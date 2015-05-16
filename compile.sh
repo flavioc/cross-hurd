@@ -17,6 +17,10 @@ cd "$BINUTILS_SRC".obj &&
    --target="$TARGET" \
    --prefix="$ROOT" \
    --with-sysroot="$SYS_ROOT" \
+   --disable-static \
+   --with-lib-path="$ROOT"/lib \
+   --disable-multilib \
+   --disable-werror \
    --disable-nls &&
    make -j$PROCS all install &&
 cd ..
@@ -27,12 +31,25 @@ compile_gcc ()
 mkdir -p "$GCC_SRC".obj &&
 cd "$GCC_SRC".obj &&
 ../$GCC_SRC/configure \
-   --target="$TARGET" \
    --prefix="$ROOT" \
+   --host="$HOST" \
+   --target="$TARGET" \
    --with-sysroot="$SYS_ROOT" \
+   --with-local-prefix="$ROOT" \
    --disable-nls \
    --disable-shared \
    --disable-threads \
+   --disable-decimal-float \
+   --disable-libgomp \
+   --disable-libmudflap \
+   --disable-libssp \
+   --disable-libatomic \
+   --disable-libitm \
+   --disable-libsanitizer \
+   --disable-libquadmath \
+   --disable-multilib \
+   --disable-target-zlib \
+   --with-system-zlib \
    --without-headers \
    --with-newlib \
    --enable-languages=c &&
@@ -105,10 +122,11 @@ compile_first_glibc() {
    ../$GLIBC_SRC/configure \
       --without-cvs \
       --with-binutils=${TARGET}/bin \
-      --build="$(../"$GLIBC_SRC"/scripts/config.guess)" \
+      --build="$HOST" \
       --host="$TARGET" \
-      --prefix= \
+      --prefix="$ROOT" \
       --with-headers="$SYS_ROOT"/include \
+      --cache-file=config.cache
       --enable-obsolete-rpc \
       --disable-profile \
       --enable-add-ons=libpthread \
