@@ -11,9 +11,10 @@ print_info ()
 
 compile_binutils ()
 {
+   print_info "Cross compiling binutils"
 mkdir -p "$BINUTILS_SRC".obj &&
 cd "$BINUTILS_SRC".obj &&
-../$BINUTILS_SRC/configure \
+AR=ar AS=as ../$BINUTILS_SRC/configure \
    --target="$TARGET" \
    --prefix="$ROOT" \
    --with-sysroot="$SYS_ROOT" \
@@ -23,13 +24,15 @@ cd "$BINUTILS_SRC".obj &&
    --disable-werror \
    --disable-nls &&
    make -j$PROCS all install &&
-cd ..
+   cd ..
 }
 
 compile_gcc ()
 {
+   print_info "Cross compiling first phase of GCC"
 mkdir -p "$GCC_SRC".obj &&
 cd "$GCC_SRC".obj &&
+AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
 ../$GCC_SRC/configure \
    --prefix="$ROOT" \
    --host="$HOST" \
@@ -116,7 +119,6 @@ compile_first_glibc() {
    print_info "Installing glibc (first pass)" &&
    mkdir -p "$GLIBC_SRC".obj &&
    cd "$GLIBC_SRC".obj &&
-   PATH=$ROOT/bin:$PATH \
    BUILD_CC="gcc" CC="$TARGET"-gcc \
    AR="$TARGET"-ar RANLIB="$TARGET"-ranlib \
    ../$GLIBC_SRC/configure \
