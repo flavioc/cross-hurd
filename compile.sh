@@ -18,7 +18,7 @@ cd "$BINUTILS_SRC".obj &&
    --prefix="$ROOT" \
    --with-sysroot="$SYS_ROOT" \
    --disable-nls &&
-   make all install &&
+   make -j$PROCS all install &&
 cd ..
 }
 
@@ -36,10 +36,10 @@ cd "$GCC_SRC".obj &&
    --without-headers \
    --with-newlib \
    --enable-languages=c &&
-   make all-gcc install-gcc &&
-   make configure-target-libgcc &&
+   make -j$PROCS all-gcc install-gcc &&
+   make -j$PROCS configure-target-libgcc &&
    cd "$TARGET"/libgcc &&
-   make 'libgcc-objects = $(lib2funcs-o) $(lib2-divmod-o)' all install &&
+   make -j$PROCS 'libgcc-objects = $(lib2funcs-o) $(lib2-divmod-o)' all install &&
    cd - &&
    mv config.status config.status.removed &&
    rm -f config.cache *config.cache */*/config.cache &&
@@ -56,7 +56,7 @@ install_gnumach_headers() {
    ../$GNUMACH_SRC/configure \
    --host="$TARGET" \
    --prefix="$SYS_ROOT" &&
-   make install-data &&
+   make -j$PROCS install-data &&
    cd -
 }
 
@@ -69,7 +69,7 @@ install_gnumig() {
    cd "$GNUMIG_SRC".obj &&
    PATH=$PATH:$ROOT/bin ../$GNUMIG_SRC/configure --target="$TARGET" \
       --prefix="$ROOT" &&
-   PATH=$PATH:$ROOT/bin make all install &&
+   PATH=$PATH:$ROOT/bin make -j$PROCS all install &&
    cd ..
 }
 
@@ -85,7 +85,7 @@ install_hurd_headers() {
       --prefix= \
       --disable-profile \
       --without-parted &&
-   make prefix="$SYS_ROOT" no_deps=t install-headers &&
+   make -j$PROCS prefix="$SYS_ROOT" no_deps=t install-headers &&
    if grep -q '^CC = gcc$' config.make
    then
       print_info "Removing config.status for later configure..."
@@ -117,7 +117,7 @@ compile_first_glibc() {
       --disable-nscd \
       --with-arch=i586 &&
    PATH=$ROOT/bin:$PATH \
-   make install_root="$SYS_ROOT" all install &&
+   make -j$PROCS install_root="$SYS_ROOT" all install &&
    cd ..
 }
 
@@ -129,10 +129,10 @@ mkdir -p "$ROOT" && cd "$ROOT" &&
    ln -sfn "$SYS_ROOT/include" "$SYS_ROOT/lib" "$TARGET"/ &&
 
 cd src &&
-#compile_binutils &&
-#compile_gcc &&
-#install_gnumach_headers &&
-#install_gnumig &&
-#install_hurd_headers &&
+compile_binutils &&
+compile_gcc &&
+install_gnumach_headers &&
+install_gnumig &&
+install_hurd_headers &&
 compile_first_glibc
 

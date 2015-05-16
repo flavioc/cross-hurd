@@ -1,3 +1,4 @@
+export PROCS=2
 export SCRIPT_DIR=$PWD
 export ROOT=$PWD/tmp
 export SYS_ROOT=$ROOT/sys
