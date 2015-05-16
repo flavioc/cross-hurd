@@ -5,7 +5,7 @@ export PROCS=1
 export SCRIPT_DIR=$PWD
 export ROOT=$PWD/tmp
 export SYS_ROOT=$ROOT/sys
-export TARGET=i686-pc-gnu
+export TARGET=i586-pc-gnu
 export HOST="$(echo $MACHTYPE | sed "s/$(echo $MACHTYPE | cut -d- -f2)/cross/g")"
 export PATH=$ROOT/bin:$PATH
 
