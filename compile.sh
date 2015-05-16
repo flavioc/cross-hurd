@@ -35,6 +35,7 @@ cd "$GCC_SRC".obj &&
 AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
 ../$GCC_SRC/configure \
    --prefix="$ROOT" \
+   --build="$HOST" \
    --host="$HOST" \
    --target="$TARGET" \
    --with-sysroot="$SYS_ROOT" \
@@ -42,14 +43,6 @@ AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
    --disable-nls \
    --disable-shared \
    --disable-threads \
-   --disable-decimal-float \
-   --disable-libgomp \
-   --disable-libmudflap \
-   --disable-libssp \
-   --disable-libatomic \
-   --disable-libitm \
-   --disable-libsanitizer \
-   --disable-libquadmath \
    --disable-multilib \
    --disable-target-zlib \
    --with-system-zlib \
@@ -122,20 +115,17 @@ compile_first_glibc() {
    BUILD_CC="gcc" CC="$TARGET"-gcc \
    AR="$TARGET"-ar RANLIB="$TARGET"-ranlib \
    ../$GLIBC_SRC/configure \
-      --without-cvs \
-      --with-binutils=${TARGET}/bin \
+      --with-binutils=${ROOT}/bin \
       --build="$HOST" \
       --host="$TARGET" \
       --prefix="$ROOT" \
       --with-headers="$SYS_ROOT"/include \
-      --cache-file=config.cache
+      --cache-file=config.cache \
       --enable-obsolete-rpc \
       --disable-profile \
       --enable-add-ons=libpthread \
-      --disable-multi-arch \
       --enable-obsolete-rpc \
-      --disable-nscd \
-      --with-arch=i586 &&
+      --disable-nscd &&
    PATH=$ROOT/bin:$PATH \
    make -j$PROCS install_root="$SYS_ROOT" all install &&
    cd ..
