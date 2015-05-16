@@ -20,11 +20,54 @@ download () {
    wget $2
 }
 
+download_gnumach () {
+   if [ -d gnumach ]; then
+      return 0
+   fi
+   git clone http://git.savannah.gnu.org/cgit/hurd/gnumach.git/
+}
+
+download_mig () {
+   if [ -d mig ]; then
+      return 0
+   fi
+   git clone http://git.savannah.gnu.org/cgit/hurd/mig.git/
+}
+
+download_hurd () {
+   if [ -d hurd ]; then
+      return 0
+   fi
+   git clone http://git.savannah.gnu.org/cgit/hurd/hurd.git/
+}
+
+apply_patch() {
+   echo "* Using patch $1"
+   patch -p1 < $1 || exit 1
+}
+
+download_glibc () {
+   if [ -d glibc ]; then
+      return 0
+   fi
+   git clone http://git.savannah.gnu.org/cgit/hurd/glibc.git/ &&
+   cd glibc &&
+   git pull origin tschwinge/Roger_Whittaker &&
+   git clone http://git.savannah.gnu.org/cgit/hurd/libpthread.git/ &&
+   (for p in $SCRIPT_DIR/patches/glibc/*; do
+      apply_patch $p
+   done) &&
+   cd ..
+}
+
 mkdir -p $ROOT/src &&
-rm -f $ROOT/src/$BINUTILS_PKG &&
 cd $ROOT/src &&
 
 download $BINUTILS_PKG $BINUTILS_URL &&
 unpack jxf $BINUTILS_PKG $BINUTILS_SRC &&
 download $GCC_PKG $GCC_URL &&
-unpack jxf $GCC_PKG $GCC_SRC
+unpack jxf $GCC_PKG $GCC_SRC &&
+download_gnumach &&
+download_mig &&
+download_hurd &&
+download_glibc

@@ -1,0 +1,5 @@
+--- /dev/null	2013-12-30 15:23:13.619881990 +0100
++++ eglibc-2.18/libpthread/configure	2014-01-01 18:46:13.982866151 +0100
+@@ -0,0 +1,2 @@
++libc_add_on_canonical=libpthread
++libc_add_on_subdirs=.

@@ -1,0 +1,26 @@
+hurd-i386 defines NO_HIDDEN, thus __GI_* versions are not available.
+
+This was introduced by
+
+https://sourceware.org/bugzilla/show_bug.cgi?id=15605
+
+Since Debian glibc is built with -O2, we shouldn't actually have the issue, but
+we should try not to define NO_HIDDEN
+
+---
+ symbol-hacks.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+Index: eglibc-2.18/sysdeps/generic/symbol-hacks.h
+===================================================================
+--- eglibc-2.18.orig/sysdeps/generic/symbol-hacks.h	2013-06-15 17:37:04.000000000 +0000
++++ eglibc-2.18/sysdeps/generic/symbol-hacks.h	2013-10-10 06:28:31.000000000 +0000
+@@ -1,6 +1,9 @@
+ /* Some compiler optimizations may transform loops into memset/memmove
+    calls and without proper declaration it may generate PLT calls.  */
+ #if !defined __ASSEMBLER__ && !defined NOT_IN_libc && defined SHARED
++#include <config.h>
++#  if !defined NO_HIDDEN
+ asm ("memmove = __GI_memmove");
+ asm ("memset = __GI_memset");
++#  endif
+ #endif

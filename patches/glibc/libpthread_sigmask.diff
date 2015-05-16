@@ -1,0 +1,45 @@
+* libpthread/sysdeps/mach/hurd/pt-sigstate.c (__pthread_sigstate): Wake up the message
+thread if any pending signals have been unblocked (code grabbed from glibc).
+---
+ libpthread/sysdeps/mach/hurd/pt-sigstate.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+--- a/libpthread/sysdeps/mach/hurd/pt-sigstate.c
++++ b/libpthread/sysdeps/mach/hurd/pt-sigstate.c
+@@ -21,6 +21,7 @@
+ #include <assert.h>
+ #include <signal.h>
+ #include <hurd/signal.h>
++#include <hurd/msg.h>
+ 
+ #include <pt-internal.h>
+ 
+@@ -31,11 +32,12 @@
+ {
+   error_t err = 0;
+   struct hurd_sigstate *ss;
++  sigset_t pending;
+ 
+   ss = _hurd_thread_sigstate (thread->kernel_thread);
+   assert (ss);
+ 
+-  __pthread_spin_lock (&ss->lock);
++  _hurd_sigstate_lock (ss);
+ 
+   if (oset)
+     *oset = ss->blocked;
+@@ -63,7 +65,13 @@
+   if (! err && clear_pending)
+     __sigemptyset (&ss->pending);
+ 
+-  __pthread_spin_unlock (&ss->lock);
++  pending = _hurd_sigstate_pending (ss) & ~ss->blocked;
++  _hurd_sigstate_unlock (ss);
++
++  if (! err && pending)
++    /* Send a message to the signal thread so it
++       will wake up and check for pending signals.  */
++    __msg_sig_post (_hurd_msgport, 0, 0, __mach_task_self ());
+ 
+   return err;
+ }

@@ -1,0 +1,29 @@
+MREMAP is unimplemented on GNU/Hurd for now
+
+--- a/bits/mman.h
++++ b/bits/mman.h
+@@ -85,10 +85,12 @@
+ #define MS_INVALIDATE	2		/* Invalidate the caches.  */
+ 
+ /* Flags for `mremap'.  */
++#if 0
+ #ifdef __USE_GNU
+ # define MREMAP_MAYMOVE	1		/* Mapping address may change.  */
+ # define MREMAP_FIXED	2		/* Fifth argument sets new address.  */
+ #endif
++#endif
+ 
+ /* Flags for `mlockall' (can be OR'd together).  */
+ #define MCL_CURRENT	1		/* Lock all currently mapped pages.  */
+--- a/malloc/memusage.c
++++ b/malloc/memusage.c
+@@ -680,6 +680,9 @@ mmap64 (void *start, size_t len, int pro
+   return result;
+ }
+ 
++#ifndef MREMAP_FIXED
++#define MREMAP_FIXED 0
++#endif
+ 
+ /* `mremap' replacement.  We do not have to keep track of the size since
+    `munmap' will get it as a parameter.  */
