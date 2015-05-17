@@ -1,7 +1,5 @@
 #!/bin/sh
 
-BINUTILS_URL=http://ftp.gnu.org/gnu/binutils/binutils-2.25.tar.bz2
-
 print_info ()
 {
    echo "* $*"
@@ -187,5 +185,7 @@ compile_gcc &&
 install_gnumach_headers &&
 install_gnumig &&
 install_hurd_headers &&
-compile_first_glibc
+compile_first_glibc &&
+compile_full_gcc &&
+compile_second_glibc
 
