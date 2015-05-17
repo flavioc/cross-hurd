@@ -5,13 +5,14 @@
 compile_binutils ()
 {
    print_info "Cross compiling binutils"
+rm -rf "$BINUTILS_SRC".obj &&
 mkdir -p "$BINUTILS_SRC".obj &&
 cd "$BINUTILS_SRC".obj &&
 AR=ar AS=as ../$BINUTILS_SRC/configure \
    --host="$HOST" \
    --target="$TARGET" \
    --prefix="$ROOT" \
-   --with-sysroot="$SYS_ROOT" \
+   --with-sysroot="$SYSTEM" \
    --disable-static \
    --with-lib-path="$SYS_ROOT"/lib \
    --disable-multilib \
@@ -24,6 +25,7 @@ AR=ar AS=as ../$BINUTILS_SRC/configure \
 compile_gcc ()
 {
    print_info "Cross compiling first phase of GCC"
+rm -rf "$GCC_SRC".obj &&
 mkdir -p "$GCC_SRC".obj &&
 cd "$GCC_SRC".obj &&
 AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
@@ -32,8 +34,9 @@ AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
    --build="$HOST" \
    --host="$HOST" \
    --target="$TARGET" \
-   --with-sysroot="$SYS_ROOT" \
-   --with-local-prefix="$ROOT" \
+   --with-sysroot="$SYSTEM" \
+   --with-local-prefix="$SYS_ROOT" \
+   --with-native-system-header-dir="$SYS_ROOT"/include \
    --disable-nls \
    --disable-shared \
    --disable-threads \
@@ -134,7 +137,9 @@ AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
 ../$GCC_SRC/configure \
    --prefix="$ROOT" \
    --target="$TARGET" \
-   --with-sysroot="$SYS_ROOT" \
+   --with-sysroot="$SYSTEM" \
+   --with-local-prefix="$ROOT" \
+   --with-native-system-header-dir="$ROOT"/include \
    --disable-static \
    --disable-nls \
    --enable-languages=c \
@@ -142,14 +147,16 @@ AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
    --disable-multilib \
    --with-system-zlib \
    --with-arch=i586 &&
-   make -j$PROCS all install &&
+   make AS_FOR_TARGET="${TARGET}-as" \
+	    LD_FOR_TARGET="${TARGET}-ld" -j$PROCS all &&
+   make install &&
    cd ..
 }
 
 compile_second_glibc() {
    print_info "Installing GLibC (second pass)" &&
-   mkdir -p "$GLIBC_SRC".obj &&
-   cd "$GLIBC_SRC".obj &&
+   mkdir -p "$GLIBC_SRC".second_obj &&
+   cd "$GLIBC_SRC".second_obj &&
    rm -f config.cache &&
    BUILD_CC="gcc" CC="$TARGET"-gcc \
    AR="$TARGET"-ar RANLIB="$TARGET"-ranlib \

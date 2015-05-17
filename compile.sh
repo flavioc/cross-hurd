@@ -30,10 +30,10 @@ install_mig() {
    ../$GNUMIG_SRC/configure \
       --build="$HOST" \
       --host="$TARGET" \
-      --prefix=/sys \
+      --prefix="$SYS_ROOT" \
       --target="$TARGET" &&
    make clean &&
-   make -j$PROCS DESTDIR="$ROOT" all install &&
+   make -j$PROCS all install &&
    cd ..
 }
 
@@ -59,8 +59,8 @@ install_gnumach() {
 	   --enable-kdb \
 	   --enable-kmsg \
 	   --enable-pae \
-	   --prefix= &&
-   make -j$PROCS DESTDIR="$SYSTEM" gnumach.gz gnumach gnumach.msgids install &&
+	   --prefix="$SYS_ROOT" &&
+   make -j$PROCS gnumach.gz gnumach gnumach.msgids install &&
    mkdir -p $SYSTEM/boot &&
    cp gnumach.gz $SYSTEM/boot/ &&
    cd -
@@ -77,10 +77,10 @@ install_hurd() {
    ../$HURD_SRC/configure \
       --build="$HOST" \
       --host="$TARGET" \
-      --prefix= \
+      --prefix="$SYS_ROOT" \
       --without-parted \
       --disable-profile &&
-   make -j$PROCS prefix="$SYS_ROOT" all install &&
+   make -j$PROCS all install &&
    cd ..
 }
 
@@ -149,13 +149,13 @@ install_e2fsprogs() {
 	cd ..
 }
 
-cd "$ROOT"/src &&
-#install_zlib &&
-#install_flex &&
-#install_mig &&
-#install_gnumach &&
-#install_hurd &&
-#install_binutils &&
-#install_bash &&
-#install_coreutils &&
+cd "$SYSTEM"/src &&
+install_zlib &&
+install_flex &&
+install_mig &&
+install_gnumach &&
+install_hurd &&
+install_binutils &&
+install_bash &&
+install_coreutils &&
 install_e2fsprogs
