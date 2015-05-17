@@ -60,9 +60,9 @@ install_gnumach() {
 	   --enable-kmsg \
 	   --enable-pae \
 	   --prefix= &&
-   make -j$PROCS DESTDIR="$ROOT" gnumach.gz gnumach gnumach.msgids install &&
-   mkdir -p $ROOT/boot &&
-   cp gnumach.gz $ROOT/boot/ &&
+   make -j$PROCS DESTDIR="$SYSTEM" gnumach.gz gnumach gnumach.msgids install &&
+   mkdir -p $SYSTEM/boot &&
+   cp gnumach.gz $SYSTEM/boot/ &&
    cd -
 }
 
