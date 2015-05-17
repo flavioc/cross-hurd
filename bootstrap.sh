@@ -1,10 +1,5 @@
 #!/bin/sh
 
-print_info ()
-{
-   echo "* $*"
-}
-
 . ./vars.sh
 
 compile_binutils ()
@@ -172,16 +167,27 @@ compile_second_glibc() {
    cd ..
 }
 
+compile_pkgconfiglite() {
+	cd "$PKGCONFIGLITE_SRC" &&
+	./configure --prefix="$ROOT" --host=${TARGET}\
+	    --with-pc-path="/sys/lib/pkgconfig:/sys/share/pkgconfig" &&
+	make all install && cd ..
+}
+
 print_info "Root is $ROOT"
 print_info "Cross-compiling on $HOST to $TARGET"
 
-mkdir -p "$ROOT" && cd "$ROOT" &&
-   mkdir -p bin src "$SYS_ROOT/include" "$SYS_ROOT/lib" "$TARGET" &&
-   ln -sfn "$SYS_ROOT/include" "$SYS_ROOT/lib" "$TARGET"/ &&
+mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
+   mkdir -p bin src "tools/include" "tools/lib" "$TARGET" "cross-tools" &&
+   ln -sfn "$PWD/tools/include" "$PWD/tools/lib" "$TARGET"/ &&
+   rm -f /tools /cross-tools &&
+   ln -sf $PWD/tools /tools &&
+   ln -sf $PWD/cross-tools /cross-tools &&
 
 cd src &&
 compile_binutils &&
 compile_gcc &&
+compile_pkgconfiglite &&
 install_gnumach_headers &&
 install_gnumig &&
 install_hurd_headers &&

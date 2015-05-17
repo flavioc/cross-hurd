@@ -51,35 +51,45 @@ index d332f36..2406203 100644
  exec-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
  exec_startup-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
 diff --git a/ext2fs/Makefile b/ext2fs/Makefile
-index 8d2e68c..e37f78c 100644
+index 8d2e68c..e864480 100644
 --- a/ext2fs/Makefile
 +++ b/ext2fs/Makefile
-@@ -24,8 +24,10 @@ SRCS = balloc.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
+@@ -24,8 +24,9 @@ SRCS = balloc.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
         inode.c pager.c pokel.c truncate.c storeinfo.c msg.c xinl.c
  OBJS = $(SRCS:.c=.o)
  HURDLIBS = diskfs pager iohelp fshelp store ports ihash shouldbeinlibc
 -OTHERLIBS = -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
-+LDLIBS = -lpthread
-+OTHERLIBS = $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
++LDLIBS = -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
  
  include ../Makeconf
  
 +ext2fs.static: LDFLAGS += -z muldefs
  ext2fs.static: $(boot-store-types:%=../libstore/libstore_%.a)
 diff --git a/fatfs/Makefile b/fatfs/Makefile
-index 6224b64..8d8dcea 100644
+index 6224b64..ee8cd83 100644
 --- a/fatfs/Makefile
 +++ b/fatfs/Makefile
-@@ -23,7 +23,8 @@ SRCS = inode.c main.c dir.c pager.c fat.c virt-inode.c node-create.c
+@@ -23,7 +23,7 @@ SRCS = inode.c main.c dir.c pager.c fat.c virt-inode.c node-create.c
  
  OBJS = $(SRCS:.c=.o)
  HURDLIBS = diskfs iohelp fshelp store pager ports ihash shouldbeinlibc
 -OTHERLIBS = -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
-+LDLIBS = -lpthread
-+OTHERLIBS = $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
++LDLIBS = -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
  
  include ../Makeconf
  
+diff --git a/ftpfs/Makefile b/ftpfs/Makefile
+index 7039890..ec8a673 100644
+--- a/ftpfs/Makefile
++++ b/ftpfs/Makefile
+@@ -25,6 +25,6 @@ SRCS = ftpfs.c fs.c host.c netfs.c dir.c conn.c ccache.c node.c ncache.c
+ 
+ OBJS = $(SRCS:.c=.o)
+ HURDLIBS = netfs fshelp iohelp ports ihash ftpconn shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ include ../Makeconf
 diff --git a/hostmux/Makefile b/hostmux/Makefile
 index 939a9f6..4776ac9 100644
 --- a/hostmux/Makefile
@@ -93,16 +103,15 @@ index 939a9f6..4776ac9 100644
  
  include ../Makeconf
 diff --git a/isofs/Makefile b/isofs/Makefile
-index 6475c52..ef1a13a 100644
+index 6475c52..25ac09a 100644
 --- a/isofs/Makefile
 +++ b/isofs/Makefile
-@@ -22,7 +22,8 @@ SRCS = inode.c main.c lookup.c pager.c rr.c
+@@ -22,7 +22,7 @@ SRCS = inode.c main.c lookup.c pager.c rr.c
  
  OBJS = $(SRCS:.c=.o)
  HURDLIBS = diskfs iohelp fshelp store pager ports ihash shouldbeinlibc
 -OTHERLIBS = -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
-+LDLIBS = -lpthread
-+OTHERLIBS = $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
++LDLIBS = -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
  
  include ../Makeconf
  
