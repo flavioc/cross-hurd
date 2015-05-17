@@ -74,9 +74,9 @@ install_gnumig() {
    cd .. &&
    mkdir -p "$GNUMIG_SRC".obj &&
    cd "$GNUMIG_SRC".obj &&
-   PATH=$PATH:$ROOT/bin ../$GNUMIG_SRC/configure --target="$TARGET" \
+   ../$GNUMIG_SRC/configure --target="$TARGET" \
       --prefix="$ROOT" &&
-   PATH=$PATH:$ROOT/bin make -j$PROCS all install &&
+   make -j$PROCS all install &&
    cd ..
 }
 
@@ -104,15 +104,15 @@ install_hurd_headers() {
 
 compile_first_glibc() {
    print_info "Installing glibc (first pass)" &&
-   mkdir -p "$GLIBC_SRC".obj &&
-   cd "$GLIBC_SRC".obj &&
+   mkdir -p "$GLIBC_SRC".first_obj &&
+   cd "$GLIBC_SRC".first_obj &&
    BUILD_CC="gcc" CC="$TARGET"-gcc \
    AR="$TARGET"-ar RANLIB="$TARGET"-ranlib \
    ../$GLIBC_SRC/configure \
       --with-binutils=${ROOT}/bin \
       --build="$HOST" \
       --host="$TARGET" \
-      --prefix= \
+      --prefix="$SYS_ROOT" \
       --with-headers="$SYS_ROOT"/include \
       --cache-file=config.cache \
       --enable-obsolete-rpc \
@@ -121,12 +121,13 @@ compile_first_glibc() {
       --enable-obsolete-rpc \
       --disable-nscd &&
    PATH=$ROOT/bin:$PATH \
-   make -j$PROCS install_root="$SYS_ROOT" all install &&
+   make -j$PROCS all install &&
    cd ..
 }
 
 compile_full_gcc () {
    print_info "Cross compiling GCC"
+rm -rf "$GCC_SRC".obj &&
 mkdir -p "$GCC_SRC".obj &&
 cd "$GCC_SRC".obj &&
 AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
