@@ -4,6 +4,8 @@
 
 BINUTILS_URL=http://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
 GCC_URL=http://gcc.cybermirror.org/releases/gcc-4.9.2/"$GCC_PKG"
+FLEX_URL=http://downloads.sourceforge.net/project/flex/"$FLEX_PKG"
+ZLIB_URL=http://zlib.net/"$ZLIB_PKG"
 
 unpack () {
    if [ -d "$3" ]; then
@@ -83,4 +85,8 @@ unpack jxf $BINUTILS_PKG $BINUTILS_SRC &&
 download_gnumach &&
 download_mig &&
 download_hurd &&
-download_glibc
+download_glibc &&
+download $FLEX_PKG $FLEX_URL &&
+unpack jxf $FLEX_PKG $FLEX_SRC
+download $ZLIB_PKG $ZLIB_URL &&
+unpack zxf $ZLIB_PKG $ZLIB_SRC
