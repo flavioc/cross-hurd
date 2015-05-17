@@ -6,7 +6,7 @@ diff -Naur gcc-4.9.2.orig/gcc/config/i386/gnu.h gcc-4.9.2/gcc/config/i386/gnu.h
  
  #undef GNU_USER_DYNAMIC_LINKER
 -#define GNU_USER_DYNAMIC_LINKER "/lib/ld.so"
-+#define GNU_USER_DYNAMIC_LINKER "/sys/lib/ld.so"
++#define GNU_USER_DYNAMIC_LINKER "/tools/lib/ld.so"
  
  #undefSTARTFILE_SPEC
  #if defined HAVE_LD_PIE
