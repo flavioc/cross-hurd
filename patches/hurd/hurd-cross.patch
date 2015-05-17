@@ -1,0 +1,265 @@
+diff --git a/auth/Makefile b/auth/Makefile
+index b9eedda..b82de07 100644
+--- a/auth/Makefile
++++ b/auth/Makefile
+@@ -23,7 +23,7 @@ SRCS = auth.c
+ OBJS = auth.o authServer.o auth_replyUser.o
+ target = auth
+ HURDLIBS = ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
+ 
+diff --git a/boot/Makefile b/boot/Makefile
+index 0afdb43..c877295 100644
+--- a/boot/Makefile
++++ b/boot/Makefile
+@@ -28,7 +28,7 @@ UX-OBJS = mach-crt0.o uxboot.o sigvec.o syscall.o ux.o $(COMMON-OBJS)
+ target = boot
+ io-MIGSFLAGS=-DREPLY_PORTS
+ HURDLIBS = store shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS += -lpthread
+ 
+ include ../Makeconf
+ 
+diff --git a/console/Makefile b/console/Makefile
+index c5ab543..c229407 100644
+--- a/console/Makefile
++++ b/console/Makefile
+@@ -27,7 +27,7 @@ SRCS = console.c display.c pager.c input.c
+ MIGSTUBS = notifyServer.o tioctlServer.o fs_notifyUser.o
+ 
+ HURDLIBS = netfs fshelp iohelp pager ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
+ 
+ MIGSFLAGS += -imacros $(srcdir)/mutations.h
+diff --git a/exec/Makefile b/exec/Makefile
+index d332f36..2406203 100644
+--- a/exec/Makefile
++++ b/exec/Makefile
+@@ -27,7 +27,7 @@ OBJS = main.o hostarch.o exec.o hashexec.o \
+ target = exec
+ #targets = exec exec.static
+ HURDLIBS = trivfs fshelp iohelp ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ exec-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
+ exec_startup-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
+diff --git a/ext2fs/Makefile b/ext2fs/Makefile
+index 8d2e68c..e37f78c 100644
+--- a/ext2fs/Makefile
++++ b/ext2fs/Makefile
+@@ -24,8 +24,10 @@ SRCS = balloc.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
+        inode.c pager.c pokel.c truncate.c storeinfo.c msg.c xinl.c
+ OBJS = $(SRCS:.c=.o)
+ HURDLIBS = diskfs pager iohelp fshelp store ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
++LDLIBS = -lpthread
++OTHERLIBS = $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
+ 
+ include ../Makeconf
+ 
++ext2fs.static: LDFLAGS += -z muldefs
+ ext2fs.static: $(boot-store-types:%=../libstore/libstore_%.a)
+diff --git a/fatfs/Makefile b/fatfs/Makefile
+index 6224b64..8d8dcea 100644
+--- a/fatfs/Makefile
++++ b/fatfs/Makefile
+@@ -23,7 +23,8 @@ SRCS = inode.c main.c dir.c pager.c fat.c virt-inode.c node-create.c
+ 
+ OBJS = $(SRCS:.c=.o)
+ HURDLIBS = diskfs iohelp fshelp store pager ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
++LDLIBS = -lpthread
++OTHERLIBS = $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
+ 
+ include ../Makeconf
+ 
+diff --git a/hostmux/Makefile b/hostmux/Makefile
+index 939a9f6..4776ac9 100644
+--- a/hostmux/Makefile
++++ b/hostmux/Makefile
+@@ -25,6 +25,6 @@ SRCS = hostmux.c mux.c leaf.c node.c stubs.c
+ 
+ OBJS = $(SRCS:.c=.o)
+ HURDLIBS = netfs fshelp iohelp ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ include ../Makeconf
+diff --git a/isofs/Makefile b/isofs/Makefile
+index 6475c52..ef1a13a 100644
+--- a/isofs/Makefile
++++ b/isofs/Makefile
+@@ -22,7 +22,8 @@ SRCS = inode.c main.c lookup.c pager.c rr.c
+ 
+ OBJS = $(SRCS:.c=.o)
+ HURDLIBS = diskfs iohelp fshelp store pager ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
++LDLIBS = -lpthread
++OTHERLIBS = $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
+ 
+ include ../Makeconf
+ 
+diff --git a/mach-defpager/Makefile b/mach-defpager/Makefile
+index 4f987fa..88322bf 100644
+--- a/mach-defpager/Makefile
++++ b/mach-defpager/Makefile
+@@ -30,8 +30,8 @@ OBJS 	:= $(SRCS:.c=.o) \
+ 	   default_pager_replyUser.o
+ 
+ HURDLIBS:= ihash
+-OTHERLIBS:= -lpthread
+-LDFLAGS += -static
++LDLIBS:= -lpthread
++LDFLAGS += -static -z muldefs
+ 
+ include ../Makeconf
+ 
+diff --git a/nfs/Makefile b/nfs/Makefile
+index d814f67..265d027 100644
+--- a/nfs/Makefile
++++ b/nfs/Makefile
+@@ -27,6 +27,6 @@ SRCS = ops.c rpc.c mount.c nfs.c cache.c consts.c main.c name-cache.c \
+        storage-info.c
+ OBJS = $(SRCS:.c=.o)
+ HURDLIBS = netfs fshelp iohelp ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ include ../Makeconf
+diff --git a/nfsd/Makefile b/nfsd/Makefile
+index 6ac6dd4..5dc9a4d 100644
+--- a/nfsd/Makefile
++++ b/nfsd/Makefile
+@@ -25,7 +25,7 @@ OBJS = $(subst .c,.o,$(SRCS))
+ target = nfsd
+ installationdir = $(sbindir)
+ HURDLIBS = shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ include ../Makeconf
+ 
+diff --git a/pfinet/Makefile b/pfinet/Makefile
+index 10b90eb..74cedcf 100644
+--- a/pfinet/Makefile
++++ b/pfinet/Makefile
+@@ -115,7 +115,7 @@ ASMHEADERS = atomic.h bitops.h byteorder.h delay.h errno.h hardirq.h init.h \
+ 	segment.h spinlock.h system.h types.h uaccess.h
+ 
+ HURDLIBS=trivfs fshelp ports ihash shouldbeinlibc iohelp
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ target = pfinet
+ 
+diff --git a/pflocal/Makefile b/pflocal/Makefile
+index bfc2f4e..0d9341f 100644
+--- a/pflocal/Makefile
++++ b/pflocal/Makefile
+@@ -26,7 +26,7 @@ SRCS = connq.c io.c pflocal.c socket.c pf.c sock.c sserver.c
+ MIGSTUBS = ioServer.o socketServer.o
+ OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
+ HURDLIBS = pipe trivfs iohelp fshelp ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
+ 
+diff --git a/proc/Makefile b/proc/Makefile
+index 2275a66..aa9986f 100644
+--- a/proc/Makefile
++++ b/proc/Makefile
+@@ -28,11 +28,10 @@ MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
+ 
+ MIGSTUBS = processServer.o notifyServer.o \
+ 	ourmsgUser.o proc_excUser.o proc_excServer.o \
+-	task_notifyServer.o
++	task_notifyServer.o task_notifyUser.o
+ OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
+ HURDLIBS = ihash ports shouldbeinlibc
+-
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ include ../Makeconf
+ 
+diff --git a/procfs/Makefile b/procfs/Makefile
+index 78f20c4..12fc9ee 100644
+--- a/procfs/Makefile
++++ b/procfs/Makefile
+@@ -26,6 +26,6 @@ LCLHDRS = dircat.h main.h process.h procfs.h procfs_dir.h proclist.h rootdir.h
+ 
+ OBJS = $(SRCS:.c=.o)
+ HURDLIBS = netfs fshelp iohelp ps ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ include ../Makeconf
+diff --git a/random/Makefile b/random/Makefile
+index 0949b63..231082c 100644
+--- a/random/Makefile
++++ b/random/Makefile
+@@ -25,6 +25,6 @@ SRCS = random.c gnupg-random.c gnupg-rmd160.c
+ OBJS = $(SRCS:.c=.o) startup_notifyServer.o
+ LCLHDRS = gnupg-random.h gnupg-rmd.h gnupg-bithelp.h random.h
+ HURDLIBS = trivfs ports fshelp ihash shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ include ../Makeconf
+diff --git a/storeio/Makefile b/storeio/Makefile
+index c131758..83b7684 100644
+--- a/storeio/Makefile
++++ b/storeio/Makefile
+@@ -24,6 +24,6 @@ SRCS = dev.c storeio.c open.c pager.c io.c
+ 
+ OBJS = $(SRCS:.c=.o)
+ HURDLIBS = trivfs pager fshelp iohelp store ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ include ../Makeconf
+diff --git a/term/Makefile b/term/Makefile
+index 1419d2a..e744042 100644
+--- a/term/Makefile
++++ b/term/Makefile
+@@ -26,7 +26,7 @@ target = term
+ SRCS = devio.c munge.c users.c main.c ptyio.c hurdio.c xinl.c
+ 
+ HURDLIBS = trivfs fshelp iohelp ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ OBJS = $(subst .c,.o,$(SRCS)) termServer.o device_replyServer.o tioctlServer.o ourmsgUser.o
+ 
+ include ../Makeconf
+diff --git a/tmpfs/Makefile b/tmpfs/Makefile
+index fdcae34..bcb76e9 100644
+--- a/tmpfs/Makefile
++++ b/tmpfs/Makefile
+@@ -24,6 +24,6 @@ SRCS = tmpfs.c node.c dir.c pager-stubs.c
+ OBJS = $(SRCS:.c=.o) default_pagerUser.o
+ # XXX The shared libdiskfs requires libstore even though we don't use it here.
+ HURDLIBS = diskfs pager iohelp fshelp store ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ include ../Makeconf
+diff --git a/usermux/Makefile b/usermux/Makefile
+index c30b5ab..8df24d4 100644
+--- a/usermux/Makefile
++++ b/usermux/Makefile
+@@ -25,6 +25,6 @@ SRCS = usermux.c mux.c leaf.c node.c stubs.c
+ 
+ OBJS = $(SRCS:.c=.o)
+ HURDLIBS = netfs fshelp iohelp ports ihash shouldbeinlibc
+-OTHERLIBS = -lpthread
++LDLIBS = -lpthread
+ 
+ include ../Makeconf

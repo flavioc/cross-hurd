@@ -12,6 +12,8 @@ export PATH=$ROOT/bin:$PATH
 # Package versions.
 BINUTILS_VERSION=2.25
 GCC_VERSION=4.9.2
+FLEX_VERSION=2.5.39
+ZLIB_VERSION=1.2.8
 # Mach, Hurd and Glibc are all taken from the Git repository.
 
 BINUTILS_SRC=binutils-"$BINUTILS_VERSION"
@@ -22,3 +24,7 @@ GNUMACH_SRC=gnumach
 GNUMIG_SRC=mig
 HURD_SRC=hurd
 GLIBC_SRC=glibc
+FLEX_SRC=flex-"$FLEX_VERSION"
+FLEX_PKG="$FLEX_SRC".tar.bz2
+ZLIB_SRC=zlib-"$ZLIB_VERSION"
+ZLIB_PKG="$ZLIB_SRC".tar.gz
