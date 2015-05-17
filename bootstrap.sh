@@ -157,14 +157,14 @@ compile_second_glibc() {
       --with-binutils=${ROOT}/bin \
       --build="$HOST" \
       --host="$TARGET" \
-      --prefix= \
+      --prefix="$SYS_ROOT" \
       --with-headers="$SYS_ROOT"/include \
       --enable-obsolete-rpc \
       --disable-profile \
       --enable-add-ons=libpthread \
       --enable-obsolete-rpc \
       --disable-nscd &&
-   make -j$PROCS install_root="$SYS_ROOT" all install &&
+   make -j$PROCS all install &&
    cd ..
 }
 
