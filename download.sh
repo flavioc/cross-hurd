@@ -42,8 +42,8 @@ download_hurd () {
 }
 
 apply_patch() {
-   echo "* Using patch $1"
-   patch -p1 < $1 || exit 1
+   echo "* Using patch $1 (level: $2)"
+   patch -p$2 < $1 || exit 1
 }
 
 download_glibc () {
@@ -54,8 +54,13 @@ download_glibc () {
    cd glibc &&
    git pull origin tschwinge/Roger_Whittaker &&
    git clone http://git.savannah.gnu.org/cgit/hurd/libpthread.git/ &&
+   cd libpthread &&
+   (for p in $SCRIPT_DIR/patches/libpthread/*; do
+      apply_patch $p 0
+   done) &&
+   cd .. &&
    (for p in $SCRIPT_DIR/patches/glibc/*; do
-      apply_patch $p
+      apply_patch $p 1
    done) &&
    cd ..
 }
