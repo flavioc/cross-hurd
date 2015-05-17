@@ -15,11 +15,12 @@ compile_binutils ()
 mkdir -p "$BINUTILS_SRC".obj &&
 cd "$BINUTILS_SRC".obj &&
 AR=ar AS=as ../$BINUTILS_SRC/configure \
+   --host="$HOST" \
    --target="$TARGET" \
    --prefix="$ROOT" \
    --with-sysroot="$SYS_ROOT" \
    --disable-static \
-   --with-lib-path="$ROOT"/lib \
+   --with-lib-path="$SYS_ROOT"/lib \
    --disable-multilib \
    --disable-werror \
    --disable-nls &&
@@ -118,7 +119,7 @@ compile_first_glibc() {
       --with-binutils=${ROOT}/bin \
       --build="$HOST" \
       --host="$TARGET" \
-      --prefix="$ROOT" \
+      --prefix= \
       --with-headers="$SYS_ROOT"/include \
       --cache-file=config.cache \
       --enable-obsolete-rpc \
@@ -127,6 +128,48 @@ compile_first_glibc() {
       --enable-obsolete-rpc \
       --disable-nscd &&
    PATH=$ROOT/bin:$PATH \
+   make -j$PROCS install_root="$SYS_ROOT" all install &&
+   cd ..
+}
+
+compile_full_gcc () {
+   print_info "Cross compiling GCC"
+mkdir -p "$GCC_SRC".obj &&
+cd "$GCC_SRC".obj &&
+AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
+../$GCC_SRC/configure \
+   --prefix="$ROOT" \
+   --target="$TARGET" \
+   --with-sysroot="$SYS_ROOT" \
+   --disable-static \
+   --disable-nls \
+   --enable-languages=c \
+   --enable-threads=posix \
+   --disable-multilib \
+   --with-system-zlib \
+   --with-arch=i586 &&
+   make -j$PROCS all install &&
+   cd ..
+}
+
+compile_second_glibc() {
+   print_info "Installing GLibC (second pass)" &&
+   mkdir -p "$GLIBC_SRC".obj &&
+   cd "$GLIBC_SRC".obj &&
+   rm -f config.cache &&
+   BUILD_CC="gcc" CC="$TARGET"-gcc \
+   AR="$TARGET"-ar RANLIB="$TARGET"-ranlib \
+   ../$GLIBC_SRC/configure \
+      --with-binutils=${ROOT}/bin \
+      --build="$HOST" \
+      --host="$TARGET" \
+      --prefix= \
+      --with-headers="$SYS_ROOT"/include \
+      --enable-obsolete-rpc \
+      --disable-profile \
+      --enable-add-ons=libpthread \
+      --enable-obsolete-rpc \
+      --disable-nscd &&
    make -j$PROCS install_root="$SYS_ROOT" all install &&
    cd ..
 }
