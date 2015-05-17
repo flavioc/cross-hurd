@@ -1,0 +1,12 @@
+diff -Naur gcc-4.9.2.orig/gcc/config/i386/gnu.h gcc-4.9.2/gcc/config/i386/gnu.h
+--- gcc-4.9.2.orig/gcc/config/i386/gnu.h
++++ gcc-4.9.2/gcc/config/i386/gnu.h
+@@ -22,7 +22,7 @@
+ #define GNU_USER_LINK_EMULATION "elf_i386"
+ 
+ #undef GNU_USER_DYNAMIC_LINKER
+-#define GNU_USER_DYNAMIC_LINKER "/lib/ld.so"
++#define GNU_USER_DYNAMIC_LINKER "/sys/lib/ld.so"
+ 
+ #undefSTARTFILE_SPEC
+ #if defined HAVE_LD_PIE

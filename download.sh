@@ -65,13 +65,21 @@ download_glibc () {
    cd ..
 }
 
+download_gcc () {
+   download $GCC_PKG $GCC_URL &&
+   unpack jxf $GCC_PKG $GCC_SRC &&
+   cd $GCC_SRC &&
+   pwd &&
+   apply_patch $SCRIPT_DIR/patches/gcc/specs.patch 1 &&
+   cd ..
+}
+
 mkdir -p $ROOT/src &&
 cd $ROOT/src &&
 
+download_gcc &&
 download $BINUTILS_PKG $BINUTILS_URL &&
 unpack jxf $BINUTILS_PKG $BINUTILS_SRC &&
-download $GCC_PKG $GCC_URL &&
-unpack jxf $GCC_PKG $GCC_SRC &&
 download_gnumach &&
 download_mig &&
 download_hurd &&
