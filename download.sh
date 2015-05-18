@@ -45,7 +45,7 @@ download_hurd () {
       return 0
    fi
    git clone http://git.savannah.gnu.org/cgit/hurd/hurd.git/ &&
-   cd hurd && apply_patch $SCRIPT_DIR/hurd/hurd-cross.patch 1 &&
+   cd hurd && apply_patch $SCRIPT_DIR/patches/hurd/hurd-cross.patch 1 &&
    cd ..
 }
 
@@ -75,6 +75,9 @@ download_glibc () {
 
 download_gcc () {
    download $GCC_PKG $GCC_URL &&
+   if [ -d "$GCC_SRC" ]; then
+      return 0
+   fi
    unpack jxf $GCC_PKG $GCC_SRC &&
    cd $GCC_SRC &&
    pwd &&
