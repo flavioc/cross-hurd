@@ -1,0 +1,91 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ sed (4.2.2-3) unstable; urgency=medium
+ .
+   * Patch from Colin Watson to update config.{guess,sub} at build
+     time.  closes: #732073.
+   * Bump to Standards-Version 3.9.5.
+Author: Clint Adams <clint@debian.org>
+Bug-Debian: http://bugs.debian.org/732073
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- sed-4.2.2.orig/po/hu.po
++++ sed-4.2.2/po/hu.po
+@@ -14,7 +14,7 @@ msgstr ""
+ "MIME-Version: 1.0\n"
+ "Content-Type: text/plain; charset=ISO-8859-2\n"
+ "Content-Transfer-Encoding: 8bit\n"
+-"Plural-Forms: nplurals=1; plural=0;\n"
++"Plural-Forms: nplurals=2; plural=n != 1;\n"
+ 
+ #: sed/compile.c:144
+ msgid "multiple `!'s"
+--- sed-4.2.2.orig/basicdefs.h
++++ sed-4.2.2/basicdefs.h
+@@ -1,5 +1,6 @@
+ /*  GNU SED, a batch stream editor.
+-    Copyright (C) 1998, 1999, 2002, 2003, 2010 Free Software Foundation, Inc.
++    Copyright (C) 1998, 1999, 2002, 2003, 2010, 2013
++    Free Software Foundation, Inc.
+ 
+     This program is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+@@ -40,6 +41,13 @@ typedef unsigned long countT;
+ #define obstack_chunk_alloc  ck_malloc
+ #define obstack_chunk_free   free
+ 
++/* MAX_PATH is not defined in some platforms, most notably GNU/Hurd.
++   In that case we define it here to some constant.  Note however that
++   this relies in the fact that sed does reallocation if a buffer
++   needs to be larger than PATH_MAX.  */
++#ifndef PATH_MAX
++# define PATH_MAX 200
++#endif
+ 
+ /* handle misdesigned <ctype.h> macros (snarfed from lib/regex.c) */
+ /* Jim Meyering writes:
+--- sed-4.2.2.orig/bootstrap.conf
++++ sed-4.2.2/bootstrap.conf
+@@ -19,7 +19,7 @@
+ # gnulib modules used by this package.
+ gnulib_modules="
+     acl alloca btowc c-ctype extensions fwriting getdelim getopt gettext-h
+-    localcharset mbrlen mbrtowc mbsinit memchr mkostemp obstack pathmax regex
++    localcharset mbrlen mbrtowc mbsinit memchr mkostemp obstack regex
+     rename selinux-h stdbool stat-macros ssize_t strerror strverscmp
+     unlocked-io verify version-etc-fsf wcrtomb wctob"
+ 
+--- sed-4.2.2.orig/sed/utils.c
++++ sed-4.2.2/sed/utils.c
+@@ -1,5 +1,5 @@
+ /*  Functions from hack's utils library.
+-    Copyright (C) 1989, 1990, 1991, 1998, 1999, 2003, 2008, 2009, 2011
++    Copyright (C) 1989, 1990, 1991, 1998, 1999, 2003, 2008, 2009, 2011, 2013
+     Free Software Foundation, Inc.
+ 
+     This program is free software; you can redistribute it and/or modify
+@@ -29,7 +29,6 @@
+ #include <limits.h>
+ 
+ #include "utils.h"
+-#include "pathmax.h"
+ #include "fwriting.h"
+ 
+ const char *myname;

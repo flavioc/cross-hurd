@@ -1,0 +1,51 @@
+#!/bin/bash
+# Setup critical hurd translators
+
+PATH=/tools/bin:/tools/sbin:/bin:/sbin
+
+# BOOT_DEV="$1"
+# if [ ! "$BOOT_DEV" ]; then
+#   echo "No device to install a boot loader was specified."
+#   echo "Here are some possible devices to use:"
+#   /bin/devprobe sd0 hd0 sd1 hd1
+#   echo -n "Boot device? [none] "
+#   read BOOT_DEV
+# fi
+# 
+# if [ "$BOOT_DEV" ]; then
+#   if /bin/devprobe -s "$BOOT_DEV"; then true; else
+#     echo 2>&1 "$0: $BOOT_DEV: No such device known"; exit 1
+#   fi
+# fi
+
+set -v
+
+# Make sure the filesystem is writable
+fsysopts / --writable 
+
+# Set root password.
+passwd
+
+# Set up standard passive translators
+/bin/settrans -c /servers/socket/local /hurd/pflocal
+/bin/settrans -c /servers/crash /hurd/crash
+/bin/settrans -c /servers/password /hurd/password
+
+# Setup crucial devices
+cd /dev
+rm -f console
+/bin/bash /sbin/MAKEDEV std hd0s1 tty1 tty2 tty3 tty4 tty5 tty6
+set +v
+
+# if test "$BOOT_DEV" && /bin/sh ./MAKEDEV "$BOOT_DEV"; then
+#   echo -n "Install grub as main boot record on $BOOT_DEV? [y] "
+#   read yn
+#   case "$yn" in
+#     "" | "[yY]*")
+#       /bin/sh /INSTALL-GRUB-MBR /dev/$BOOT_DEV;;
+#   esac
+# fi
+
+rm -f /SETUP
+sync
+reboot

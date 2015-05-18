@@ -10,6 +10,11 @@ BASH_URL=https://ftp.gnu.org/gnu/bash/"$BASH_PKG"
 COREUTILS_URL=http://ftp.gnu.org/gnu/coreutils/"$COREUTILS_PKG"
 E2FSPROGS_URL=https://www.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v1.42.12/"$E2FSPROGS_PKG"
 PKGCONFIGLITE_URL=http://downloads.sourceforge.net/project/pkgconfiglite/0.28-1/"$PKGCONFIGLITE_PKG"
+LIBUUID_URL=http://downloads.sourceforge.net/project/libuuid/"$LIBUUID_PKG"
+UTIL_LINUX_URL=https://www.kernel.org/pub/linux/utils/util-linux/v2.26/"$UTIL_LINUX_PKG"
+GRUB_URL=ftp://ftp.gnu.org/gnu/grub/"$GRUB_PKG"
+SHADOW_URL=http://pkg-shadow.alioth.debian.org/releases/"$SHADOW_PKG"
+SED_URL=http://ftp.gnu.org/gnu/sed/"$SED_PKG"
 
 unpack () {
    if [ -d "$3" ]; then
@@ -95,6 +100,17 @@ download_coreutils () {
    fi
 }
 
+download_sed () {
+	download $SED_PKG $SED_URL &&
+	if [ -d "$SED_SRC" ]; then
+		return 0
+	fi
+	unpack zxf $SED_PKG $SED_SRC
+	cd "$SED_SRC" &&
+	apply_patch $SCRIPT_DIR/patches/sed/debian.patch 1 &&
+	cd ..
+}
+
 mkdir -p $SYSTEM/src &&
 cd $SYSTEM/src &&
 
@@ -115,4 +131,16 @@ download_coreutils &&
 download $E2FSPROGS_PKG $E2FSPROGS_URL &&
 unpack zxf $E2FSPROGS_PKG $E2FSPROGS_SRC
 download $PKGCONFIGLITE_PKG $PKGCONFIGLITE_URL &&
-unpack zxf $PKGCONFIGLITE_PKG $PKGCONFIGLITE_SRC
+unpack zxf $PKGCONFIGLITE_PKG $PKGCONFIGLITE_SRC &&
+download $LIBUUID_PKG $LIBUUID_URL &&
+unpack zxf $LIBUUID_PKG $LIBUUID_SRC &&
+download $UTIL_LINUX_PKG $UTIL_LINUX_URL &&
+unpack zxf $UTIL_LINUX_PKG $UTIL_LINUX_SRC &&
+
+download $GRUB_PKG $GRUB_URL &&
+unpack zxf $GRUB_PKG $GRUB_SRC &&
+
+download $SHADOW_PKG $SHADOW_URL &&
+unpack Jxf $SHADOW_PKG $SHADOW_SRC &&
+
+download_sed
