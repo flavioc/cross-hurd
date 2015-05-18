@@ -4,6 +4,8 @@
 
 It has been tested on Linux and does not appear to work on Mac OS X due to problems when building the Glibc.
 
+For now, you should run the scripts as root so you have to trust that the scripts will not break havoc in the system. I expect to change that in the future.
+
 # Downloading all the sources
 
 The first step is to download all the required sources. Run "bash download.sh" to download all the required packages. The build system will use the most up-to-date gnumach, glibc, libpthread, mig and hurd packages by fetching them from the official git repositories available on http://git.savannah.gnu.org/cgit/hurd/.
