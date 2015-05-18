@@ -138,8 +138,8 @@ AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
    --prefix="$ROOT" \
    --target="$TARGET" \
    --with-sysroot="$SYSTEM" \
-   --with-local-prefix="$ROOT" \
-   --with-native-system-header-dir="$ROOT"/include \
+   --with-local-prefix="$SYS_ROOT" \
+   --with-native-system-header-dir="$SYS_ROOT"/include \
    --disable-static \
    --disable-nls \
    --enable-languages=c \
@@ -186,8 +186,8 @@ print_info "Root is $ROOT"
 print_info "Cross-compiling on $HOST to $TARGET"
 
 mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
-   mkdir -p bin src "tools/include" "tools/lib" "$TARGET" "cross-tools" &&
-   ln -sfn "$PWD/tools/include" "$PWD/tools/lib" "$TARGET"/ &&
+   mkdir -p bin src boot "tools/include" "tools/lib" "cross-tools/$TARGET" &&
+   ln -sfn "$SYS_ROOT"/include "$SYS_ROOT"/lib "$ROOT"/"$TARGET"/ &&
    rm -f /tools /cross-tools &&
    ln -sf $PWD/tools /tools &&
    ln -sf $PWD/cross-tools /cross-tools &&
@@ -202,4 +202,3 @@ install_hurd_headers &&
 compile_first_glibc &&
 compile_full_gcc &&
 compile_second_glibc
-

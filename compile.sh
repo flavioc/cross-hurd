@@ -7,7 +7,7 @@ export AR="${ROOT}/bin/${TARGET}-ar"
 export AS="${ROOT}/bin/${TARGET}-as"
 export RANLIB="${ROOT}/bin/${TARGET}-ranlib"
 export LD="${ROOT}/bin/${TARGET}-ld"
-export STRIP="${ROOT}/${TARGET}-strip"
+export STRIP="${ROOT}/bin/${TARGET}-strip"
 export MIG="${ROOT}/bin/${TARGET}-mig"
 
 install_flex() {
@@ -137,16 +137,73 @@ EOF
 make && make install && cd ..
 }
 
+install_libuuid() {
+	cd "$LIBUUID_SRC" &&
+	./configure --prefix="$SYS_ROOT" \
+		--host="$HOST" \
+		--target="$TARGET" &&
+	make && make install &&
+	cd ..
+}
+
 install_e2fsprogs() {
 	cd "$E2FSPROGS_SRC" &&
 	rm -rf build &&
 	mkdir -vp build && cd build &&
-	../configure --prefix="$SYS_ROOT" \
+	LDFLAGS="-luuid" ../configure --prefix="$SYS_ROOT" \
 	    --enable-elf-shlibs --build=${HOST} --host=${TARGET} \
 	    --disable-libblkid --disable-libuuid  \
 	    --disable-uuidd &&
-	make && make install && make install-libs &&
+	LDFLAGS="-luuid" make && make install && make install-libs &&
 	cd ..
+}
+
+install_util_linux() {
+	cd "$UTIL_LINUX_SRC" &&
+	./configure --prefix="$SYS_ROOT" \
+	    --build="$HOST" --host="$TARGET" \
+	    --disable-makeinstall-chown \
+	    --disable-makeinstall-setuid  &&
+	make &&
+	make install &&
+	cd ..
+}
+
+install_grub() {
+	cd "$GRUB_SRC" &&
+	cp -v grub-core/gnulib/stdio.in.h{,.orig} &&
+	sed -e '/gets is a/d' grub-core/gnulib/stdio.in.h.orig > grub-core/gnulib/stdio.in.h &&
+	./configure --prefix="$SYS_ROOT" \
+	    --build=${HOST} --host=${TARGET} \
+	    --disable-werror --enable-grub-mkfont=no --with-bootdir=tools/boot &&
+	make &&
+	make install &&
+	cd ..
+}
+
+install_shadow () {
+	cd "$SHADOW_SRC" &&
+cp -v src/Makefile.in{,.orig} &&
+sed -e 's/groups$(EXEEXT) //' \
+    -e 's/= nologin$(EXEEXT)/= /' \
+    -e 's/= login$(EXEEXT)/= /' \ # Hurd already provides it.
+    -e 's/\(^suidu*bins = \).*/\1/' \
+    src/Makefile.in.orig > src/Makefile.in &&
+	cat > config.cache << "EOF"
+shadow_cv_passwd_dir=/tools/bin
+EOF
+	./configure --prefix="$SYS_ROOT" \
+    --build=${HOST} --host=${TARGET} --cache-file=config.cache \
+	--enable-subordinate-ids=no &&
+	echo "#define ENABLE_SUBIDS 1" >> config.h &&
+	make && make install && cd ..
+}
+
+install_sed() {
+	cd "$SED_SRC" &&
+	./configure --prefix="$SYS_ROOT" \
+		--build="$HOST" --host="$TARGET" &&
+	make && make install && cd ..
 }
 
 cd "$SYSTEM"/src &&
@@ -158,4 +215,8 @@ install_hurd &&
 install_binutils &&
 install_bash &&
 install_coreutils &&
-install_e2fsprogs
+install_util_linux &&
+install_e2fsprogs &&
+install_grub &&
+install_sed &&
+install_shadow
