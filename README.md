@@ -12,6 +12,8 @@ The first step is to download all the required sources. Run "bash download.sh" t
 
 # Building a toolchain
 
+First, update the CC and CXX variables in "vars.sh" to match your architecture and GCC version.
+
 To build the cross-compiler, run "bash bootstrap.sh". The script will create a build environment on the $PWD/tmp directory. Two directory links, "/tools" and "/cross-tools" will be created: "/cross-tools" is a link to $PWD/tmp/cross-tools and contains the cross-compiler; "/tools" will contain the basic system and points to $PWD/tmp/tools.
 
 # Compiling the basic system
