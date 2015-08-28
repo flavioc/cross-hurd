@@ -5,10 +5,11 @@
 LOOP=/dev/loop0
 MAPPER=/dev/mapper/loop0p1
 IMG=hd.img
+IMG_SIZE=1024MB
 
 create_image () {
    print_info "Creating disk image $IMG..."
-   fallocate -l 512M $IMG &&
+   fallocate -l $IMG_SIZE $IMG &&
       losetup $LOOP $IMG &&
       parted -a optimal -s $LOOP mklabel msdos &&
       parted -a optimal -s $LOOP -- mkpart primary ext2 32k -1 &&

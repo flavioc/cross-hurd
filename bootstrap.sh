@@ -28,8 +28,8 @@ compile_gcc ()
    print_info "Cross compiling first phase of GCC"
    if [ -d "$GCC_SRC" ]; then
       rm -rf "$GCC_SRC"
-      unpack_gcc
    fi
+   unpack_gcc
    rm -rf "$GCC_SRC".obj &&
       mkdir -p "$GCC_SRC".obj &&
       cd "$GCC_SRC".obj &&
