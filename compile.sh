@@ -1,6 +1,7 @@
 #!/bin/sh
 
 . ./vars.sh
+. ./download-funcs.sh
 export CC="${ROOT}/bin/${TARGET}-gcc"
 export CXX="${ROOT}/bin/${TARGET}-g++"
 export AR="${ROOT}/bin/${TARGET}-ar"
@@ -155,7 +156,7 @@ install_e2fsprogs() {
       --disable-libblkid --disable-libuuid  \
       --disable-uuidd &&
       LDFLAGS="-luuid" make && make install && make install-libs &&
-      cd ..
+      cd ../..
 }
 
 install_util_linux() {
@@ -183,20 +184,20 @@ install_grub() {
 
 install_shadow () {
    cd "$SHADOW_SRC" &&
-      cp -v src/Makefile.in{,.orig} &&
-      sed -e 's/groups$(EXEEXT) //' \
-      -e 's/= nologin$(EXEEXT)/= /' \
-      -e 's/= login$(EXEEXT)/= /' \ # Hurd already provides it.
-   -e 's/\(^suidu*bins = \).*/\1/' \
-      src/Makefile.in.orig > src/Makefile.in &&
-      cat > config.cache << "EOF"
+   cp -v src/Makefile.in src/Makefile.in.orig &&
+   sed -e 's/groups$(EXEEXT) //' \
+       -e 's/= nologin$(EXEEXT)/= /' \
+       -e 's/= login$(EXEEXT)/= /' \
+       -e 's/\(^suidu*bins = \).*/\1/' \
+   src/Makefile.in.orig > src/Makefile.in &&
+   cat > config.cache << "EOF"
 shadow_cv_passwd_dir=/tools/bin
 EOF
    ./configure --prefix="$SYS_ROOT" \
       --build=${HOST} --host=${TARGET} --cache-file=config.cache \
       --enable-subordinate-ids=no &&
-      echo "#define ENABLE_SUBIDS 1" >> config.h &&
-      make && make install && cd ..
+   echo "#define ENABLE_SUBIDS 1" >> config.h &&
+   make && make install && cd ..
 }
 
 install_sed() {
@@ -204,6 +205,70 @@ install_sed() {
       ./configure --prefix="$SYS_ROOT" \
       --build="$HOST" --host="$TARGET" &&
       make && make install && cd ..
+}
+
+install_gmp() {
+  cd "$GMP_SRC" &&
+  CC_FOR_BUILD=gcc ./configure --prefix="$SYS_ROOT" \
+      --build=${HOST} --host=${TARGET} &&
+  make && make install && cd ..
+}
+
+install_mpfr() {
+   cd "$MPFR_SRC" &&
+   ./configure --prefix="$SYS_ROOT" \
+      --build=${HOST} \
+      --host=${TARGET} &&
+   make &&
+   make install &&
+   cd ..
+}
+
+install_mpc() {
+   cd "$MPC_SRC" &&
+   ./configure --prefix="$SYS_ROOT" \
+      --build=${HOST} \
+      --host=${TARGET} &&
+   make &&
+   make install &&
+   cd ..
+}
+
+install_gcc() {
+   if [ -d "$GCC_SRC" ]; then
+      rm -rf "$GCC_SRC"
+      unpack_gcc
+   fi
+   cd "$GCC_SRC" &&
+   echo -en "\n#undef STANDARD_STARTFILE_PREFIX_1\n#define STANDARD_STARTFILE_PREFIX_1 \"${SYS_ROOT}/lib/\"\n" >> gcc/config/gnu.h &&
+echo -en '\n#undef STANDARD_STARTFILE_PREFIX_2\n#define STANDARD_STARTFILE_PREFIX_2 ""\n' >> gcc/config/gnu.h &&
+    cp gcc/Makefile.in gcc/Makefile.in.orig &&
+   sed 's@\./fixinc\.sh@-c true@' gcc/Makefile.in.orig > gcc/Makefile.in &&
+   cd .. &&
+   rm -rf "$GCC_SRC".obj &&
+   mkdir -p "$GCC_SRC".obj &&
+   cd "$GCC_SRC".obj &&
+   ../$GCC_SRC/configure \
+      --prefix="$SYS_ROOT" \
+      --build=${HOST} \
+      --target=${TARGET} \
+      --host=${TARGET} \
+      --disable-multilib \
+      --with-local-prefix="$SYS_ROOT" \
+      --disable-nls \
+      --enable-languages=c,c++ \
+      --disable-libstdcxx-pch \
+      --with-system-zlib \
+      --with-native-system-header-dir="$SYS_ROOT/include" \
+      --enable-checking=release \
+      --disable-libcilkrts \
+      --disable-libssp \
+      --with-arch=i586 &&
+   cp Makefile Makefile.orig &&
+   sed "/^HOST_\(GMP\|ISL\|CLOOG\)\(LIBS\|INC\)/s:$SYS_ROOT:$ROOT:g" Makefile.orig > Makefile &&
+   make AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD" -j$PROCS all &&
+   make install &&
+   cd ..
 }
 
 cd "$SYSTEM"/src &&
@@ -219,4 +284,8 @@ cd "$SYSTEM"/src &&
    install_e2fsprogs &&
    install_grub &&
    install_sed &&
-   install_shadow
+   install_shadow &&
+   install_gmp &&
+   install_mpfr &&
+   install_mpc &&
+   install_gcc

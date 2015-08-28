@@ -24,6 +24,9 @@ UTIL_LINUX_VERSION=2.26.2
 GRUB_VERSION=2.00
 SHADOW_VERSION=4.2.1
 SED_VERSION=4.2.2
+GMP_VERSION=6.0.0
+MPFR_VERSION=3.1.3
+MPC_VERSION=1.0.3
 # Mach, Hurd and Glibc are all taken from the Git repository.
 
 BINUTILS_SRC=binutils-"$BINUTILS_VERSION"
@@ -56,6 +59,12 @@ SHADOW_SRC=shadow-"$SHADOW_VERSION"
 SHADOW_PKG="$SHADOW_SRC".tar.xz
 SED_SRC=sed-"$SED_VERSION"
 SED_PKG="$SED_SRC".tar.gz
+GMP_SRC=gmp-"$GMP_VERSION"
+GMP_PKG="${GMP_SRC}a".tar.bz2
+MPFR_SRC=mpfr-"$MPFR_VERSION"
+MPFR_PKG="${MPFR_SRC}".tar.bz2
+MPC_SRC=mpc-"$MPC_VERSION"
+MPC_PKG="${MPC_SRC}".tar.gz
 
 print_info ()
 {

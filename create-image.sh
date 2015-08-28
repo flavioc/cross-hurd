@@ -75,6 +75,7 @@ create_image &&
    mount_image &&
    copy_files &&
    install_grub &&
-   umount_image
-print_info "Disk image available on $IMG"
-print_info "Run 'qemu $IMG' to enjoy the Hurd!"
+   umount_image &&
+print_info "Disk image available on $IMG" &&
+print_info "Run 'qemu $IMG' to enjoy the Hurd!" &&
+exit 0

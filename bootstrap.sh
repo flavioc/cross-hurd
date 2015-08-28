@@ -1,6 +1,7 @@
 #!/bin/sh
 
 . ./vars.sh
+. ./download-funcs.sh
 
 compile_binutils ()
 {
@@ -25,6 +26,10 @@ compile_binutils ()
 compile_gcc ()
 {
    print_info "Cross compiling first phase of GCC"
+   if [ -d "$GCC_SRC" ]; then
+      rm -rf "$GCC_SRC"
+      unpack_gcc
+   fi
    rm -rf "$GCC_SRC".obj &&
       mkdir -p "$GCC_SRC".obj &&
       cd "$GCC_SRC".obj &&
@@ -142,10 +147,12 @@ install_hurd_headers() {
          --with-native-system-header-dir="$SYS_ROOT"/include \
          --disable-static \
          --disable-nls \
-         --enable-languages=c \
+         --enable-languages=c,c++ \
          --enable-threads=posix \
          --disable-multilib \
          --with-system-zlib \
+         --with-libstdcxx-time \
+      	 --disable-libcilkrts \
          --with-arch=i586 &&
          make AS_FOR_TARGET="${TARGET}-as" \
          LD_FOR_TARGET="${TARGET}-ld" -j$PROCS all &&
@@ -201,4 +208,5 @@ mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
    install_hurd_headers &&
    compile_first_glibc &&
    compile_full_gcc &&
-   compile_second_glibc
+   compile_second_glibc &&
+   exit 0
