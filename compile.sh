@@ -271,6 +271,44 @@ echo -en '\n#undef STANDARD_STARTFILE_PREFIX_2\n#define STANDARD_STARTFILE_PREFI
    cd ..
 }
 
+install_ncurses () {
+   cd "$NCURSES_SRC" &&
+  ./configure --prefix=/tools --with-shared \
+    --build=${HOST} --host=${TARGET} \
+    --without-debug --without-ada \
+    --enable-overwrite --with-build-cc=gcc &&
+  make && make install &&
+  cd ..
+}
+
+install_vim () {
+  cd "vim74" &&
+  cat > src/auto/config.cache << "EOF"
+  vim_cv_getcwd_broken=no
+  vim_cv_memmove_handles_overlap=yes
+  vim_cv_stat_ignores_slash=no
+  vim_cv_terminfo=yes
+  vim_cv_toupper_broken=no
+  vim_cv_tty_group=world
+EOF
+  echo "#define SYS_VIMRC_FILE \"${SYS_ROOT}/etc/vimrc\"" >> src/feature.h
+  ./configure --build=${HOST} --host=${TARGET} \
+    --prefix=${SYS_ROOT} --enable-gui=no --disable-gtktest --disable-xim \
+    --disable-gpm --without-x --disable-netbeans --with-tlib=ncurses &&
+  make &&
+  make install &&
+  ln -sfv vim $SYS_ROOT/bin/vi &&
+  cd .. &&
+  cat > $SYS_ROOT/etc/vimrc << "EOF"
+set nocompatible
+set backspace=2
+set expandtab
+set ts=2
+set ruler
+syntax on
+EOF
+}
+
 cd "$SYSTEM"/src &&
    install_zlib &&
    install_flex &&
@@ -288,4 +326,7 @@ cd "$SYSTEM"/src &&
    install_gmp &&
    install_mpfr &&
    install_mpc &&
-   install_gcc
+   install_gcc &&
+   install_ncurses &&
+   install_vim &&
+   exit 0

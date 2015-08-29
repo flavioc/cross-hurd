@@ -199,7 +199,7 @@ mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
    ln -sf $PWD/tools /tools &&
    ln -sf $PWD/cross-tools /cross-tools &&
 
-   cd src &&
+ cd src &&
    compile_binutils &&
    compile_gcc &&
    compile_pkgconfiglite &&

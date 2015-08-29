@@ -44,4 +44,8 @@ unpack jxf $MPFR_PKG $MPFR_SRC &&
 download $MPC_PKG $MPC_URL &&
 unpack zxf $MPC_PKG $MPC_SRC &&
 
+download_ncurses &&
+
+download_vim &&
+
 download_sed 

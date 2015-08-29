@@ -27,6 +27,8 @@ SED_VERSION=4.2.2
 GMP_VERSION=6.0.0
 MPFR_VERSION=3.1.3
 MPC_VERSION=1.0.3
+NCURSES_VERSION=6.0
+VIM_VERSION=7.4
 # Mach, Hurd and Glibc are all taken from the Git repository.
 
 BINUTILS_SRC=binutils-"$BINUTILS_VERSION"
@@ -65,6 +67,10 @@ MPFR_SRC=mpfr-"$MPFR_VERSION"
 MPFR_PKG="${MPFR_SRC}".tar.bz2
 MPC_SRC=mpc-"$MPC_VERSION"
 MPC_PKG="${MPC_SRC}".tar.gz
+NCURSES_SRC=ncurses-"$NCURSES_VERSION"
+NCURSES_PKG="${NCURSES_SRC}".tar.gz
+VIM_SRC=vim-"$VIM_VERSION"
+VIM_PKG="$VIM_SRC".tar.bz2
 
 print_info ()
 {

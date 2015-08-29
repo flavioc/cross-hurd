@@ -16,6 +16,8 @@ SED_URL=http://ftp.gnu.org/gnu/sed/"$SED_PKG"
 GMP_URL=http://ftp.gnu.org/gnu/gmp/"$GMP_PKG"
 MPFR_URL=http://mpfr.org/mpfr-current/"$MPFR_PKG"
 MPC_URL=ftp://ftp.gnu.org/gnu/mpc/"$MPC_PKG"
+NCURSES_URL=ftp://ftp.gnu.org/gnu/ncurses/"$NCURSES_PKG"
+VIM_URL=ftp://ftp.vim.org/pub/vim/unix/"$VIM_PKG"
 
 unpack () {
    if [ -d "$3" ]; then
@@ -115,3 +117,20 @@ download_sed () {
 	apply_patch $SCRIPT_DIR/patches/sed/debian.patch 1 &&
 	cd ..
 }
+
+download_ncurses () {
+  download $NCURSES_PKG $NCURSES_URL &&
+  if [ -d "$NCURSES_SRC" ]; then
+    return 0
+  fi
+  unpack zxf $NCURSES_PKG $NCURSES_SRC
+}
+
+download_vim () {
+  download $VIM_PKG $VIM_URL &&
+  if [ -d "$VIM_SRC" ]; then
+    return 0
+  fi
+  unpack jxf $VIM_PKG $VIM_SRC
+}
+
