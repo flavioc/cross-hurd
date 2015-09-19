@@ -194,10 +194,10 @@ print_info "Cross-compiling on $HOST to $TARGET"
 
 mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
    mkdir -p bin src boot "tools/include" "tools/lib" "cross-tools/$TARGET" &&
-   ln -sfn "$SYS_ROOT"/include "$SYS_ROOT"/lib "$ROOT"/"$TARGET"/ &&
    rm -f /tools /cross-tools &&
    ln -sf $PWD/tools /tools &&
    ln -sf $PWD/cross-tools /cross-tools &&
+   ln -sfn "$SYS_ROOT"/include "$SYS_ROOT"/lib "$ROOT"/"$TARGET"/ &&
 
  cd src &&
    compile_binutils &&

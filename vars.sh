@@ -1,5 +1,5 @@
-export CC=i586-linux-gnu-gcc-4.9
-export CXX=i586-linux-gnu-g++-4.9
+export CC=x86_64-linux-gnu-gcc-4.9
+export CXX=x86_64-linux-gnu-g++-4.9
 export AR=gar
 export PROCS=1
 export SCRIPT_DIR=$PWD
