@@ -7,9 +7,10 @@ compile_binutils ()
 {
    print_info "Cross compiling binutils"
    rm -rf "$BINUTILS_SRC".obj &&
-      mkdir -p "$BINUTILS_SRC".obj &&
-      cd "$BINUTILS_SRC".obj &&
-      AR=ar AS=as ../$BINUTILS_SRC/configure \
+   mkdir -p "$BINUTILS_SRC".obj &&
+   cd "$BINUTILS_SRC".obj &&
+   AR="$HOST_MACHINE-ar" AS="$HOST_MACHINE-as" \
+   ../$BINUTILS_SRC/configure \
       --host="$HOST" \
       --target="$TARGET" \
       --prefix="$ROOT" \
@@ -19,9 +20,15 @@ compile_binutils ()
       --disable-multilib \
       --disable-werror \
       --disable-nls &&
-      make -j$PROCS all install &&
-      cd ..
+   make -j$PROCS all install &&
+   cd ..
 }
+
+fix_gcc_path() {
+   echo -en "\n#undef STANDARD_STARTFILE_PREFIX_1\n#define STANDARD_STARTFILE_PREFIX_1 \"${SYS_ROOT}/lib/\"\n" >> gcc/config/gnu.h &&
+echo -en '\n#undef STANDARD_STARTFILE_PREFIX_2\n#define STANDARD_STARTFILE_PREFIX_2 ""\n' >> gcc/config/gnu.h
+}
+
 
 compile_gcc ()
 {
@@ -30,6 +37,7 @@ compile_gcc ()
       rm -rf "$GCC_SRC"
    fi
    unpack_gcc
+   cd "$GCC_SRC" && fix_gcc_path && cd .. &&
    rm -rf "$GCC_SRC".obj &&
       mkdir -p "$GCC_SRC".obj &&
       cd "$GCC_SRC".obj &&
@@ -50,6 +58,14 @@ compile_gcc ()
       --with-system-zlib \
       --without-headers \
       --with-newlib \
+      --disable-decimal-float \
+      --disable-threads \
+      --disable-libatomic \
+      --disable-libgomp \
+      --disable-libquadmath \
+      --disable-libssp \
+      --disable-libvtv \
+      --disable-libstdcxx \
       --enable-languages=c &&
       make -j$PROCS all-gcc install-gcc &&
       make -j$PROCS configure-target-libgcc &&
@@ -90,96 +106,98 @@ install_gnumig() {
 
 install_hurd_headers() {
    print_info "Installing Hurd headers" &&
-      cd "$HURD_SRC" &&
-      autoreconf -i &&
-      cd .. &&
-      mkdir -p "$HURD_SRC".obj &&
-      cd "$HURD_SRC".obj &&
-      ../$HURD_SRC/configure \
+   cd "$HURD_SRC" &&
+   autoreconf -i &&
+   cd .. &&
+   mkdir -p "$HURD_SRC".obj &&
+   cd "$HURD_SRC".obj &&
+   ../$HURD_SRC/configure \
       --host="$TARGET" \
       --prefix= \
       --disable-profile \
       --without-parted &&
-      make -j$PROCS prefix="$SYS_ROOT" no_deps=t install-headers &&
-      if grep -q '^CC = gcc$' config.make
-      then
-         print_info "Removing config.status for later configure..."
-         rm config.status
-      else :
-      fi &&
-         cd ..
-   }
+   make -j$PROCS prefix="$SYS_ROOT" no_deps=t install-headers &&
+   if grep -q '^CC = gcc$' config.make
+   then
+      print_info "Removing config.status for later configure..."
+      rm config.status
+   else :
+   fi &&
+      cd ..
+}
 
-   compile_first_glibc() {
-      print_info "Installing glibc (first pass)" &&
-         mkdir -p "$GLIBC_SRC".first_obj &&
-         cd "$GLIBC_SRC".first_obj &&
-         BUILD_CC="gcc" CC="$TARGET"-gcc \
-         AR="$TARGET"-ar RANLIB="$TARGET"-ranlib \
-         ../$GLIBC_SRC/configure \
-         --with-binutils=${ROOT}/bin \
-         --build="$HOST" \
-         --host="$TARGET" \
-         --prefix="$SYS_ROOT" \
-         --with-headers="$SYS_ROOT"/include \
-         --cache-file=config.cache \
-         --enable-obsolete-rpc \
-         --disable-profile \
-         --enable-add-ons=libpthread \
-         --enable-obsolete-rpc \
-         --disable-nscd &&
-         PATH=$ROOT/bin:$PATH \
-         make -j$PROCS all install &&
-         cd ..
-   }
+compile_first_glibc() {
+   print_info "Installing glibc (first pass)" &&
+   mkdir -p "$GLIBC_SRC".first_obj &&
+   cd "$GLIBC_SRC".first_obj &&
+   BUILD_CC="$HOST_MACHINE-gcc" CC="$TARGET"-gcc \
+   AR="$TARGET"-ar RANLIB="$TARGET"-ranlib \
+   ../$GLIBC_SRC/configure \
+      --with-binutils=${ROOT}/bin \
+      --build="$HOST" \
+      --host="$TARGET" \
+      --prefix="$SYS_ROOT" \
+      --with-headers="$SYS_ROOT"/include \
+      --cache-file=config.cache \
+      --enable-obsolete-rpc \
+      --disable-profile \
+      --enable-add-ons=libpthread \
+      --enable-obsolete-rpc \
+      --disable-nscd &&
+   make -j$PROCS all install &&
+   cd ..
+}
 
-   compile_full_gcc () {
-      print_info "Cross compiling GCC"
-      rm -rf "$GCC_SRC".obj &&
-         mkdir -p "$GCC_SRC".obj &&
-         cd "$GCC_SRC".obj &&
-         AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
-         ../$GCC_SRC/configure \
-         --prefix="$ROOT" \
-         --target="$TARGET" \
-         --with-sysroot="$SYSTEM" \
-         --with-local-prefix="$SYS_ROOT" \
-         --with-native-system-header-dir="$SYS_ROOT"/include \
-         --disable-static \
-         --disable-nls \
-         --enable-languages=c,c++ \
-         --enable-threads=posix \
-         --disable-multilib \
-         --with-system-zlib \
-         --with-libstdcxx-time \
-      	 --disable-libcilkrts \
-         --with-arch=i586 &&
-         make AS_FOR_TARGET="${TARGET}-as" \
-         LD_FOR_TARGET="${TARGET}-ld" -j$PROCS all &&
-         make install &&
-         cd ..
-   }
+compile_full_gcc () {
+   print_info "Cross compiling GCC"
+   rm -rf "$GCC_SRC".obj &&
+   mkdir -p "$GCC_SRC".obj &&
+   cd "$GCC_SRC".obj &&
+   AR="$HOST_MACHINE-ar" \
+   LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
+   ../$GCC_SRC/configure \
+      --prefix="$ROOT" \
+      --target="$TARGET" \
+      --with-sysroot="$SYSTEM" \
+      --with-local-prefix="$SYS_ROOT" \
+      --with-native-system-header-dir="$SYS_ROOT"/include \
+      --disable-static \
+      --disable-nls \
+      --enable-languages=c,c++ \
+      --enable-threads=posix \
+      --disable-multilib \
+      --with-system-zlib \
+      --with-libstdcxx-time \
+      --disable-libstdcxx-pch \
+      --disable-bootstrap \
+      --disable-libcilkrts \
+      --disable-libgomp \
+      --with-arch=i586 &&
+   make -j$PROCS AS_FOR_TARGET="$TARGET-as" LD_FOR_TARGET="$TARGET-ld" all &&
+   make install &&
+   cd ..
+}
 
-   compile_second_glibc() {
-      print_info "Installing GLibC (second pass)" &&
-         mkdir -p "$GLIBC_SRC".second_obj &&
-         cd "$GLIBC_SRC".second_obj &&
-         rm -f config.cache &&
-         BUILD_CC="gcc" CC="$TARGET"-gcc \
-         AR="$TARGET"-ar RANLIB="$TARGET"-ranlib \
-         ../$GLIBC_SRC/configure \
-         --with-binutils=${ROOT}/bin \
-         --build="$HOST" \
-         --host="$TARGET" \
-         --prefix="$SYS_ROOT" \
-         --with-headers="$SYS_ROOT"/include \
-         --enable-obsolete-rpc \
-         --disable-profile \
-         --enable-add-ons=libpthread \
-         --enable-obsolete-rpc \
-         --disable-nscd &&
-         make -j$PROCS all install &&
-         cd ..
+compile_second_glibc() {
+   print_info "Installing GLibC (second pass)" &&
+   mkdir -p "$GLIBC_SRC".second_obj &&
+   cd "$GLIBC_SRC".second_obj &&
+   rm -f config.cache &&
+   BUILD_CC="$HOST_MACHINE-gcc" CC="$TARGET"-gcc \
+   AR="$TARGET"-ar RANLIB="$TARGET"-ranlib \
+   ../$GLIBC_SRC/configure \
+      --with-binutils=${ROOT}/bin \
+      --build="$HOST" \
+      --host="$TARGET" \
+      --prefix="$SYS_ROOT" \
+      --with-headers="$SYS_ROOT"/include \
+      --enable-obsolete-rpc \
+      --disable-profile \
+      --enable-add-ons=libpthread \
+      --enable-obsolete-rpc \
+      --disable-nscd &&
+   make -j$PROCS all install &&
+   cd ..
 }
 
 compile_pkgconfiglite() {

@@ -16,12 +16,14 @@ First, update the CC and CXX variables in "vars.sh" to match your architecture a
 
 To build the cross-compiler, run "bash bootstrap.sh". The script will create a build environment on the $PWD/tmp directory. Two directory links, "/tools" and "/cross-tools" will be created: "/cross-tools" is a link to $PWD/tmp/cross-tools and contains the cross-compiler; "/tools" will contain the basic system and points to $PWD/tmp/tools.
 
+Note that you need to install GCC, make, flex, bison, and other related packages in order to build the cross tools.
+
 # Compiling the basic system
 
 Once the toolchain is in place, run "bash compile.sh" to build a very basic set of packages using the cross-compiler built on the previous phase. Everything is installed into $PWD/tmp/tools.
 
 # Creating a bootable disk image
 
-If everything went alright, then run "bash create-image.sh" to create a bootable disk image. The script will use the base system built previously.
+If everything went alright, then run "bash create-image.sh" to create a bootable disk image. The script will use the base system built previously. The script runs 'grub-install' on the final disk image and needs to have the files for the i386-pc architecture (in debian, you need to install grub-pc-bin).
 
 Once the file "hd.img" is in place, just run it on your favorite virtual machine. The grub bootloader will load GNU Mach and the Hurd and complete the installation process by populating the /dev directory, setting an empty password for the root user and then rebooting. Afterwards, just enter "login root" and an empty password to log into the system.

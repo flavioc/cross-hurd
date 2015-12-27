@@ -21,7 +21,7 @@ download $BASH_PKG $BASH_URL &&
 unpack zxf $BASH_PKG $BASH_SRC &&
 download_coreutils &&
 download $E2FSPROGS_PKG $E2FSPROGS_URL &&
-unpack zxf $E2FSPROGS_PKG $E2FSPROGS_SRC
+unpack zxf $E2FSPROGS_PKG $E2FSPROGS_SRC &&
 download $PKGCONFIGLITE_PKG $PKGCONFIGLITE_URL &&
 unpack zxf $PKGCONFIGLITE_PKG $PKGCONFIGLITE_SRC &&
 download $LIBUUID_PKG $LIBUUID_URL &&

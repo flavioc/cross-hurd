@@ -17,6 +17,7 @@ install_flex() {
       ./configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
       --host="$TARGET" &&
+      sed -i -e 's/tests//' Makefile &&
       make all install &&
       cd ..
 }
@@ -211,7 +212,7 @@ install_gmp() {
   cd "$GMP_SRC" &&
   CC_FOR_BUILD=gcc ./configure --prefix="$SYS_ROOT" \
       --build=${HOST} --host=${TARGET} &&
-  make && make install && cd ..
+  make -j$PROCS && make install && cd ..
 }
 
 install_mpfr() {
@@ -219,7 +220,7 @@ install_mpfr() {
    ./configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} &&
-   make &&
+   make -j$PROCS &&
    make install &&
    cd ..
 }
@@ -229,20 +230,14 @@ install_mpc() {
    ./configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} &&
-   make &&
+   make -j$PROCS &&
    make install &&
    cd ..
 }
 
 install_gcc() {
-   if [ -d "$GCC_SRC" ]; then
-      rm -rf "$GCC_SRC"
-      unpack_gcc
-   fi
    cd "$GCC_SRC" &&
-   echo -en "\n#undef STANDARD_STARTFILE_PREFIX_1\n#define STANDARD_STARTFILE_PREFIX_1 \"${SYS_ROOT}/lib/\"\n" >> gcc/config/gnu.h &&
-echo -en '\n#undef STANDARD_STARTFILE_PREFIX_2\n#define STANDARD_STARTFILE_PREFIX_2 ""\n' >> gcc/config/gnu.h &&
-    cp gcc/Makefile.in gcc/Makefile.in.orig &&
+   cp -v gcc/Makefile.in{,.orig} &&
    sed 's@\./fixinc\.sh@-c true@' gcc/Makefile.in.orig > gcc/Makefile.in &&
    cd .. &&
    rm -rf "$GCC_SRC".obj &&
@@ -254,6 +249,7 @@ echo -en '\n#undef STANDARD_STARTFILE_PREFIX_2\n#define STANDARD_STARTFILE_PREFI
       --target=${TARGET} \
       --host=${TARGET} \
       --disable-multilib \
+      --disable-bootstrap \
       --with-local-prefix="$SYS_ROOT" \
       --disable-nls \
       --enable-languages=c,c++ \
@@ -264,20 +260,25 @@ echo -en '\n#undef STANDARD_STARTFILE_PREFIX_2\n#define STANDARD_STARTFILE_PREFI
       --disable-libcilkrts \
       --disable-libssp \
       --with-arch=i586 &&
-   cp Makefile Makefile.orig &&
-   sed "/^HOST_\(GMP\|ISL\|CLOOG\)\(LIBS\|INC\)/s:$SYS_ROOT:$ROOT:g" Makefile.orig > Makefile &&
-   make AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD" -j$PROCS all &&
+   cp -v Makefile{,.orig} &&
+   sed "/^HOST_\(GMP\|ISL\|CLOOG\)\(LIBS\|INC\)/s:/tools:/cross-tools:g" \
+         Makefile.orig > Makefile
+   make -j$PROCS AS_FOR_TARGET="$TARGET-as" LD_FOR_TARGET="$TARGET-ld" all &&
    make install &&
    cd ..
 }
 
 install_ncurses () {
    cd "$NCURSES_SRC" &&
-  ./configure --prefix=/tools --with-shared \
-    --build=${HOST} --host=${TARGET} \
-    --without-debug --without-ada \
-    --enable-overwrite --with-build-cc=gcc &&
-  make && make install &&
+   CPPFLAGS="-P" ./configure --prefix="${SYS_ROOT}" \
+     --with-shared \
+     --build=${HOST} \
+     --host=${TARGET} \
+     --without-debug \
+     --without-ada \
+     --enable-overwrite \
+     --with-build-cc=gcc &&
+  make -j$PROCS all install &&
   cd ..
 }
 

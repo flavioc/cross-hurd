@@ -1,15 +1,15 @@
 #!/bin/sh
 
 BINUTILS_URL=http://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
-GCC_URL=http://gcc.cybermirror.org/releases/gcc-4.9.2/"$GCC_PKG"
+GCC_URL=http://gcc.cybermirror.org/releases/gcc-"$GCC_VERSION"/"$GCC_PKG"
 FLEX_URL=http://downloads.sourceforge.net/project/flex/"$FLEX_PKG"
 ZLIB_URL=http://zlib.net/"$ZLIB_PKG"
 BASH_URL=https://ftp.gnu.org/gnu/bash/"$BASH_PKG"
 COREUTILS_URL=http://ftp.gnu.org/gnu/coreutils/"$COREUTILS_PKG"
-E2FSPROGS_URL=https://www.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v1.42.12/"$E2FSPROGS_PKG"
-PKGCONFIGLITE_URL=http://downloads.sourceforge.net/project/pkgconfiglite/0.28-1/"$PKGCONFIGLITE_PKG"
+E2FSPROGS_URL=https://www.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v"$E2FSPROGS_VERSION"/"$E2FSPROGS_PKG"
+PKGCONFIGLITE_URL=http://downloads.sourceforge.net/project/pkgconfiglite/"$PKGCONFIGLITE_VERSION"/"$PKGCONFIGLITE_PKG"
 LIBUUID_URL=http://downloads.sourceforge.net/project/libuuid/"$LIBUUID_PKG"
-UTIL_LINUX_URL=https://www.kernel.org/pub/linux/utils/util-linux/v2.26/"$UTIL_LINUX_PKG"
+UTIL_LINUX_URL=https://www.kernel.org/pub/linux/utils/util-linux/v"$UTIL_LINUX_BASE_VERSION"/"$UTIL_LINUX_PKG"
 GRUB_URL=ftp://ftp.gnu.org/gnu/grub/"$GRUB_PKG"
 SHADOW_URL=http://pkg-shadow.alioth.debian.org/releases/"$SHADOW_PKG"
 SED_URL=http://ftp.gnu.org/gnu/sed/"$SED_PKG"
@@ -128,7 +128,7 @@ download_ncurses () {
 
 download_vim () {
   download $VIM_PKG $VIM_URL &&
-  if [ -d "$VIM_SRC" ]; then
+  if [ -d "vim$VIM_BASE_VERSION" ]; then
     return 0
   fi
   unpack jxf $VIM_PKG $VIM_SRC
