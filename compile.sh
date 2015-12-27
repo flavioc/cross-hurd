@@ -1,6 +1,7 @@
 #!/bin/sh
 
 . ./vars.sh
+. ./common.sh
 . ./download-funcs.sh
 export CC="${ROOT}/bin/${TARGET}-gcc"
 export CXX="${ROOT}/bin/${TARGET}-g++"
@@ -136,8 +137,10 @@ fu_cv_sys_stat_statfs2_bsize=yes
 gl_cv_func_working_mkstemp=yes
 EOF
    ./configure --prefix="$SYS_ROOT" \
-      --build="$HOST" --host="TARGET" \
-      --enable-install-program=hostname --cache-file=config.cache &&
+      --build="$HOST" \
+      --host="$TARGET" \
+      --enable-install-program=hostname \
+      --cache-file=config.cache &&
    make -j$PROCS &&
    make install &&
    cd ..
@@ -156,9 +159,13 @@ install_e2fsprogs() {
    cd "$E2FSPROGS_SRC" &&
    rm -rf build &&
    mkdir -vp build && cd build &&
-   LDFLAGS="-luuid" ../configure --prefix="$SYS_ROOT" \
-      --enable-elf-shlibs --build=${HOST} --host=${TARGET} \
-      --disable-libblkid --disable-libuuid  \
+   LDFLAGS="-luuid" ../configure \
+      --prefix="$SYS_ROOT" \
+      --enable-elf-shlibs \
+      --build=${HOST} \
+      --host=${TARGET} \
+      --disable-libblkid \
+      --disable-libuuid  \
       --disable-uuidd &&
    LDFLAGS="-luuid" make -j$PROCS && make install && make install-libs &&
    cd ../..
@@ -167,7 +174,8 @@ install_e2fsprogs() {
 install_util_linux() {
    cd "$UTIL_LINUX_SRC" &&
    ./configure --prefix="$SYS_ROOT" \
-      --build="$HOST" --host="$TARGET" \
+      --build="$HOST" \
+      --host="$TARGET" \
       --disable-makeinstall-chown \
       --disable-makeinstall-setuid  &&
    make -j$PROCS &&
@@ -180,8 +188,11 @@ install_grub() {
    cp -v grub-core/gnulib/stdio.in.h{,.orig} &&
    sed -e '/gets is a/d' grub-core/gnulib/stdio.in.h.orig > grub-core/gnulib/stdio.in.h &&
    ./configure --prefix="$SYS_ROOT" \
-      --build=${HOST} --host=${TARGET} \
-      --disable-werror --enable-grub-mkfont=no --with-bootdir=tools/boot &&
+      --build=${HOST} \
+      --host=${TARGET} \
+      --disable-werror \
+      --enable-grub-mkfont=no \
+      --with-bootdir=tools/boot &&
    make -j$PROCS &&
    make install &&
    cd ..
@@ -199,7 +210,9 @@ install_shadow () {
 shadow_cv_passwd_dir=/tools/bin
 EOF
    ./configure --prefix="$SYS_ROOT" \
-      --build=${HOST} --host=${TARGET} --cache-file=config.cache \
+      --build=${HOST} \
+      --host=${TARGET} \
+      --cache-file=config.cache \
       --enable-subordinate-ids=no &&
    echo "#define ENABLE_SUBIDS 1" >> config.h &&
    make -j$PROCS && make install && cd ..
@@ -208,7 +221,8 @@ EOF
 install_sed() {
    cd "$SED_SRC" &&
    ./configure --prefix="$SYS_ROOT" \
-      --build="$HOST" --host="$TARGET" &&
+      --build="$HOST" \
+      --host="$TARGET" &&
    make -j$PROCS &&
    make install &&
    cd ..
@@ -216,8 +230,10 @@ install_sed() {
 
 install_gmp() {
   cd "$GMP_SRC" &&
-  CC_FOR_BUILD=gcc ./configure --prefix="$SYS_ROOT" \
-      --build=${HOST} --host=${TARGET} &&
+  CC_FOR_BUILD="$HOST_MACHINE-gcc" ./configure \
+      --prefix="$SYS_ROOT" \
+      --build=${HOST} \
+      --host=${TARGET} &&
   make -j$PROCS &&
   make install &&
   cd ..
@@ -244,7 +260,11 @@ install_mpc() {
 }
 
 install_gcc() {
-   cd "$GCC_SRC" &&
+   if [ -d "$GCC_SRC" ]; then
+      rm -rf "$GCC_SRC"
+   fi
+   unpack_gcc &&
+   cd "$GCC_SRC" && fix_gcc_path &&
    cp -v gcc/Makefile.in{,.orig} &&
    sed 's@\./fixinc\.sh@-c true@' gcc/Makefile.in.orig > gcc/Makefile.in &&
    cd .. &&
@@ -271,7 +291,7 @@ install_gcc() {
    cp -v Makefile{,.orig} &&
    sed "/^HOST_\(GMP\|ISL\|CLOOG\)\(LIBS\|INC\)/s:/tools:/cross-tools:g" \
          Makefile.orig > Makefile
-   make -j$PROCS AS_FOR_TARGET="$TARGET-as" LD_FOR_TARGET="$TARGET-ld" all &&
+   make -j$PROCS AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD" all &&
    make install &&
    cd ..
 }
@@ -292,7 +312,7 @@ install_ncurses () {
 }
 
 install_vim () {
-  cd "vim74" &&
+  cd vim"$VIM_BASE_VERSION" &&
   cat > src/auto/config.cache << "EOF"
   vim_cv_getcwd_broken=no
   vim_cv_memmove_handles_overlap=yes
@@ -302,9 +322,16 @@ install_vim () {
   vim_cv_tty_group=world
 EOF
   echo "#define SYS_VIMRC_FILE \"${SYS_ROOT}/etc/vimrc\"" >> src/feature.h
-  ./configure --build=${HOST} --host=${TARGET} \
-    --prefix=${SYS_ROOT} --enable-gui=no --disable-gtktest --disable-xim \
-    --disable-gpm --without-x --disable-netbeans --with-tlib=ncurses &&
+  ./configure --build=${HOST} \
+     --host=${TARGET} \
+    --prefix=${SYS_ROOT} \
+    --enable-gui=no \
+    --disable-gtktest \
+    --disable-xim \
+    --disable-gpm \
+    --without-x \
+    --disable-netbeans \
+    --with-tlib=ncurses &&
   make &&
   make install &&
   ln -sfv vim $SYS_ROOT/bin/vi &&

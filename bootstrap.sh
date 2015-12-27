@@ -2,6 +2,10 @@
 
 . ./vars.sh
 . ./download-funcs.sh
+. ./common.sh
+# You can change the GCC version here.
+export CC="$HOST_MACHINE"-gcc
+export CXX="$HOST_MACHINE"-g++
 
 compile_binutils ()
 {
@@ -24,20 +28,18 @@ compile_binutils ()
    cd ..
 }
 
-fix_gcc_path() {
-   echo -en "\n#undef STANDARD_STARTFILE_PREFIX_1\n#define STANDARD_STARTFILE_PREFIX_1 \"${SYS_ROOT}/lib/\"\n" >> gcc/config/gnu.h &&
-echo -en '\n#undef STANDARD_STARTFILE_PREFIX_2\n#define STANDARD_STARTFILE_PREFIX_2 ""\n' >> gcc/config/gnu.h
+unpack_gcc_and_fix() {
+   if [ -d "$GCC_SRC" ]; then
+      rm -rf "$GCC_SRC"
+   fi
+   unpack_gcc &&
+   cd "$GCC_SRC" && fix_gcc_path && cd ..
 }
-
 
 compile_gcc ()
 {
    print_info "Cross compiling first phase of GCC"
-   if [ -d "$GCC_SRC" ]; then
-      rm -rf "$GCC_SRC"
-   fi
-   unpack_gcc
-   cd "$GCC_SRC" && fix_gcc_path && cd .. &&
+   unpack_gcc_and_fix &&
    rm -rf "$GCC_SRC".obj &&
    mkdir -p "$GCC_SRC".obj &&
    cd "$GCC_SRC".obj &&
@@ -152,6 +154,7 @@ compile_first_glibc() {
 
 compile_full_gcc () {
    print_info "Cross compiling GCC"
+   unpack_gcc_and_fix
    rm -rf "$GCC_SRC".obj &&
    mkdir -p "$GCC_SRC".obj &&
    cd "$GCC_SRC".obj &&
