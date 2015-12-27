@@ -39,10 +39,10 @@ compile_gcc ()
    unpack_gcc
    cd "$GCC_SRC" && fix_gcc_path && cd .. &&
    rm -rf "$GCC_SRC".obj &&
-      mkdir -p "$GCC_SRC".obj &&
-      cd "$GCC_SRC".obj &&
-      AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
-      ../$GCC_SRC/configure \
+   mkdir -p "$GCC_SRC".obj &&
+   cd "$GCC_SRC".obj &&
+   AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
+   ../$GCC_SRC/configure \
       --prefix="$ROOT" \
       --build="$HOST" \
       --host="$HOST" \
@@ -67,41 +67,42 @@ compile_gcc ()
       --disable-libvtv \
       --disable-libstdcxx \
       --enable-languages=c &&
-      make -j$PROCS all-gcc install-gcc &&
-      make -j$PROCS configure-target-libgcc &&
-      cd "$TARGET"/libgcc &&
-      make -j$PROCS 'libgcc-objects = $(lib2funcs-o) $(lib2-divmod-o)' all install &&
-      cd - &&
-      mv config.status config.status.removed &&
-      rm -f config.cache *config.cache */*/config.cache &&
-      cd ..
+   make -j$PROCS all-gcc install-gcc &&
+   make -j$PROCS configure-target-libgcc &&
+   cd "$TARGET"/libgcc &&
+   make -j$PROCS 'libgcc-objects = $(lib2funcs-o) $(lib2-divmod-o)' all install &&
+   cd - &&
+   mv config.status config.status.removed &&
+   rm -f config.cache *config.cache */*/config.cache &&
+   cd ..
 }
 
 install_gnumach_headers() {
    print_info "Installing GNU Mach Headers" &&
-      cd "$GNUMACH_SRC" &&
-      autoreconf -i &&
-      cd .. &&
-      mkdir -p "$GNUMACH_SRC".obj &&
-      cd "$GNUMACH_SRC".obj &&
+   cd "$GNUMACH_SRC" &&
+   autoreconf -i &&
+   cd .. &&
+   mkdir -p "$GNUMACH_SRC".obj &&
+   cd "$GNUMACH_SRC".obj &&
       ../$GNUMACH_SRC/configure \
       --host="$TARGET" \
       --prefix="$SYS_ROOT" &&
-      make -j$PROCS install-data &&
-      cd -
+   make -j$PROCS install-data &&
+   cd -
 }
 
 install_gnumig() {
    print_info "Installing cross GNU Mig" &&
-      cd "$GNUMIG_SRC" &&
-      autoreconf -i &&
-      cd .. &&
-      mkdir -p "$GNUMIG_SRC".obj &&
-      cd "$GNUMIG_SRC".obj &&
-      ../$GNUMIG_SRC/configure --target="$TARGET" \
+   cd "$GNUMIG_SRC" &&
+   autoreconf -i &&
+   cd .. &&
+   mkdir -p "$GNUMIG_SRC".obj &&
+   cd "$GNUMIG_SRC".obj &&
+   ../$GNUMIG_SRC/configure --target="$TARGET" \
       --prefix="$ROOT" &&
-      make -j$PROCS all install &&
-      cd ..
+   make -j$PROCS &&
+   make install &&
+   cd ..
 }
 
 install_hurd_headers() {
@@ -123,7 +124,7 @@ install_hurd_headers() {
       rm config.status
    else :
    fi &&
-      cd ..
+   cd ..
 }
 
 compile_first_glibc() {
@@ -144,7 +145,8 @@ compile_first_glibc() {
       --enable-add-ons=libpthread \
       --enable-obsolete-rpc \
       --disable-nscd &&
-   make -j$PROCS all install &&
+   make -j$PROCS &&
+   make install &&
    cd ..
 }
 
@@ -196,15 +198,18 @@ compile_second_glibc() {
       --enable-add-ons=libpthread \
       --enable-obsolete-rpc \
       --disable-nscd &&
-   make -j$PROCS all install &&
+   make -j$PROCS &&
+   make install &&
    cd ..
 }
 
 compile_pkgconfiglite() {
    cd "$PKGCONFIGLITE_SRC" &&
-      ./configure --prefix="$ROOT" --host=${TARGET}\
+   ./configure --prefix="$ROOT" --host=${TARGET}\
       --with-pc-path="/sys/lib/pkgconfig:/sys/share/pkgconfig" &&
-      make all install && cd ..
+   make -j$PROCS &&
+   make  install &&
+   cd ..
 }
 
 print_info "Root is $ROOT"
