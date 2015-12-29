@@ -27,7 +27,7 @@ mount_image () {
 copy_files () {
    print_info "Copying system into mount..."
    cp -R tmp/tools mount/ &&
-      mkdir -p mount/{etc,boot,dev,usr,hurd,servers,libexec,sbin,bin,var,root,lib} &&
+      mkdir -p mount/{etc,boot,dev,usr,hurd,servers,libexec,proc,sbin,bin,var,root,lib} &&
       mkdir -p mount/var/run &&
       cp -R mount/tools/etc/* mount/etc/ &&
       mkdir -p mount/servers/socket &&
