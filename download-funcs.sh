@@ -52,11 +52,7 @@ download_hurd () {
    if [ -d hurd ]; then
       return 0
    fi
-   git clone http://git.savannah.gnu.org/cgit/hurd/hurd.git/ &&
-   cd hurd &&
-   apply_patch $SCRIPT_DIR/patches/hurd/hurd-libs.patch 1 &&
-   apply_patch $SCRIPT_DIR/patches/hurd/hurd-cross.patch 1 &&
-   cd ..
+   git clone http://git.savannah.gnu.org/cgit/hurd/hurd.git/
 }
 
 apply_patch() {
