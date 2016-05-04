@@ -1,7 +1,7 @@
 #!/bin/sh
 
 BINUTILS_URL=http://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
-GCC_URL=http://gcc.cybermirror.org/releases/gcc-"$GCC_VERSION"/"$GCC_PKG"
+GCC_URL=ftp://gd.tuwien.ac.at/gnu/gcc/releases/gcc-"$GCC_VERSION"/"$GCC_PKG"
 FLEX_URL=http://downloads.sourceforge.net/project/flex/"$FLEX_PKG"
 ZLIB_URL=http://zlib.net/"$ZLIB_PKG"
 BASH_URL=https://ftp.gnu.org/gnu/bash/"$BASH_PKG"
