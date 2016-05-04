@@ -98,6 +98,7 @@ install_gnumig() {
    cd "$GNUMIG_SRC" &&
    autoreconf -i &&
    cd .. &&
+   rm -rf "$GNUMIG_SRC".obj &&
    mkdir -p "$GNUMIG_SRC".obj &&
    cd "$GNUMIG_SRC".obj &&
    ../$GNUMIG_SRC/configure --target="$TARGET" \
@@ -185,6 +186,7 @@ compile_full_gcc () {
 
 compile_second_glibc() {
    print_info "Installing GLibC (second pass)" &&
+   rm -rf "$GLIBC_SRC".second_obj &&
    mkdir -p "$GLIBC_SRC".second_obj &&
    cd "$GLIBC_SRC".second_obj &&
    rm -f config.cache &&
