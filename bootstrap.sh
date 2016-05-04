@@ -132,6 +132,7 @@ install_hurd_headers() {
 
 compile_first_glibc() {
    print_info "Installing glibc (first pass)" &&
+   rm -rf "$GLIBC_SRC".first_obj &&
    mkdir -p "$GLIBC_SRC".first_obj &&
    cd "$GLIBC_SRC".first_obj &&
    BUILD_CC="$HOST_MACHINE-gcc" CC="$TARGET"-gcc \
