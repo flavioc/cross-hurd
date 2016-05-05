@@ -376,13 +376,12 @@ type flock_t = struct[5] of int;
 
 type timespec_t = struct[2] of int;
 
-#define _SYS_UTSNAME_H		/* Inhibit warning from <bits/utsname.h>.  */
-#include <bits/utsname.h>
-type utsname_t = struct[5 * _UTSNAME_LENGTH] of unsigned char;
+#include <sys/utsname.h>
+import <sys/utsname.h>;
+typedef struct utsname utsname_t;
 
 import <sys/types.h>;
 import <sys/stat.h>;
 import <sys/statfs.h>;
 import <sys/resource.h>;
-import <sys/utsname.h>;
 import <hurd/hurd_types.h>;

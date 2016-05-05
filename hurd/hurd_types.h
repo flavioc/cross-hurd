@@ -55,7 +55,7 @@ typedef mach_port_t ctty_t;
 
 /* These names exist only because of MiG deficiencies.
    You should not use them in C source; use the normal C types instead.  */
-typedef char *data_t;
+typedef unsigned char *data_t;
 typedef char string_t [1024];
 typedef int *intarray_t;
 typedef int *fd_mask_t;
