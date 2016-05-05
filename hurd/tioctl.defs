@@ -35,7 +35,7 @@ import <hurd/ioctl_types.h>; /* XXX */
 /* These are the pieces of a struct termios as specified by the
    definition of _IOT_termios in <termbits.h>. */
 type modes_t = array[4] of int;
-type ccs_t = array[20] of char;
+type ccs_t = array[20] of unsigned char;
 type speeds_t = array[2] of int;
 
 /* This is the arg for a struct winsize as specified by the
