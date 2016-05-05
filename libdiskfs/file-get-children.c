@@ -29,7 +29,7 @@
    CRED.  */
 error_t
 diskfs_S_file_get_children (struct protid *cred,
-			    char **children,
+			    data_t *children,
 			    mach_msg_type_number_t *children_len)
 {
   error_t err;

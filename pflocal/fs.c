@@ -74,7 +74,7 @@ S_dir_mkfile (struct sock_user *cred,
 
 error_t
 S_dir_readdir (struct sock_user *cred,
-	       char **data,
+	       data_t *data,
 	       size_t *datacnt,
 	       boolean_t *data_dealloc,
 	       int entry,
@@ -159,9 +159,9 @@ error_t
 S_file_exec (struct sock_user *cred,
 	     task_t task,
 	     int flags,
-	     char *argv,
+	     data_t argv,
 	     size_t argvlen,
-	     char *envp,
+	     data_t envp,
 	     size_t envplen,
 	     mach_port_t *fds,
 	     size_t fdslen,
@@ -179,7 +179,7 @@ S_file_exec (struct sock_user *cred,
 
 error_t
 S_file_get_children (struct sock_user *cred,
-		     char **children,
+		     data_t *children,
 		     mach_msg_type_number_t *children_len)
 {
   return EOPNOTSUPP;
@@ -194,13 +194,13 @@ S_file_getcontrol (struct sock_user *cred,
 }
 
 error_t
-S_file_getfh (struct sock_user *cred, char **fh, size_t *fh_len)
+S_file_getfh (struct sock_user *cred, data_t *fh, size_t *fh_len)
 {
   return EOPNOTSUPP;
 }
 
 error_t
-S_file_get_fs_options (struct sock_user *cred, char **data, size_t *data_len)
+S_file_get_fs_options (struct sock_user *cred, data_t *data, size_t *data_len)
 {
   return EOPNOTSUPP;
 }
@@ -227,13 +227,13 @@ S_file_get_storage_info (struct sock_user *cred,
 			 int **ints, mach_msg_type_number_t *num_ints,
 			 off_t **offsets,
 			 mach_msg_type_number_t *num_offsets,
-			 char **data, mach_msg_type_number_t *data_len)
+			 data_t *data, mach_msg_type_number_t *data_len)
 {
   return EOPNOTSUPP;
 }
 
 error_t
-S_file_get_translator (struct sock_user *cred, char **trans, size_t *translen)
+S_file_get_translator (struct sock_user *cred, data_t *trans, size_t *translen)
 {
   return EOPNOTSUPP;
 }
@@ -276,7 +276,7 @@ S_file_set_translator (struct sock_user *cred,
 		       int passive_flags,
 		       int active_flags,
 		       int killtrans_flags,
-		       char *passive,
+		       data_t passive,
 		       size_t passivelen,
 		       fsys_t active)
 {

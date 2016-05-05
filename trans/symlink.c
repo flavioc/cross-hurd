@@ -185,7 +185,7 @@ S_fsys_syncfs (mach_port_t control,
 
 error_t
 S_fsys_set_options (mach_port_t control,
-		    char *data, mach_msg_type_number_t len,
+		    data_t data, mach_msg_type_number_t len,
 		    int do_children)
 {
   return EOPNOTSUPP;
@@ -193,7 +193,7 @@ S_fsys_set_options (mach_port_t control,
 
 error_t
 S_fsys_get_options (mach_port_t control,
-		    char **data, mach_msg_type_number_t *len)
+		    data_t *data, mach_msg_type_number_t *len)
 {
   return EOPNOTSUPP;
 }
@@ -202,7 +202,7 @@ error_t
 S_fsys_getfile (mach_port_t control,
 		uid_t *uids, size_t nuids,
 		uid_t *gids, size_t ngids,
-		char *handle, size_t handllen,
+		data_t handle, size_t handllen,
 		mach_port_t *pt,
 		mach_msg_type_name_t *pttype)
 {
@@ -230,7 +230,7 @@ S_fsys_init (mach_port_t control,
 
 error_t
 S_fsys_forward (mach_port_t server, mach_port_t requestor,
-		char *argz, size_t argz_len)
+		data_t argz, size_t argz_len)
 {
   return EOPNOTSUPP;
 }

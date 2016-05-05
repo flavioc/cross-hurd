@@ -27,7 +27,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 			      int passive_flags,
 			      int active_flags,
 			      int killtrans_flags,
-			      char *passive,
+			      data_t passive,
 			      size_t passivelen,
 			      fsys_t active)
 {
