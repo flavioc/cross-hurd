@@ -366,7 +366,6 @@ type off_array_t = array[] of loff_t;
 
 type pidarray_t = array[] of pid_t;
 type procinfo_t = array[] of int;
-type fsys_statfsbuf_t=struct[22] of int;
 
 type idarray_t = array[] of uid_t;
 
@@ -380,8 +379,12 @@ type timespec_t = struct[2] of int;
 import <sys/utsname.h>;
 typedef struct utsname utsname_t;
 
+#include <sys/statfs.h>
+import <sys/statfs.h>;
+
+typedef struct statfs fsys_statfsbuf_t;
+
 import <sys/types.h>;
 import <sys/stat.h>;
-import <sys/statfs.h>;
 import <sys/resource.h>;
 import <hurd/hurd_types.h>;
