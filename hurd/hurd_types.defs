@@ -352,10 +352,7 @@ import <sys/types.h>;
 type data_t = array[] of unsigned char;
 type string_t = c_string[1024]; /* XXX */
 type retry_type = uint32_t;
-// type pid_t = int32_t;
 type wait_status_t = int32_t;
-//type loff_t = int64_t;
-type ino64_t = int64_t;
 type file_changed_type_t = uint32_t;
 type dir_changed_type_t = uint32_t;
 
@@ -366,7 +363,6 @@ type off_array_t = array[] of loff_t;
 type pidarray_t = array[] of pid_t;
 type procinfo_t = array[] of int;
 
-//type flock_t = struct[5] of int;
 typedef struct flock flock_t;
 
 #include <sys/time.h>

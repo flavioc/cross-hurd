@@ -37,18 +37,8 @@ typedef tcflag_t modes_t[4];
 typedef speed_t speeds_t[2];
 typedef cc_t ccs_t[NCCS];
 
-//#include <sys/ioctl.h>
-//typedef struct winsize winsize_t;
-
-/* These are the pieces of a struct termios as specified by the
-   definition of _IOT_termios in <termbits.h>. */
-//type modes_t = array[4] of int;
-//type ccs_t = array[20] of unsigned char;
-//type speeds_t = array[2] of int;
-
-/* This is the arg for a struct winsize as specified by the
-   definition of _IOT_winsize in <sys/ioctl.h>. */
-type winsize_t = struct[4] of short;
+#include <sys/ioctl.h>
+typedef struct winsize winsize_t;
 
 skip; skip; skip; /* 0 1 2 unused */
 
