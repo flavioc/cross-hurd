@@ -348,10 +348,10 @@ serverprefix SERVERPREFIX;
 
 type data_t = array[] of unsigned char;
 type string_t = c_string[1024]; /* XXX */
-type io_statbuf_t = struct[32] of int;
-type uid_t = uint32_t;
-type gid_t = uint32_t;
-type mode_t = uint32_t;
+// type io_statbuf_t = struct[32] of int;
+//type uid_t = uint32_t;
+//type gid_t = uint32_t;
+//type mode_t = uint32_t;
 type retry_type = uint32_t;
 type pid_t = int32_t;
 type wait_status_t = int32_t;
@@ -366,8 +366,6 @@ type off_array_t = array[] of loff_t;
 
 type pidarray_t = array[] of pid_t;
 type procinfo_t = array[] of int;
-
-type idarray_t = array[] of uid_t;
 
 type rusage_t = struct[18] of int; /* XXX */
 
@@ -384,7 +382,14 @@ import <sys/statfs.h>;
 
 typedef struct statfs fsys_statfsbuf_t;
 
-import <sys/types.h>;
+#include <sys/stat.h>
 import <sys/stat.h>;
+
+typedef struct stat io_statbuf_t;
+
+import <sys/types.h>;
 import <sys/resource.h>;
 import <hurd/hurd_types.h>;
+
+type idarray_t = array[] of uid_t;
+
