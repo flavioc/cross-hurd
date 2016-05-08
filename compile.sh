@@ -3,8 +3,8 @@
 . ./vars.sh
 . ./common.sh
 . ./download-funcs.sh
-export CC="${ROOT}/bin/${TARGET}-gcc"
-export CXX="${ROOT}/bin/${TARGET}-g++"
+export CC="${TARGET}-gcc"
+export CXX="${TARGET}-g++"
 export AR="${ROOT}/bin/${TARGET}-ar"
 export AS="${ROOT}/bin/${TARGET}-as"
 export RANLIB="${ROOT}/bin/${TARGET}-ranlib"
@@ -27,6 +27,7 @@ install_mig() {
    cd "$GNUMIG_SRC" &&
    autoreconf -i &&
    cd .. &&
+   rm -rf "$GNUMIG_SRC".obj &&
    mkdir -p "$GNUMIG_SRC".obj &&
    cd "$GNUMIG_SRC".obj &&
    rm -f config.cache &&

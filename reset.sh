@@ -12,3 +12,4 @@ cd "$SYSTEM" &&
 rm -rf bin boot tools cross-tools &&
 rm -f /tools &&
 rm -f /cross-tools
+rm -f hd.img

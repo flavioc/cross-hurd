@@ -9,6 +9,10 @@ export TARGET=i586-pc-gnu
 export HOST="$(echo $MACHTYPE | sed "s/$(echo $MACHTYPE | cut -d- -f2)/cross/g")"
 export PATH=$ROOT/bin:$PATH
 
+if [ ! -z "$CCACHE_DIRECTORY" ]; then
+   export PATH=$CCACHE_DIRECTORY:$PATH
+fi
+
 # Package versions.
 BINUTILS_VERSION=2.25.1
 GCC_VERSION=5.3.0
