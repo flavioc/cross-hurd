@@ -18,6 +18,15 @@ along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 
+#define __MIG__
+/* mig still does not understand the following files. */
+#define _MACH_MIG_ERRORS_H_
+#define _MACH_MACH_TRAPS_H_ 1
+#define _MACH_H 1
+#define _SYS_WAIT_H 1
+#define _STDLIB_H
+#define _I386_TLS_H
+
 #ifdef HURD_SERVER
 /* The Hurd uses protected payloads to quickly look up the object
    receiving a message.  Looking up objects is optimized at the cost
@@ -58,6 +67,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <mach/std_types.defs>
 #include <mach/mach_types.defs>
 #include <device/device_types.defs>
+#include <hurd/hurd_types.h>
 
 /* The Hurd types.  You can inject translation functions for type X
    using the X_INTRAN, X_INTRAN_PAYLOAD, X_OUTTRAN, and X_DESTRUCTOR.
@@ -346,50 +356,6 @@ serverprefix SERVERPREFIX;
 #define INTR_INTERFACE		/* Nothing special.  */
 #endif
 
-#include <sys/types.h>
-import <sys/types.h>;
-
-type data_t = array[] of unsigned char;
-type string_t = c_string[1024]; /* XXX */
-type retry_type = uint32_t;
-type wait_status_t = int32_t;
-type file_changed_type_t = uint32_t;
-type dir_changed_type_t = uint32_t;
-
-type portarray_t = array[] of mach_port_send_t;
-type intarray_t = array[] of int;
-type off_array_t = array[] of loff_t;
-
-type pidarray_t = array[] of pid_t;
-type procinfo_t = array[] of int;
-
-typedef struct flock flock_t;
-
-#include <sys/time.h>
-import <sys/time.h>;
-
-typedef struct timespec timespec_t;
-
-#include <sys/utsname.h>
-import <sys/utsname.h>;
-typedef struct utsname utsname_t;
-
-#include <sys/statfs.h>
-import <sys/statfs.h>;
-
-typedef struct statfs fsys_statfsbuf_t;
-
-#include <sys/stat.h>
-import <sys/stat.h>;
-
-typedef struct stat io_statbuf_t;
-
-#include <sys/resource.h>
-import <sys/resource.h>;
-
-typedef struct rusage rusage_t;
-
 import <hurd/hurd_types.h>;
 
-type idarray_t = array[] of uid_t;
-
+typedef uint64_t ino64_t;

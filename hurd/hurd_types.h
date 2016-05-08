@@ -22,8 +22,14 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include <time.h>		/* For struct timespec.  */
 #include <mach/std_types.h>	/* For mach_port_t et al. */
+#ifndef __MIG__
 #include <mach/message.h>	/* For mach_msg_id_t et al. */
+#endif
 #include <sys/types.h>		/* For pid_t and uid_t.  */
+#include <sys/utsname.h>        /* For struct utsname.  */
+#include <sys/resource.h>       /* For struct rusage.  */
+#include <sys/statfs.h>       /* For struct statfs.  */
+#include <sys/stat.h>       /* For struct stat.  */
 
 /* A string identifying this release of the GNU Hurd.  Our
    interpretation of the term "release" is that it refers to a set of
@@ -35,6 +41,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /*   Simple type declarations   */
 
+#ifndef __MIG__
 /* These types identify certain kinds of ports used by the Hurd. */
 typedef mach_port_t file_t;
 typedef mach_port_t fsys_t;
@@ -52,17 +59,23 @@ typedef mach_port_t proccoll_t;
 typedef mach_port_t ctty_t;
 
 #include <errno.h>		/* Defines `error_t'.  */
+#endif
 
 /* These names exist only because of MiG deficiencies.
    You should not use them in C source; use the normal C types instead.  */
-typedef unsigned char *data_t;
+typedef unsigned char *data_t; MIG_INLINE(data_t, 2048);
 typedef char string_t [1024];
-typedef int *intarray_t;
+typedef int *intarray_t; MIG_INLINE(intarray_t, 512);
 typedef int *fd_mask_t;
+#ifdef __MIG__
+type portarray_t = array[] of mach_port_send_t;
+//inline portarray_t/512;
+#else
 typedef mach_port_t *portarray_t;
-typedef pid_t *pidarray_t;
-typedef uid_t *idarray_t;
-typedef loff_t *off_array_t;
+#endif
+typedef pid_t *pidarray_t; MIG_INLINE(pidarray_t, 512);
+typedef uid_t *idarray_t; MIG_INLINE(idarray_t, 512);
+typedef loff_t *off_array_t; MIG_INLINE(off_array_t, 512);
 typedef struct rusage rusage_t;
 typedef struct flock flock_t;
 typedef struct utsname utsname_t;
@@ -254,10 +267,12 @@ enum file_storage_class
 
 /*   Data types   */
 
+#ifndef __MIG__
 #include <mach/task_info.h>
 #include <mach/thread_info.h>
 #ifndef THREAD_SCHED_INFO
 #include <mach/policy.h>
+#endif
 #endif
 
 /* Flags sent in proc_getprocinfo request. */
@@ -298,7 +313,8 @@ struct procinfo
 #endif
     } threadinfos[0];
 };
-typedef int *procinfo_t;
+
+typedef int *procinfo_t; MIG_INLINE(procinfo_t, 512);
 
 /* Bits in struct procinfo  state: */
 #define PI_STOPPED 0x00000001	/* Proc server thinks is stopped.  */
