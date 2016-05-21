@@ -1,0 +1,13 @@
+--- a/gcc/config.gcc	2015-09-10 16:17:53.000000000 +0200
++++ b/gcc/config.gcc	2016-05-15 20:13:41.245990331 +0200
+@@ -1498,6 +1498,10 @@
+ 		;;
+ 	esac
+ 	;;
++x86_64-*-gnu*)
++        tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h gnu-user.h glibc-stdint.h"
++        tm_file="${tm_file} i386/x86-64.h i386/gnu-user-common.h i386/gnu-user64.h gnu.h i386/gnu64.h"
++        ;;
+ x86_64-*-linux* | x86_64-*-kfreebsd*-gnu | x86_64-*-knetbsd*-gnu)
+ 	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h gnu-user.h glibc-stdint.h \
+ 		 i386/x86-64.h i386/gnu-user-common.h i386/gnu-user64.h"

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. ./config.sh
+
 BINUTILS_URL=http://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
 GCC_URL=ftp://gd.tuwien.ac.at/gnu/gcc/releases/gcc-"$GCC_VERSION"/"$GCC_PKG"
 FLEX_URL=http://downloads.sourceforge.net/project/flex/"$FLEX_PKG"
@@ -82,8 +84,14 @@ download_glibc () {
 unpack_gcc () {
    unpack jxf $GCC_PKG $GCC_SRC &&
    cd $GCC_SRC &&
-   pwd &&
-   apply_patch $SCRIPT_DIR/patches/gcc/specs.patch 1 &&
+   (if [ "$CPU" = "i586" ]; then
+    apply_patch $SCRIPT_DIR/patches/gcc/i586/specs.patch 1
+   fi) &&
+   (if [ "$CPU" = "x86_64" ]; then
+    apply_patch $SCRIPT_DIR/patches/gcc/x86_64/config.patch 1 &&
+    apply_patch $SCRIPT_DIR/patches/gcc/x86_64/gnu64.patch 1 &&
+    apply_patch $SCRIPT_DIR/patches/gcc/x86_64/libgcc.patch 1
+   fi) &&
    cd ..
 }
 
@@ -94,6 +102,20 @@ download_gcc () {
    fi
    unpack_gcc
 }
+
+download_binutils () {
+   download $BINUTILS_PKG $BINUTILS_URL &&
+   if [ -d "$BINUTILS_SRC" ]; then
+      return 0
+   fi
+   unpack jxf $BINUTILS_PKG $BINUTILS_SRC &&
+   cd $BINUTILS_SRC &&
+   (if [ $CPU = "x86_64" ]; then
+     apply_patch $SCRIPT_DIR/patches/binutils/x86_64/binutils-bfd-x86_64-gnu.patch 1 &&
+     apply_patch $SCRIPT_DIR/patches/binutils/x86_64/binutils-ld-x86_64-gnu.patch 1
+   fi) &&
+   cd ..
+ }
 
 download_coreutils () {
    download $COREUTILS_PKG $COREUTILS_URL &&

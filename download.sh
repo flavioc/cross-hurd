@@ -7,8 +7,7 @@ mkdir -p $SYSTEM/src &&
 cd $SYSTEM/src &&
 
 download_gcc &&
-download $BINUTILS_PKG $BINUTILS_URL &&
-unpack jxf $BINUTILS_PKG $BINUTILS_SRC &&
+download_binutils &&
 download_gnumach &&
 download_mig &&
 download_hurd &&

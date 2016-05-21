@@ -179,7 +179,7 @@ compile_full_gcc () {
       --disable-bootstrap \
       --disable-libcilkrts \
       --disable-libgomp \
-      --with-arch=i586 &&
+      --with-arch=$CPU &&
    make -j$PROCS AS_FOR_TARGET="$TARGET-as" LD_FOR_TARGET="$TARGET-ld" all &&
    make install &&
    cd ..

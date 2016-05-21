@@ -288,7 +288,7 @@ install_gcc() {
       --enable-checking=release \
       --disable-libcilkrts \
       --disable-libssp \
-      --with-arch=i586 &&
+      --with-arch=$CPU &&
    cp -v Makefile{,.orig} &&
    sed "/^HOST_\(GMP\|ISL\|CLOOG\)\(LIBS\|INC\)/s:/tools:/cross-tools:g" \
          Makefile.orig > Makefile
