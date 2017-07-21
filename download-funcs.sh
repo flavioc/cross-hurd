@@ -2,23 +2,23 @@
 
 . ./config.sh
 
-BINUTILS_URL=http://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
-GCC_URL=ftp://gd.tuwien.ac.at/gnu/gcc/releases/gcc-"$GCC_VERSION"/"$GCC_PKG"
+BINUTILS_URL=https://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
+GCC_URL=http://gd.tuwien.ac.at/gnu/gcc/releases/gcc-"$GCC_VERSION"/"$GCC_PKG"
 FLEX_URL=http://downloads.sourceforge.net/project/flex/"$FLEX_PKG"
 ZLIB_URL=http://zlib.net/"$ZLIB_PKG"
 BASH_URL=https://ftp.gnu.org/gnu/bash/"$BASH_PKG"
-COREUTILS_URL=http://ftp.gnu.org/gnu/coreutils/"$COREUTILS_PKG"
+COREUTILS_URL=https://ftp.gnu.org/gnu/coreutils/"$COREUTILS_PKG"
 E2FSPROGS_URL=https://www.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v"$E2FSPROGS_VERSION"/"$E2FSPROGS_PKG"
 PKGCONFIGLITE_URL=http://downloads.sourceforge.net/project/pkgconfiglite/"$PKGCONFIGLITE_VERSION"/"$PKGCONFIGLITE_PKG"
 LIBUUID_URL=http://downloads.sourceforge.net/project/libuuid/"$LIBUUID_PKG"
 UTIL_LINUX_URL=https://www.kernel.org/pub/linux/utils/util-linux/v"$UTIL_LINUX_BASE_VERSION"/"$UTIL_LINUX_PKG"
-GRUB_URL=ftp://ftp.gnu.org/gnu/grub/"$GRUB_PKG"
+GRUB_URL=https://ftp.gnu.org/gnu/grub/"$GRUB_PKG"
 SHADOW_URL=http://pkg-shadow.alioth.debian.org/releases/"$SHADOW_PKG"
-SED_URL=http://ftp.gnu.org/gnu/sed/"$SED_PKG"
-GMP_URL=http://ftp.gnu.org/gnu/gmp/"$GMP_PKG"
+SED_URL=https://ftp.gnu.org/gnu/sed/"$SED_PKG"
+GMP_URL=https://ftp.gnu.org/gnu/gmp/"$GMP_PKG"
 MPFR_URL=http://mpfr.org/mpfr-current/"$MPFR_PKG"
-MPC_URL=ftp://ftp.gnu.org/gnu/mpc/"$MPC_PKG"
-NCURSES_URL=ftp://ftp.gnu.org/gnu/ncurses/"$NCURSES_PKG"
+MPC_URL=https://ftp.gnu.org/gnu/mpc/"$MPC_PKG"
+NCURSES_URL=https://ftp.gnu.org/gnu/ncurses/"$NCURSES_PKG"
 VIM_URL=ftp://ftp.vim.org/pub/vim/unix/"$VIM_PKG"
 
 unpack () {
@@ -40,21 +40,21 @@ download_gnumach () {
    if [ -d gnumach ]; then
       return 0
    fi
-   git clone http://git.savannah.gnu.org/cgit/hurd/gnumach.git/
+   git clone https://git.savannah.gnu.org/git/hurd/gnumach.git
 }
 
 download_mig () {
    if [ -d mig ]; then
       return 0
    fi
-   git clone http://git.savannah.gnu.org/cgit/hurd/mig.git/
+   git clone https://git.savannah.gnu.org/git/hurd/mig.git
 }
 
 download_hurd () {
    if [ -d hurd ]; then
       return 0
    fi
-   git clone http://git.savannah.gnu.org/cgit/hurd/hurd.git/
+   git clone https://git.savannah.gnu.org/git/hurd/hurd.git
 }
 
 apply_patch() {
@@ -66,10 +66,10 @@ download_glibc () {
    if [ -d glibc ]; then
       return 0
    fi
-   git clone http://git.savannah.gnu.org/cgit/hurd/glibc.git/ &&
+   git clone https://git.savannah.gnu.org/git/hurd/glibc.git &&
    cd glibc &&
    git pull origin tschwinge/Roger_Whittaker &&
-   git clone http://git.savannah.gnu.org/cgit/hurd/libpthread.git/ &&
+   git clone https://git.savannah.gnu.org/git/hurd/libpthread.git &&
    cd libpthread &&
    (for p in $SCRIPT_DIR/patches/libpthread/*; do
       apply_patch $p 0
