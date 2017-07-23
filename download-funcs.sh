@@ -66,9 +66,8 @@ download_glibc () {
    if [ -d glibc ]; then
       return 0
    fi
-   git clone https://git.savannah.gnu.org/git/hurd/glibc.git &&
+   git clone https://git.savannah.gnu.org/git/hurd/glibc.git -b tschwinge/Roger_Whittaker &&
    cd glibc &&
-   git checkout origin/tschwinge/Roger_Whittaker &&
    git clone https://git.savannah.gnu.org/git/hurd/libpthread.git &&
    cd libpthread &&
    (for p in $SCRIPT_DIR/patches/libpthread/*; do
