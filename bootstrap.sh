@@ -148,6 +148,7 @@ compile_first_glibc() {
       --disable-profile \
       --enable-add-ons=libpthread \
       --enable-obsolete-rpc \
+      --disable-werror \
       --disable-nscd &&
    make -j$PROCS &&
    make install &&
@@ -203,6 +204,7 @@ compile_second_glibc() {
       --disable-profile \
       --enable-add-ons=libpthread \
       --enable-obsolete-rpc \
+      --disable-werror \
       --disable-nscd &&
    make -j$PROCS &&
    make install &&
