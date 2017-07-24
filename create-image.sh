@@ -33,8 +33,8 @@ copy_files () {
       mkdir -p mount/servers/socket &&
       cp -R files/etc/* mount/etc/ &&
       mkdir -p mount/etc/hurd &&
-      cp files/runsystem.hurd mount/etc/hurd/ &&
-      chmod ogu+x mount/etc/hurd/runsystem.hurd &&
+      cp files/runsystem.hurd mount/libexec/ &&
+      chmod ogu+x mount/libexec/runsystem.hurd &&
       mkdir -p mount/tools/boot/grub &&
       cp files/boot/grub.cfg mount/tools/boot/grub &&
       cp files/boot/servers.boot mount/tools/boot &&
