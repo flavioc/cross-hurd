@@ -13,4 +13,3 @@
 # in ${exec-task} to be passed to the fs above, but it is left suspended;
 # the fs will resume the exec task once it is ready.
 /tools/lib/ld.so.1 /tools/hurd/exec $(exec-task=task-create)
-
