@@ -49,7 +49,7 @@ copy_files () {
       cp tmp/tools/libexec/{getty,runttys,console-run} mount/libexec/ &&
       cp files/{rc,runsystem} mount/libexec/ &&
       ln -svf /bin/bash mount/bin/sh &&
-      ln -svf /tools/lib/ld-2.19.so mount/tools/lib/ld.so &&
+      ln -svf /tools/lib/ld-2.23.so mount/tools/lib/ld.so &&
       cp files/SETUP mount/ &&
       chmod +x mount/SETUP &&
       # Create a motd message.
