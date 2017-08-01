@@ -13,7 +13,7 @@ download_mig &&
 download_hurd &&
 download_glibc &&
 download $FLEX_PKG $FLEX_URL &&
-unpack jxf $FLEX_PKG $FLEX_SRC &&
+unpack zxf $FLEX_PKG $FLEX_SRC &&
 download $ZLIB_PKG $ZLIB_URL &&
 unpack zxf $ZLIB_PKG $ZLIB_SRC &&
 download $BASH_PKG $BASH_URL &&

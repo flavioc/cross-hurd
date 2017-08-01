@@ -3,8 +3,8 @@
 . ./config.sh
 
 BINUTILS_URL=https://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
-GCC_URL=http://gd.tuwien.ac.at/gnu/gcc/releases/gcc-"$GCC_VERSION"/"$GCC_PKG"
-FLEX_URL=http://downloads.sourceforge.net/project/flex/"$FLEX_PKG"
+GCC_URL=http://www.netgull.com/gcc/releases/gcc-"$GCC_VERSION"/"$GCC_PKG"
+FLEX_URL=https://github.com/westes/flex/releases/download/v$FLEX_VERSION/$FLEX_PKG
 ZLIB_URL=http://zlib.net/"$ZLIB_PKG"
 BASH_URL=https://ftp.gnu.org/gnu/bash/"$BASH_PKG"
 COREUTILS_URL=https://ftp.gnu.org/gnu/coreutils/"$COREUTILS_PKG"
@@ -13,7 +13,7 @@ PKGCONFIGLITE_URL=http://downloads.sourceforge.net/project/pkgconfiglite/"$PKGCO
 LIBUUID_URL=http://downloads.sourceforge.net/project/libuuid/"$LIBUUID_PKG"
 UTIL_LINUX_URL=https://www.kernel.org/pub/linux/utils/util-linux/v"$UTIL_LINUX_BASE_VERSION"/"$UTIL_LINUX_PKG"
 GRUB_URL=https://ftp.gnu.org/gnu/grub/"$GRUB_PKG"
-SHADOW_URL=http://pkg-shadow.alioth.debian.org/releases/"$SHADOW_PKG"
+SHADOW_URL=https://github.com/shadow-maint/shadow/releases/download/$SHADOW_VERSION/"$SHADOW_PKG"
 SED_URL=https://ftp.gnu.org/gnu/sed/"$SED_PKG"
 GMP_URL=https://ftp.gnu.org/gnu/gmp/"$GMP_PKG"
 MPFR_URL=http://mpfr.org/mpfr-current/"$MPFR_PKG"
@@ -82,7 +82,7 @@ download_glibc () {
 }
 
 unpack_gcc () {
-   unpack jxf $GCC_PKG $GCC_SRC &&
+   unpack zxf $GCC_PKG $GCC_SRC &&
    cd $GCC_SRC &&
    (if [ "$CPU" = "i586" ]; then
     apply_patch $SCRIPT_DIR/patches/gcc/i586/specs.patch 1
@@ -132,10 +132,7 @@ download_sed () {
 	if [ -d "$SED_SRC" ]; then
 		return 0
 	fi
-	unpack zxf $SED_PKG $SED_SRC
-	cd "$SED_SRC" &&
-	apply_patch $SCRIPT_DIR/patches/sed/debian.patch 1 &&
-	cd ..
+	unpack xf $SED_PKG $SED_SRC
 }
 
 download_ncurses () {
