@@ -30,6 +30,9 @@ unpack zxf $UTIL_LINUX_PKG $UTIL_LINUX_SRC &&
 
 download $GRUB_PKG $GRUB_URL &&
 unpack zxf $GRUB_PKG $GRUB_SRC &&
+pushd $GRUB_SRC &&
+apply_patch_optional $SCRIPT_DIR/patches/grub/fix-build.patch 1 || true &&
+popd &&
 
 download $SHADOW_PKG $SHADOW_URL &&
 unpack Jxf $SHADOW_PKG $SHADOW_SRC &&

@@ -53,6 +53,8 @@ install_zlib() {
 
 install_gpg_error() {
    cd "$GPG_ERROR_SRC" &&
+   # We patch src/Makefile.am so we have to regenerate the files
+   autoreconf -fi &&
    ./configure --prefix=$SYS_ROOT \
       --build="$HOST" \
       --host="$TARGET" &&
@@ -214,8 +216,6 @@ install_util_linux() {
 
 install_grub() {
    cd "$GRUB_SRC" &&
-   cp -v grub-core/gnulib/stdio.in.h{,.orig} &&
-   sed -e '/gets is a/d' grub-core/gnulib/stdio.in.h.orig > grub-core/gnulib/stdio.in.h &&
    ./configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} \
@@ -234,6 +234,7 @@ install_shadow () {
        -e 's/= nologin$(EXEEXT)/= /' \
        -e 's/= login$(EXEEXT)/= /' \
        -e 's/\(^suidu*bins = \).*/\1/' \
+       -e 's/\(\t$(am__append_3) $(am__append_4)\)/#\1/' \
    src/Makefile.in.orig > src/Makefile.in &&
    cat > config.cache << "EOF"
 shadow_cv_passwd_dir=/tools/bin

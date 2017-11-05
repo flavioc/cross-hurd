@@ -11,9 +11,9 @@ COREUTILS_URL=https://ftp.gnu.org/gnu/coreutils/"$COREUTILS_PKG"
 E2FSPROGS_URL=https://www.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v"$E2FSPROGS_VERSION"/"$E2FSPROGS_PKG"
 PKGCONFIGLITE_URL=http://downloads.sourceforge.net/project/pkgconfiglite/"$PKGCONFIGLITE_VERSION"/"$PKGCONFIGLITE_PKG"
 LIBUUID_URL=http://downloads.sourceforge.net/project/libuuid/"$LIBUUID_PKG"
-UTIL_LINUX_URL=https://www.kernel.org/pub/linux/utils/util-linux/v"$UTIL_LINUX_BASE_VERSION"/"$UTIL_LINUX_PKG"
+UTIL_LINUX_URL=https://www.kernel.org/pub/linux/utils/util-linux/v"$UTIL_LINUX_VERSION"/"$UTIL_LINUX_PKG"
 GRUB_URL=https://ftp.gnu.org/gnu/grub/"$GRUB_PKG"
-SHADOW_URL=https://github.com/shadow-maint/shadow/releases/download/$SHADOW_VERSION/"$SHADOW_PKG"
+SHADOW_URL=https://github.com/shadow-maint/shadow/releases/download/"$SHADOW_VERSION"/"$SHADOW_PKG"
 SED_URL=https://ftp.gnu.org/gnu/sed/"$SED_PKG"
 GMP_URL=https://ftp.gnu.org/gnu/gmp/"$GMP_PKG"
 MPFR_URL=http://mpfr.org/mpfr-current/"$MPFR_PKG"
@@ -62,7 +62,12 @@ download_hurd () {
 
 apply_patch() {
    print_info "Using patch $1 (level: $2)"
-   patch -p$2 < $1 || exit 1
+   patch -Np$2 < $1 || exit 1
+}
+
+apply_patch_optional() {
+   print_info "Using patch $1 (level: $2)"
+   patch -Np$2 < $1
 }
 
 download_glibc () {
@@ -117,10 +122,7 @@ download_binutils () {
 download_coreutils () {
    download $COREUTILS_PKG $COREUTILS_URL &&
    if [ ! -d "$COREUTILS_SRC" ]; then
-	   unpack Jxf $COREUTILS_PKG $COREUTILS_SRC &&
-		cd $COREUTILS_SRC &&
-	   apply_patch $SCRIPT_DIR/patches/coreutils/*.patch 1 &&
-	cd ..
+	   unpack Jxf $COREUTILS_PKG $COREUTILS_SRC
    fi
 }
 
@@ -153,7 +155,12 @@ download_gpg_error () {
   if [ -d "$GPG_ERROR_SRC" ]; then
     return 0
   fi
-  unpack jxf $GPG_ERROR_PKG $GPG_ERROR_SRC
+  unpack jxf $GPG_ERROR_PKG $GPG_ERROR_SRC &&
+  cd $GPG_ERROR_SRC &&
+  (for p in $SCRIPT_DIR/patches/libgpg-error/*; do
+    apply_patch $p 1
+  done) &&
+  cd ..
 }
 
 download_gcrypt () {
