@@ -24,7 +24,8 @@ compile_binutils ()
       --disable-multilib \
       --disable-werror \
       --disable-nls &&
-   make -j$PROCS all install &&
+   make -j$PROCS all &&
+   make install &&
    cd ..
 }
 
@@ -69,10 +70,12 @@ compile_gcc ()
       --disable-libvtv \
       --disable-libstdcxx \
       --enable-languages=c &&
-   make -j$PROCS all-gcc install-gcc &&
+   make -j$PROCS all-gcc &&
+   make install-gcc &&
    make -j$PROCS configure-target-libgcc &&
    cd "$TARGET"/libgcc &&
-   make -j$PROCS 'libgcc-objects = $(lib2funcs-o) $(lib2-divmod-o)' all install &&
+   make -j$PROCS 'libgcc-objects = $(lib2funcs-o) $(lib2-divmod-o)' all &&
+   make 'libgcc-objects = $(lib2funcs-o) $(lib2-divmod-o)' install &&
    cd - &&
    mv config.status config.status.removed &&
    rm -f config.cache *config.cache */*/config.cache &&
@@ -213,6 +216,8 @@ compile_second_glibc() {
 
 compile_pkgconfiglite() {
    cd "$PKGCONFIGLITE_SRC" &&
+   # otherwise "ln pkg-config i586-pc-gnu-pkg-config" in the install step fails
+   rm -fv "$ROOT"/bin/i586-pc-gnu-pkg-config &&
    ./configure --prefix="$ROOT" --host=${TARGET}\
       --with-pc-path="/sys/lib/pkgconfig:/sys/share/pkgconfig" &&
    make -j$PROCS &&
@@ -240,4 +245,5 @@ mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
    compile_first_glibc &&
    compile_full_gcc &&
    compile_second_glibc &&
+   print_info "bootstrap.sh finished successfully" &&
    exit 0
