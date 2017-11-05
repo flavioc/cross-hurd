@@ -47,4 +47,7 @@ download_ncurses &&
 
 download_vim &&
 
+download_gpg_error &&
+download_gcrypt &&
+
 download_sed 

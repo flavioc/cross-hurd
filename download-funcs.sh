@@ -20,6 +20,8 @@ MPFR_URL=http://mpfr.org/mpfr-current/"$MPFR_PKG"
 MPC_URL=https://ftp.gnu.org/gnu/mpc/"$MPC_PKG"
 NCURSES_URL=https://ftp.gnu.org/gnu/ncurses/"$NCURSES_PKG"
 VIM_URL=ftp://ftp.vim.org/pub/vim/unix/"$VIM_PKG"
+GPG_ERROR_URL=ftp://ftp.gnupg.org/gcrypt/libgpg-error/"$GPG_ERROR_PKG"
+GCRYPT_URL=ftp://ftp.gnupg.org/gcrypt/libgcrypt/"$GCRYPT_PKG"
 
 unpack () {
    if [ -d "$3" ]; then
@@ -143,5 +145,21 @@ download_vim () {
     return 0
   fi
   unpack jxf $VIM_PKG $VIM_SRC
+}
+
+download_gpg_error () {
+  download $GPG_ERROR_PKG $GPG_ERROR_URL &&
+  if [ -d "$GPG_ERROR_SRC" ]; then
+    return 0
+  fi
+  unpack jxf $GPG_ERROR_PKG $GPG_ERROR_SRC
+}
+
+download_gcrypt () {
+  download $GCRYPT_PKG $GCRYPT_URL &&
+  if [ -d "$GCRYPT_SRC" ]; then
+    return 0
+  fi
+  unpack jxf $GCRYPT_PKG $GCRYPT_SRC
 }
 

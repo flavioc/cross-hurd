@@ -49,6 +49,29 @@ install_zlib() {
    cd ..
 }
 
+install_gpg_error() {
+   cd "$GPG_ERROR_SRC" &&
+   ./configure --prefix=$SYS_ROOT \
+      --build="$HOST" \
+      --host="$TARGET" &&
+   make -j$PROCS &&
+   make install &&
+   cd ..
+}
+
+install_gcrypt() {
+   cd "$GCRYPT_SRC" &&
+   ./configure --prefix=$SYS_ROOT \
+      --build="$HOST" \
+      --host="$TARGET" \
+      --disable-padlock-support \
+      --with-gpg-error-prefix="$SYS_ROOT" \
+      --disable-asm &&
+   make -j$PROCS &&
+   make install &&
+   cd ..
+}
+
 install_gnumach() {
    cd "$GNUMACH_SRC" &&
    autoreconf -i &&
@@ -349,6 +372,8 @@ EOF
 
 cd "$SYSTEM"/src &&
    install_zlib &&
+   install_gpg_error &&
+   install_gcrypt &&
    install_flex &&
    install_mig &&
    install_gnumach &&
