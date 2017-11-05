@@ -5,7 +5,7 @@
 LOOP=/dev/loop0
 MAPPER=/dev/mapper/loop0p1
 IMG=hd.img
-IMG_SIZE=1024MB
+IMG_SIZE=2048MB
 
 create_image () {
    print_info "Creating disk image $IMG..."
