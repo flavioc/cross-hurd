@@ -50,4 +50,6 @@ download_vim &&
 download_gpg_error &&
 download_gcrypt &&
 
+download_make &&
+
 download_sed 

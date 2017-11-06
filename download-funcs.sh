@@ -22,6 +22,7 @@ NCURSES_URL=https://ftp.gnu.org/gnu/ncurses/"$NCURSES_PKG"
 VIM_URL=ftp://ftp.vim.org/pub/vim/unix/"$VIM_PKG"
 GPG_ERROR_URL=ftp://ftp.gnupg.org/gcrypt/libgpg-error/"$GPG_ERROR_PKG"
 GCRYPT_URL=ftp://ftp.gnupg.org/gcrypt/libgcrypt/"$GCRYPT_PKG"
+MAKE_URL=ftp://ftp.gnu.org/gnu/make/"$MAKE_PKG"
 
 unpack () {
    if [ -d "$3" ]; then
@@ -161,5 +162,13 @@ download_gcrypt () {
     return 0
   fi
   unpack jxf $GCRYPT_PKG $GCRYPT_SRC
+}
+
+download_make () {
+  download $MAKE_PKG $MAKE_URL &&
+  if [ -d "$MAKE_SRC" ]; then
+    return 0
+  fi
+  unpack jxf $MAKE_PKG $MAKE_SRC
 }
 
