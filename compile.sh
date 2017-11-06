@@ -19,7 +19,8 @@ install_flex() {
       --build="$HOST" \
       --host="$TARGET" &&
    sed -i -e 's/tests//' Makefile &&
-   make -j$PROCS all install &&
+   make -j$PROCS all &&
+   make install &&
    cd ..
 }
 
@@ -37,7 +38,8 @@ install_mig() {
       --prefix="$SYS_ROOT" \
       --target="$TARGET" &&
    make clean &&
-   make -j$PROCS all install &&
+   make -j$PROCS all &&
+   make install &&
    cd ..
 }
 
@@ -82,12 +84,13 @@ install_gnumach() {
    ../$GNUMACH_SRC/configure \
       --host="$TARGET" \
       --build="$HOST" \
-      --exec-prefix= \
+      --exec-prefix=/tmp/throwitaway \
       --enable-kdb \
       --enable-kmsg \
       --enable-pae \
       --prefix="$SYS_ROOT" &&
-   make -j$PROCS gnumach.gz gnumach gnumach.msgids install &&
+   make -j$PROCS gnumach.gz gnumach gnumach.msgids &&
+   make install &&
    mkdir -p $SYSTEM/boot &&
    cp gnumach.gz $SYSTEM/boot/ &&
    cd -
@@ -107,7 +110,8 @@ install_hurd() {
       --prefix="$SYS_ROOT" \
       --without-parted \
       --disable-profile &&
-   make -j$PROCS all install &&
+   make -j$PROCS all &&
+   fakeroot make install &&
    cd ..
 }
 
@@ -126,7 +130,8 @@ install_binutils ()
       --disable-nls \
       --enable-shared \
       --disable-multilib &&
-   make -j$PROCS all install &&
+   make -j$PROCS all &&
+   make install &&
    cd ..
 }
 
