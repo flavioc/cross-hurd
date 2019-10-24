@@ -228,11 +228,22 @@ compile_pkgconfiglite() {
 print_info "Root is $ROOT"
 print_info "Cross-compiling on $HOST to $TARGET"
 
+create_tools_symlink() {
+    set -x
+    if [ $(readlink /tools) != "$PWD/tools" ]; then
+        sudo rm -f /tools
+        sudo ln -sf "$PWD"/tools /tools
+    fi
+    if [ $(readlink /cross-tools) != "$PWD/cross-tools" ]; then
+        sudo rm -f /cross-tools
+        sudo ln -sf "$PWD"/cross-tools /cross-tools
+    fi
+    set +x
+}
+
 mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
    mkdir -p bin src boot "tools/include" "tools/lib" "cross-tools/$TARGET" &&
-   rm -f /tools /cross-tools &&
-   ln -sf $PWD/tools /tools &&
-   ln -sf $PWD/cross-tools /cross-tools &&
+   create_tools_symlink &&
    ln -sfn "$SYS_ROOT"/include "$SYS_ROOT"/lib "$ROOT"/"$TARGET"/ &&
 
  cd src &&
