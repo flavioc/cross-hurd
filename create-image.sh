@@ -65,7 +65,8 @@ install_grub () {
 umount_image () {
    umount mount &&
       kpartx -d $LOOP &&
-      losetup -d $LOOP
+      losetup -d $LOOP &&
+      rmdir mount
 }
 
 umount mount >/dev/null 2>&1
