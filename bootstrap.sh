@@ -153,6 +153,7 @@ compile_first_glibc() {
       --enable-obsolete-rpc \
       --disable-werror \
       --disable-nscd &&
+   make -j$PROCS || # workaround for "fails first time"?
    make -j$PROCS &&
    make install &&
    cd ..
