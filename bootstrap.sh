@@ -219,7 +219,7 @@ compile_second_glibc() {
 compile_pkgconfiglite() {
    cd "$PKGCONFIGLITE_SRC" &&
    # otherwise "ln pkg-config i586-pc-gnu-pkg-config" in the install step fails
-   rm -fv "$ROOT"/bin/i586-pc-gnu-pkg-config &&
+   rm -fv "$ROOT"/bin/*-pkg-config &&
    ./configure --prefix="$ROOT" --host=${TARGET}\
       --with-pc-path="/sys/lib/pkgconfig:/sys/share/pkgconfig" &&
    make -j$PROCS &&
