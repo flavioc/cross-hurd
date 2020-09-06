@@ -19,7 +19,8 @@ install_flex() {
       --build="$HOST" \
       --host="$TARGET" &&
    sed -i -e 's/tests//' Makefile &&
-   make -j$PROCS all install &&
+   make -j$PROCS all &&
+   make install &&
    cd ..
 }
 
@@ -37,13 +38,39 @@ install_mig() {
       --prefix="$SYS_ROOT" \
       --target="$TARGET" &&
    make clean &&
-   make -j$PROCS all install &&
+   make -j$PROCS all &&
+   make install &&
    cd ..
 }
 
 install_zlib() {
    cd "$ZLIB_SRC" &&
    ./configure --prefix=$SYS_ROOT &&
+   make -j$PROCS &&
+   make install &&
+   cd ..
+}
+
+install_gpg_error() {
+   cd "$GPG_ERROR_SRC" &&
+   # We patch src/Makefile.am so we have to regenerate the files
+   autoreconf -fi &&
+   ./configure --prefix=$SYS_ROOT \
+      --build="$HOST" \
+      --host="$TARGET" &&
+   make -j$PROCS &&
+   make install &&
+   cd ..
+}
+
+install_gcrypt() {
+   cd "$GCRYPT_SRC" &&
+   ./configure --prefix=$SYS_ROOT \
+      --build="$HOST" \
+      --host="$TARGET" \
+      --disable-padlock-support \
+      --with-gpg-error-prefix="$SYS_ROOT" \
+      --disable-asm &&
    make -j$PROCS &&
    make install &&
    cd ..
@@ -59,12 +86,13 @@ install_gnumach() {
    ../$GNUMACH_SRC/configure \
       --host="$TARGET" \
       --build="$HOST" \
-      --exec-prefix= \
+      --exec-prefix=/tmp/throwitaway \
       --enable-kdb \
       --enable-kmsg \
       --enable-pae \
       --prefix="$SYS_ROOT" &&
-   make -j$PROCS gnumach.gz gnumach gnumach.msgids install &&
+   make -j$PROCS gnumach.gz gnumach gnumach.msgids &&
+   make install &&
    mkdir -p $SYSTEM/boot &&
    cp gnumach.gz $SYSTEM/boot/ &&
    cd -
@@ -84,7 +112,8 @@ install_hurd() {
       --prefix="$SYS_ROOT" \
       --without-parted \
       --disable-profile &&
-   make -j$PROCS all install &&
+   make -j$PROCS all &&
+   fakeroot make install &&
    cd ..
 }
 
@@ -103,7 +132,8 @@ install_binutils ()
       --disable-nls \
       --enable-shared \
       --disable-multilib &&
-   make -j$PROCS all install &&
+   make -j$PROCS all &&
+   make install &&
    cd ..
 }
 
@@ -186,8 +216,6 @@ install_util_linux() {
 
 install_grub() {
    cd "$GRUB_SRC" &&
-   cp -v grub-core/gnulib/stdio.in.h{,.orig} &&
-   sed -e '/gets is a/d' grub-core/gnulib/stdio.in.h.orig > grub-core/gnulib/stdio.in.h &&
    ./configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} \
@@ -206,6 +234,7 @@ install_shadow () {
        -e 's/= nologin$(EXEEXT)/= /' \
        -e 's/= login$(EXEEXT)/= /' \
        -e 's/\(^suidu*bins = \).*/\1/' \
+       -e 's/\(\t$(am__append_3) $(am__append_4)\)/#\1/' \
    src/Makefile.in.orig > src/Makefile.in &&
    cat > config.cache << "EOF"
 shadow_cv_passwd_dir=/tools/bin
@@ -347,8 +376,20 @@ syntax on
 EOF
 }
 
+install_make() {
+   cd "$MAKE_SRC" &&
+   ./configure --prefix="$SYS_ROOT" \
+      --build="$HOST" \
+      --host="$TARGET" &&
+   make -j$PROCS &&
+   make install &&
+   cd ..
+}
+
 cd "$SYSTEM"/src &&
    install_zlib &&
+   install_gpg_error &&
+   install_gcrypt &&
    install_flex &&
    install_mig &&
    install_gnumach &&
@@ -367,4 +408,6 @@ cd "$SYSTEM"/src &&
    install_gcc &&
    install_ncurses &&
    install_vim &&
+   install_make &&
+   print_info "compile.sh finished successfully" &&
    exit 0

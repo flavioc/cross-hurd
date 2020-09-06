@@ -24,7 +24,8 @@ compile_binutils ()
       --disable-multilib \
       --disable-werror \
       --disable-nls &&
-   make -j$PROCS all install &&
+   make -j$PROCS all &&
+   make install &&
    cd ..
 }
 
@@ -69,10 +70,12 @@ compile_gcc ()
       --disable-libvtv \
       --disable-libstdcxx \
       --enable-languages=c &&
-   make -j$PROCS all-gcc install-gcc &&
+   make -j$PROCS all-gcc &&
+   make install-gcc &&
    make -j$PROCS configure-target-libgcc &&
    cd "$TARGET"/libgcc &&
-   make -j$PROCS 'libgcc-objects = $(lib2funcs-o) $(lib2-divmod-o)' all install &&
+   make -j$PROCS 'libgcc-objects = $(lib2funcs-o) $(lib2-divmod-o)' all &&
+   make 'libgcc-objects = $(lib2funcs-o) $(lib2-divmod-o)' install &&
    cd - &&
    mv config.status config.status.removed &&
    rm -f config.cache *config.cache */*/config.cache &&
@@ -150,6 +153,7 @@ compile_first_glibc() {
       --enable-obsolete-rpc \
       --disable-werror \
       --disable-nscd &&
+   make -j$PROCS || # workaround for "fails first time"?
    make -j$PROCS &&
    make install &&
    cd ..
@@ -213,6 +217,8 @@ compile_second_glibc() {
 
 compile_pkgconfiglite() {
    cd "$PKGCONFIGLITE_SRC" &&
+   # otherwise "ln pkg-config i586-pc-gnu-pkg-config" in the install step fails
+   rm -fv "$ROOT"/bin/i586-pc-gnu-pkg-config &&
    ./configure --prefix="$ROOT" --host=${TARGET}\
       --with-pc-path="/sys/lib/pkgconfig:/sys/share/pkgconfig" &&
    make -j$PROCS &&
@@ -223,11 +229,22 @@ compile_pkgconfiglite() {
 print_info "Root is $ROOT"
 print_info "Cross-compiling on $HOST to $TARGET"
 
+create_tools_symlink() {
+    set -x
+    if [ $(readlink /tools) != "$PWD/tools" ]; then
+        sudo rm -f /tools
+        sudo ln -sf "$PWD"/tools /tools
+    fi
+    if [ $(readlink /cross-tools) != "$PWD/cross-tools" ]; then
+        sudo rm -f /cross-tools
+        sudo ln -sf "$PWD"/cross-tools /cross-tools
+    fi
+    set +x
+}
+
 mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
    mkdir -p bin src boot "tools/include" "tools/lib" "cross-tools/$TARGET" &&
-   rm -f /tools /cross-tools &&
-   ln -sf $PWD/tools /tools &&
-   ln -sf $PWD/cross-tools /cross-tools &&
+   create_tools_symlink &&
    ln -sfn "$SYS_ROOT"/include "$SYS_ROOT"/lib "$ROOT"/"$TARGET"/ &&
 
  cd src &&
@@ -240,4 +257,5 @@ mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
    compile_first_glibc &&
    compile_full_gcc &&
    compile_second_glibc &&
+   print_info "bootstrap.sh finished successfully" &&
    exit 0
