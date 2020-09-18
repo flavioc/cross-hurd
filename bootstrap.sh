@@ -231,16 +231,12 @@ print_info "Root is $ROOT"
 print_info "Cross-compiling on $HOST to $TARGET"
 
 create_tools_symlink() {
-    set -x
-    if [ $(readlink /tools) != "$PWD/tools" ]; then
-        sudo rm -f /tools
+    if [ ! -e /tools ]; then
         sudo ln -sf "$PWD"/tools /tools
     fi
-    if [ $(readlink /cross-tools) != "$PWD/cross-tools" ]; then
-        sudo rm -f /cross-tools
+    if [ ! -e /cross-tools ]; then
         sudo ln -sf "$PWD"/cross-tools /cross-tools
     fi
-    set +x
 }
 
 mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
