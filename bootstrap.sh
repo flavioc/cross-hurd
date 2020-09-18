@@ -74,8 +74,8 @@ compile_gcc ()
    make install-gcc &&
    make -j$PROCS configure-target-libgcc &&
    cd "$TARGET"/libgcc &&
-   make -j$PROCS 'libgcc-objects = $(lib2funcs-o) $(lib2-divmod-o)' all &&
-   make 'libgcc-objects = $(lib2funcs-o) $(lib2-divmod-o)' install &&
+   make -j$PROCS  all &&
+   make install &&
    cd - &&
    mv config.status config.status.removed &&
    rm -f config.cache *config.cache */*/config.cache &&
@@ -152,7 +152,8 @@ compile_first_glibc() {
       --enable-add-ons=libpthread \
       --enable-obsolete-rpc \
       --disable-werror \
-      --disable-nscd &&
+      --disable-nscd \
+      libc_cv_ctors_header=yes &&
    make -j$PROCS || # workaround for "fails first time"?
    make -j$PROCS &&
    make install &&
