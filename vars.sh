@@ -30,7 +30,7 @@ GRUB_VERSION=2.04
 SHADOW_VERSION=4.6
 SED_VERSION=4.5
 GMP_VERSION=6.1.2
-MPFR_VERSION=4.0.2
+MPFR_VERSION=4.1.0
 MPC_VERSION=1.1.0
 NCURSES_VERSION=6.1
 # 8.1: checking what tgetent() returns for an unknown terminal... configure: error: failed to compile test program.
