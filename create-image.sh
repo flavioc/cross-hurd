@@ -59,7 +59,7 @@ copy_files () {
 
 install_grub () {
    print_info "Installing the GRUB on $IMG..."
-   grub-install --target=i386-pc --boot-directory=$PWD/mount/tools/boot $LOOP
+   grub-install --target=i386-pc --directory=/tools/lib/grub/i386-pc --boot-directory=$PWD/mount/tools/boot $LOOP
 }
 
 umount_image () {
