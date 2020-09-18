@@ -176,6 +176,6 @@ download_make () {
   if [ -d "$MAKE_SRC" ]; then
     return 0
   fi
-  unpack jxf $MAKE_PKG $MAKE_SRC
+  unpack xf $MAKE_PKG $MAKE_SRC
 }
 
