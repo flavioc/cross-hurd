@@ -50,6 +50,7 @@ download_gpg_error &&
 download_gcrypt &&
 
 download_make &&
+download_grep &&
 
 download_sed &&
 echo "Download complete."

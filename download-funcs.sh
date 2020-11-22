@@ -23,6 +23,7 @@ VIM_URL=ftp://ftp.vim.org/pub/vim/unix/"$VIM_PKG"
 GPG_ERROR_URL=ftp://ftp.gnupg.org/gcrypt/libgpg-error/"$GPG_ERROR_PKG"
 GCRYPT_URL=ftp://ftp.gnupg.org/gcrypt/libgcrypt/"$GCRYPT_PKG"
 MAKE_URL=ftp://ftp.gnu.org/gnu/make/"$MAKE_PKG"
+GREP_URL=https://ftp.gnu.org/gnu/grep/"$GREP_PKG"
 
 unpack () {
    if [ -d "$3" ]; then
@@ -187,4 +188,12 @@ download_grub () {
   pushd $GRUB_SRC &&
   apply_patch $SCRIPT_DIR/patches/grub/fix-build.patch 1 &&
   popd
+}
+
+download_grep () {
+  download $GREP_PKG $GREP_URL &&
+  if [ -d "$GREP_SRC" ]; then
+    return 0
+  fi
+  unpack xf $GREP_PKG $GREP_SRC
 }

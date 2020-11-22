@@ -386,6 +386,16 @@ install_make() {
    cd ..
 }
 
+install_grep() {
+   cd "$GREP_SRC" &&
+   ./configure --prefix="$SYS_ROOT" \
+      --build="$HOST" \
+      --host="$TARGET" &&
+   make -j$PROCS &&
+   make install &&
+   cd ..
+}
+
 cd "$SYSTEM"/src &&
    install_zlib &&
    install_gpg_error &&
@@ -409,5 +419,6 @@ cd "$SYSTEM"/src &&
    install_ncurses &&
    install_vim &&
    install_make &&
+   install_grep &&
    print_info "compile.sh finished successfully" &&
    exit 0
