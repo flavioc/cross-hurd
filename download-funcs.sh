@@ -24,6 +24,7 @@ GPG_ERROR_URL=ftp://ftp.gnupg.org/gcrypt/libgpg-error/"$GPG_ERROR_PKG"
 GCRYPT_URL=ftp://ftp.gnupg.org/gcrypt/libgcrypt/"$GCRYPT_PKG"
 MAKE_URL=ftp://ftp.gnu.org/gnu/make/"$MAKE_PKG"
 GREP_URL=https://ftp.gnu.org/gnu/grep/"$GREP_PKG"
+GAWK_URL=https://ftp.gnu.org/gnu/gawk/"$GAWK_PKG"
 
 unpack () {
    if [ -d "$3" ]; then
@@ -196,4 +197,12 @@ download_grep () {
     return 0
   fi
   unpack xf $GREP_PKG $GREP_SRC
+}
+
+download_gawk () {
+  download $GAWK_PKG $GAWK_URL &&
+    if [ -d "$GAWK_SRC" ]; then
+      return 0
+    fi
+    unpack xf $GAWK_PKG $GAWK_SRC
 }

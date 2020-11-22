@@ -396,6 +396,16 @@ install_grep() {
    cd ..
 }
 
+install_gawk() {
+   cd "$GAWK_SRC" &&
+   ./configure --prefix="$SYS_ROOT" \
+      --build="$HOST" \
+      --host="$TARGET" &&
+   make -j$PROCS &&
+   make install &&
+   cd ..
+}
+
 cd "$SYSTEM"/src &&
    install_zlib &&
    install_gpg_error &&
@@ -420,5 +430,6 @@ cd "$SYSTEM"/src &&
    install_vim &&
    install_make &&
    install_grep &&
+   install_gawk &&
    print_info "compile.sh finished successfully" &&
    exit 0
