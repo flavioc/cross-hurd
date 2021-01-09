@@ -1,0 +1,51 @@
+From: Jeremie Koenig <jk@jk.fr.eu.org>
+Subject: [PATCH] Small signal fixes
+
+    22e7268 Hurd signals: fix sigwait for pending signals
+    da8bf5e Hurd signals: clear the pending mask in fork and spawn
+    8e87205 Hurd signals: don't drop blocked ignored signals     
+
+---
+ hurd/hurdsig.c             |    4 +---
+ sysdeps/mach/hurd/fork.c   |    4 +++-
+ sysdeps/mach/hurd/spawni.c |    2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+--- a/hurd/hurdsig.c
++++ b/hurd/hurdsig.c
+@@ -904,9 +904,7 @@
+     }
+ 
+   /* Handle receipt of a blocked signal, or any signal while stopped.  */
+-  if (act != ignore &&		/* Signals ignored now are forgotten now.  */
+-      __sigismember (&blocked, signo) ||
+-      (signo != SIGKILL && _hurd_stopped))
++  if (__sigismember (&blocked, signo) || (signo != SIGKILL && _hurd_stopped))
+     {
+       mark_pending ();
+       act = ignore;
+--- a/sysdeps/mach/hurd/fork.c
++++ b/sysdeps/mach/hurd/fork.c
+@@ -684,8 +684,10 @@
+       err = __USEPORT (PROC, __proc_getpids (port, &_hurd_pid, &_hurd_ppid,
+ 					     &_hurd_orphaned));
+ 
+-      /* Forking clears the trace flag.  */
++      /* Forking clears the trace flag and pending masks.  */
+       __sigemptyset (&_hurdsig_traced);
++      __sigemptyset (&_hurd_global_sigstate->pending);
++      __sigemptyset (&ss->pending);
+ 
+       /* Release malloc locks.  */
+       _hurd_malloc_fork_child ();
+--- a/sysdeps/mach/hurd/spawni.c
++++ b/sysdeps/mach/hurd/spawni.c
+@@ -239,7 +239,7 @@
+ 
+   _hurd_sigstate_lock (ss);
+   ints[INIT_SIGMASK] = ss->blocked;
+-  ints[INIT_SIGPENDING] = _hurd_sigstate_pending (ss); /* XXX really? */
++  ints[INIT_SIGPENDING] = 0;
+   ints[INIT_SIGIGN] = 0;
+   /* Unless we were asked to reset all handlers to SIG_DFL,
+      pass down the set of signals that were set to SIG_IGN.  */

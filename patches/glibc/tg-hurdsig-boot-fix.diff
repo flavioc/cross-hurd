@@ -1,0 +1,21 @@
+2012-09-05  Richard Braun  <rbraun@sceen.net>
+
+       * hurd/hurdsig.c (sigstate_is_global_rcv): Do not return true
+       if _HURD_GLOBAL_SIGSTATE is null.
+
+---
+ hurd/hurdsig.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/hurd/hurdsig.c
++++ b/hurd/hurdsig.c
+@@ -161,7 +161,8 @@ _hurd_sigstate_set_global_rcv (struct hu
+ static int
+ sigstate_is_global_rcv (const struct hurd_sigstate *ss)
+ {
+-  return ss->actions[0].sa_handler == SIG_IGN;
++  return (_hurd_global_sigstate != NULL)
++	 && (ss->actions[0].sa_handler == SIG_IGN);
+ }
+ 
+ /* Lock/unlock a hurd_sigstate structure.  If the accessors below require
