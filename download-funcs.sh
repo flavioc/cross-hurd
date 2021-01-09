@@ -41,6 +41,7 @@ download () {
 
 download_gnumach () {
    if [ -d gnumach ]; then
+      cd gnumach && git pull && cd .. &&
       return 0
    fi
    git clone https://git.savannah.gnu.org/git/hurd/gnumach.git
@@ -48,6 +49,7 @@ download_gnumach () {
 
 download_mig () {
    if [ -d mig ]; then
+      cd mig && git pull && cd .. &&
       return 0
    fi
    git clone https://git.savannah.gnu.org/git/hurd/mig.git
@@ -55,6 +57,7 @@ download_mig () {
 
 download_hurd () {
    if [ -d hurd ]; then
+      cd hurd && git pull && cd .. &&
       return 0
    fi
    git clone https://git.savannah.gnu.org/git/hurd/hurd.git
