@@ -68,11 +68,6 @@ apply_patch() {
    patch -Np$2 < $1 || exit 1
 }
 
-apply_patch_optional() {
-   print_info "Using patch $1 (level: $2)"
-   patch -Np$2 < $1
-}
-
 download_glibc () {
    if [ -d glibc ]; then
       cd glibc && git pull && cd .. &&
@@ -184,3 +179,13 @@ download_make () {
   unpack xf $MAKE_PKG $MAKE_SRC
 }
 
+download_grub () {
+  download $GRUB_PKG $GRUB_URL &&
+  if [ -d "$GRUB_SRC" ]; then
+    return 0
+  fi
+  unpack zxf $GRUB_PKG $GRUB_SRC &&
+  pushd $GRUB_SRC &&
+  apply_patch $SCRIPT_DIR/patches/grub/fix-build.patch 1 &&
+  popd
+}
