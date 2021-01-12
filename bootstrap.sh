@@ -139,7 +139,7 @@ compile_first_glibc() {
    mkdir -p "$GLIBC_SRC".first_obj &&
    cd "$GLIBC_SRC".first_obj &&
    BUILD_CC="$HOST_MACHINE-gcc" CC="$TARGET"-gcc \
-   AR="$TARGET"-ar CXX="" RANLIB="$TARGET"-ranlib \
+   AR="$TARGET"-ar CXX="cxx-not-found" RANLIB="$TARGET"-ranlib \
    ../$GLIBC_SRC/configure \
       --with-binutils=${ROOT}/bin \
       --build="$HOST" \
