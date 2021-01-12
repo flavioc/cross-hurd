@@ -10,6 +10,9 @@ echo "Removing from $SYSTEM..."
 
 cd "$SYSTEM" &&
 rm -rf bin boot tools cross-tools &&
-rm -f /tools &&
-rm -f /cross-tools
+echo "Removing /tools"
+sudo rm -f /tools &&
+echo "Removing /cross-tools"
+sudo rm -f /cross-tools
 rm -f hd.img
+rm -rf src/*obj
