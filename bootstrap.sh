@@ -25,7 +25,7 @@ compile_binutils ()
       --disable-werror \
       --disable-nls &&
    make -j$PROCS all &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -71,11 +71,11 @@ compile_gcc ()
       --disable-libstdcxx \
       --enable-languages=c &&
    make -j$PROCS all-gcc &&
-   make install-gcc &&
+   make -j$PROCS install-gcc &&
    make -j$PROCS configure-target-libgcc &&
    cd "$TARGET"/libgcc &&
    make -j$PROCS  all &&
-   make install &&
+   make -j$PROCS install &&
    cd - &&
    mv config.status config.status.removed &&
    rm -f config.cache *config.cache */*/config.cache &&
@@ -107,7 +107,7 @@ install_gnumig() {
    ../$GNUMIG_SRC/configure --target="$TARGET" \
       --prefix="$ROOT" &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -156,7 +156,7 @@ compile_first_glibc() {
       libc_cv_ctors_header=yes &&
    make -j$PROCS || # workaround for "fails first time"?
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -187,7 +187,7 @@ compile_full_gcc () {
       --disable-libgomp \
       --with-arch=$CPU &&
    make -j$PROCS AS_FOR_TARGET="$TARGET-as" LD_FOR_TARGET="$TARGET-ld" all &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -212,7 +212,7 @@ compile_second_glibc() {
       --disable-werror \
       --disable-nscd &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -223,7 +223,7 @@ compile_pkgconfiglite() {
    ./configure --prefix="$ROOT" --host=${TARGET}\
       --with-pc-path="/sys/lib/pkgconfig:/sys/share/pkgconfig" &&
    make -j$PROCS &&
-   make  install &&
+   make -j$PROCS install &&
    cd ..
 }
 

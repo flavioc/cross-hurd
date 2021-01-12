@@ -20,7 +20,7 @@ install_flex() {
       --host="$TARGET" &&
    sed -i -e 's/tests//' Makefile &&
    make -j$PROCS all &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -39,7 +39,7 @@ install_mig() {
       --target="$TARGET" &&
    make clean &&
    make -j$PROCS all &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -47,7 +47,7 @@ install_zlib() {
    cd "$ZLIB_SRC" &&
    ./configure --prefix=$SYS_ROOT &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -59,7 +59,7 @@ install_gpg_error() {
       --build="$HOST" \
       --host="$TARGET" &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -72,7 +72,7 @@ install_gcrypt() {
       --with-gpg-error-prefix="$SYS_ROOT" \
       --disable-asm &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -92,7 +92,7 @@ install_gnumach() {
       --enable-pae \
       --prefix="$SYS_ROOT" &&
    make -j$PROCS gnumach.gz gnumach gnumach.msgids &&
-   make install &&
+   make -j$PROCS install &&
    mkdir -p $SYSTEM/boot &&
    cp gnumach.gz $SYSTEM/boot/ &&
    cd -
@@ -113,7 +113,7 @@ install_hurd() {
       --without-parted \
       --disable-profile &&
    make -j$PROCS all &&
-   fakeroot make install &&
+   fakeroot make -j$PROCS install &&
    cd ..
 }
 
@@ -133,7 +133,7 @@ install_binutils ()
       --enable-shared \
       --disable-multilib &&
    make -j$PROCS all &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -157,7 +157,7 @@ EOF
       --build="$HOST" --host="$TARGET" \
       --without-bash-malloc --cache-file=config.cache &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -173,7 +173,7 @@ EOF
       --enable-install-program=hostname \
       --cache-file=config.cache &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -182,7 +182,7 @@ install_libuuid() {
    ./configure --prefix="$SYS_ROOT" \
       --host="$HOST" \
       --target="$TARGET" &&
-   make -j$PROCS && make install &&
+   make -j$PROCS && make -j$PROCS install &&
    cd ..
 }
 
@@ -198,7 +198,7 @@ install_e2fsprogs() {
       --disable-libblkid \
       --disable-libuuid  \
       --disable-uuidd &&
-   LDFLAGS="-luuid" make -j$PROCS && make install && make install-libs &&
+   LDFLAGS="-luuid" make -j$PROCS && make -j$PROCS install && make -j$PROCS install-libs &&
    cd ../..
 }
 
@@ -210,7 +210,7 @@ install_util_linux() {
       --disable-makeinstall-chown \
       --disable-makeinstall-setuid  &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -223,7 +223,7 @@ install_grub() {
       --enable-grub-mkfont=no \
       --with-bootdir=tools/boot &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -245,7 +245,7 @@ EOF
       --cache-file=config.cache \
       --enable-subordinate-ids=no &&
    echo "#define ENABLE_SUBIDS 1" >> config.h &&
-   make -j$PROCS && make install && cd ..
+   make -j$PROCS && make -j$PROCS install && cd ..
 }
 
 install_sed() {
@@ -254,7 +254,7 @@ install_sed() {
       --build="$HOST" \
       --host="$TARGET" &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -265,7 +265,7 @@ install_gmp() {
       --build=${HOST} \
       --host=${TARGET} &&
   make -j$PROCS &&
-  make install &&
+  make -j$PROCS install &&
   cd ..
 }
 
@@ -275,7 +275,7 @@ install_mpfr() {
       --build=${HOST} \
       --host=${TARGET} &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -285,7 +285,7 @@ install_mpc() {
       --build=${HOST} \
       --host=${TARGET} &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -322,7 +322,7 @@ install_gcc() {
    sed "/^HOST_\(GMP\|ISL\|CLOOG\)\(LIBS\|INC\)/s:/tools:/cross-tools:g" \
          Makefile.orig > Makefile
    make -j$PROCS AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD" all &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
@@ -337,7 +337,7 @@ install_ncurses () {
      --enable-overwrite \
      --with-build-cc=gcc &&
   make -j$PROCS &&
-  make install &&
+  make -j$PROCS install &&
   cd ..
 }
 
@@ -362,8 +362,8 @@ EOF
     --without-x \
     --disable-netbeans \
     --with-tlib=ncurses &&
-  make &&
-  make install &&
+  make -j$PROCS &&
+  make -j$PROCS install &&
   ln -sfv vim $SYS_ROOT/bin/vi &&
   cd .. &&
   cat > $SYS_ROOT/etc/vimrc << "EOF"
@@ -382,7 +382,7 @@ install_make() {
       --build="$HOST" \
       --host="$TARGET" &&
    make -j$PROCS &&
-   make install &&
+   make -j$PROCS install &&
    cd ..
 }
 
