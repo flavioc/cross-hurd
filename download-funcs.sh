@@ -70,14 +70,13 @@ apply_patch() {
 
 download_glibc () {
    if [ -d glibc ]; then
-      cd glibc && git pull && cd .. &&
+      cd glibc && git pull && cd ..
       return 0
    fi
    git clone git://sourceware.org/git/glibc.git &&
    cd glibc &&
    apply_patch $SCRIPT_DIR/patches/glibc/tg-mach-hurd-link.diff 1 &&
    apply_patch $SCRIPT_DIR/patches/glibc/unsubmitted-clock_t_centiseconds.diff 1 &&
-   apply_patch $SCRIPT_DIR/patches/glibc/unsubmitted-mremap.diff 1 &&
    apply_patch $SCRIPT_DIR/patches/glibc/unsubmitted-prof-eintr.diff 1 &&
    apply_patch $SCRIPT_DIR/patches/glibc/tg-bits_atomic.h_multiple_threads.diff 1 &&
    cd ..
