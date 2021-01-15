@@ -15,4 +15,11 @@ sudo rm -f /tools &&
 echo "Removing /cross-tools"
 sudo rm -f /cross-tools
 rm -f hd.img
-rm -rf src/*obj
+for dir in `ls src`; do
+  if [ -d src/$dir ]; then
+    if [ ! -d src/$dir/.git ]; then
+      echo "Removing src/$dir"
+      rm -rf src/$dir
+    fi
+  fi
+done
