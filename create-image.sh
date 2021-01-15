@@ -27,7 +27,7 @@ mount_image () {
 copy_files () {
    print_info "Copying system into mount..."
    cp -R tmp/tools mount/ &&
-      mkdir -p mount/{etc,boot,dev,usr,hurd,servers,libexec,proc,sbin,bin,var,root,lib} &&
+      mkdir -p mount/{etc,boot,dev,usr,hurd,servers,libexec,proc,sbin,bin,var,root} &&
       mkdir -p mount/var/run &&
       cp -R mount/tools/etc/* mount/etc/ &&
       mkdir -p mount/servers/socket &&
@@ -50,6 +50,8 @@ copy_files () {
       cp files/{rc,runsystem} mount/libexec/ &&
       ln -svf /bin/bash mount/bin/sh &&
       ln -svf /tools/lib/ld-*.so mount/tools/lib/ld.so &&
+      mv mount/tools/lib mount/lib &&
+      ln -sf /lib mount/tools/lib &&
       cp files/SETUP mount/ &&
       chmod +x mount/SETUP &&
       # Create a motd message.
