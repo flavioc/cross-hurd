@@ -81,5 +81,5 @@ create_image &&
    install_grub &&
    umount_image &&
 print_info "Disk image available on $IMG" &&
-print_info "Run 'qemu $IMG' to enjoy the Hurd!" &&
+print_info "Run 'qemu-system-i386 $IMG' to enjoy the Hurd!" &&
 exit 0
