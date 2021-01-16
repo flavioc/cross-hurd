@@ -15,7 +15,7 @@ fi
 
 # Package versions.
 BINUTILS_VERSION=2.35.1
-GCC_VERSION=9.2.0
+GCC_VERSION=9.3.0
 FLEX_VERSION=2.6.4
 ZLIB_VERSION=1.2.11
 BASH_VERSION=5.0
@@ -32,12 +32,12 @@ SED_VERSION=4.5
 GMP_VERSION=6.1.2
 MPFR_VERSION=4.1.0
 MPC_VERSION=1.1.0
-NCURSES_VERSION=6.1
+NCURSES_VERSION=6.2
 # 8.1: checking what tgetent() returns for an unknown terminal... configure: error: failed to compile test program.
 VIM_BASE_VERSION=74
 VIM_VERSION=7.4
 GPG_ERROR_VERSION=1.36
-GCRYPT_VERSION=1.8.5
+GCRYPT_VERSION=1.8.6
 MAKE_VERSION=4.3
 # Mach, Hurd and Glibc are all taken from the Git repository.
 
