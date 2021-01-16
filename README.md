@@ -4,8 +4,6 @@
 
 It has been tested on Linux and does not appear to work on Mac OS X due to problems when building the Glibc.
 
-For now, you should run the scripts as root so you have to trust that the scripts will not break havoc in the system. I expect to change that in the future.
-
 # Downloading all the sources
 
 The first step is to download all the required sources. Run "bash download.sh" to download all the required packages. The build system will use the most up-to-date gnumach, glibc, libpthread, mig and hurd packages by fetching them from the official git repositories available on http://git.savannah.gnu.org/cgit/hurd/.
@@ -14,7 +12,7 @@ The first step is to download all the required sources. Run "bash download.sh" t
 
 First, update the CC and CXX variables in "vars.sh" to match your architecture and GCC version.
 
-To build the cross-compiler, run "bash bootstrap.sh". The script will create a build environment on the $PWD/tmp directory. Two directory links, "/tools" and "/cross-tools" will be created: "/cross-tools" is a link to $PWD/tmp/cross-tools and contains the cross-compiler; "/tools" will contain the basic system and points to $PWD/tmp/tools.
+To build the cross-compiler, run "bash bootstrap.sh". The script will create a build environment on the $PWD/tmp directory. Two directory links, "/tools" and "/cross-tools" will be created: "/cross-tools" is a link to $PWD/tmp/cross-tools and contains the cross-compiler; "/tools" will contain the basic system and points to $PWD/tmp/tools. You will be asked for the root password for some steps in the process since we are creating links in the root file system.
 
 Note that you need to install GCC, make, flex, bison, and other related packages in order to build the cross tools.
 
