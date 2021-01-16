@@ -24,6 +24,6 @@ Once the toolchain is in place, run "bash compile.sh" to build a very basic set 
 
 # Creating a bootable disk image
 
-If everything went alright, then run "bash create-image.sh" to create a bootable disk image. The script will use the base system built previously. The script runs 'grub-install' on the final disk image and needs to have the files for the i386-pc architecture (in debian, you need to install grub-pc-bin).
+If everything went alright, then run "sudo bash create-image.sh" to create a bootable disk image. You need sudo because you need access to the loopback device. The script will use the base system built previously. The script runs 'grub-install' on the final disk image and needs to have the files for the i386-pc architecture (in debian, you need to install grub-pc-bin).
 
 Once the file "hd.img" is in place, just run it on your favorite virtual machine. The grub bootloader will load GNU Mach and the Hurd and complete the installation process by populating the /dev directory, setting an empty password for the root user and then rebooting. Afterwards, just enter "login root" and an empty password to log into the system.
