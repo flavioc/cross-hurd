@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.54)			dnl Minimum Autoconf version required.
-AC_INIT([GNU Hurd], [0.7], [bug-hurd@gnu.org])
+AC_INIT([GNU Hurd], [0.9], [bug-hurd@gnu.org])
 AC_CONFIG_SRCDIR([hurd/hurd_types.h])	dnl File to look for in srcdir.
 
 AC_PREFIX_DEFAULT()		dnl Default to empty prefix, not /usr/local.
@@ -50,7 +50,7 @@ sparc*)
 esac
 AC_SUBST(asm_syntax)
 
-test -r "$srcdir/libthreads/$asm_syntax/cthreads.h" || {
+test -r "$srcdir/pfinet/linux-src/include/asm-$asm_syntax/checksum.h" || {
   AC_MSG_WARN([unsupported CPU type $host_cpu])
 }
 
@@ -105,9 +105,9 @@ AC_CHECK_TOOL(MIG, mig)
 if test x${MIG} = x; then
   AC_MSG_ERROR([
 *** You need GNU MiG to compile the GNU Hurd, please see
-*** http://www.gnu.org/software/hurd/mig.html for further details, or
-*** download it directly from the main GNU server (ftp.gnu.org) or any
-*** GNU mirror.])
+*** http://www.gnu.org/software/hurd/microkernel/mach/mig/gnu_mig.html
+*** for further details, or download it directly from the main GNU server
+*** (ftp.gnu.org) or any GNU mirror.])
 fi
 
 dnl Let these propagate from the environment.
@@ -151,18 +151,23 @@ AC_CACHE_CHECK([for libio],
     hurd_cv_libio=yes,
     hurd_cv_libio=no))
 
-# The versions of the symbols in libthreads have to match those in
-# libc.so.  Since the symbols in a libc that includes libio will be
-# versioned differently from the ones in a libc that uses stdio, this
-# isn't easy to accomplish.  Instead we leave things unversioned if
-# libio isn't found.
-if test $hurd_cv_libio = yes; then
-  VERSIONING=$hurd_cv_ld_version_script_option
-else
-  VERSIONING=no
-fi
-AC_SUBST(VERSIONING)
+# Check if libc contains these functions.
+AC_CHECK_FUNCS(file_exec_paths exec_exec_paths _hurd_exec_paths)
 
+# Compatibility with glibc < 2.28
+AC_CHECK_FUNCS(file_futimens)
+AC_DEFINE([UTIME_NOW],[-1])
+AC_DEFINE([UTIME_OMIT],[-2])
+
+AC_ARG_WITH([libcrypt],
+  [AS_HELP_STRING([--without-libcrypt], [disable libcrypt])], , [with_libcrypt=yes])
+
+AS_IF([test "x$with_libcrypt" != xno], [
+  AC_CHECK_LIB([crypt], [crypt],
+	       [HAVE_LIBCRYPT=1
+		AC_DEFINE([HAVE_LIBCRYPT], [1], [Use libcrypt])])
+])
+AC_SUBST([HAVE_LIBCRYPT])
 
 # From glibc HEAD, 2007-11-07.
 AC_CACHE_CHECK(for -fgnu89-inline, libc_cv_gnu89_inline, [dnl
@@ -226,6 +231,11 @@ AS_IF([test "x$with_libz" != xno], [
   AC_CHECK_LIB(z, deflate, [HAVE_LIBZ=1], [true])
 ])
 AC_SUBST([HAVE_LIBZ])
+
+AC_CHECK_HEADER([rump/rump.h], [
+  AC_CHECK_LIB(rump, rump_init, [HAVE_LIBRUMP=yes], [HAVE_LIBRUMP=no])
+  ], [HAVE_LIBRUMP=no])
+AC_SUBST([HAVE_LIBRUMP])
 
 AC_ARG_ENABLE(boot-store-types,
 [  --enable-boot-store-types=TYPES...
@@ -335,11 +345,28 @@ AS_IF([test "x$with_libdaemon" != xno], [
 AC_SUBST([libdaemon_LIBS])
 AC_SUBST([libdaemon_CFLAGS])
 
+
+AC_CHECK_MEMBERS([struct thread_sched_info.last_processor],,,
+ [#include <mach/thread_info.h>])
+
 PKG_CHECK_MODULES([libblkid], [blkid],
   [AC_DEFINE([HAVE_BLKID], [1], [Use libblkid])],
   [true])
 AC_SUBST([libblkid_LIBS])
 AC_SUBST([libblkid_CFLAGS])
+
+AM_PATH_LIBGCRYPT("1:1.6.0",[HAVE_LIBGCRYPT=yes], [HAVE_LIBGCRYPT=no])
+AC_SUBST([HAVE_LIBGCRYPT])
+
+PKG_CHECK_MODULES([liblwip], [lwip], [HAVE_LIBLWIP=yes], [HAVE_LIBLWIP=no])
+AC_SUBST([HAVE_LIBLWIP])
+AC_SUBST([liblwip_CFLAGS])
+AC_SUBST([liblwip_LIBS])
+
+PKG_CHECK_MODULES([libpciaccess], [pciaccess], [HAVE_LIBPCIACCESS=yes], [HAVE_LIBPCIACCESS=no])
+AC_SUBST([HAVE_LIBPCIACCESS])
+AC_SUBST([libpciaccess_CFLAGS])
+AC_SUBST([libpciaccess_LIBS])
 
 AC_CONFIG_FILES([config.make ${makefiles}])
 AC_OUTPUT

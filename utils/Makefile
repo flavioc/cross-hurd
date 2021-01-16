@@ -36,9 +36,9 @@ SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
 HURDLIBS = ps ihash store fshelp ports ftpconn shouldbeinlibc
 LDLIBS += -lpthread
-login-LDLIBS = -lutil -lcrypt
-addauth-LDLIBS = -lcrypt
-setauth-LDLIBS = -lcrypt
+login-LDLIBS = -lutil $(and $(HAVE_LIBCRYPT),-lcrypt)
+addauth-LDLIBS = $(and $(HAVE_LIBCRYPT),-lcrypt)
+setauth-LDLIBS = $(and $(HAVE_LIBCRYPT),-lcrypt)
 mount-LDLIBS = $(libblkid_LIBS)
 mount-CPPFLAGS = $(libblkid_CFLAGS)
 
@@ -70,7 +70,8 @@ $(filter-out $(special-targets), $(targets)): %: %.o
 
 rpctrace: ../libports/libports.a
 rpctrace rpcscan: msgids.o \
-	  ../libihash/libihash.a
+	  ../libihash/libihash.a \
+	  ../libshouldbeinlibc/libshouldbeinlibc.a
 msgids-CPPFLAGS = -DDATADIR=\"${datadir}\"
 
 fakeauth: authServer.o auth_requestUser.o interruptServer.o \
@@ -86,3 +87,5 @@ mount umount: ../sutils/fstab.o ../sutils/clookup.o match-options.o \
 ../sutils/fstab.o ../sutils/clookup.o: FORCE
 	$(MAKE) -C $(@D) $(@F)
 FORCE:
+
+shd vmallocate: ../libshouldbeinlibc/libshouldbeinlibc.a

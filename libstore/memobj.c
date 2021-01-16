@@ -22,7 +22,7 @@
 #include <hurd/sigpreempt.h>
 #include <sys/mman.h>
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 
 /* Return a new store in STORE referring to the memory object MEMOBJ.
@@ -83,6 +83,7 @@ memobj_memcpy (memory_object_t memobj,
 	  /* Realign the fault preemptor for the new mapping window.  */
 	  preemptor->first = window;
 	  preemptor->last = window + windowsize;
+	  __sync_synchronize();
 
 	  if (prot == VM_PROT_READ)
 	    memcpy (other, (const void *) window + pageoff,
@@ -100,10 +101,10 @@ memobj_memcpy (memory_object_t memobj,
   jmp_buf buf;
   void fault (int signo, long int sigcode, struct sigcontext *scp)
     {
-      assert (scp->sc_error == EKERN_MEMORY_ERROR);
+      assert_backtrace (scp->sc_error == EKERN_MEMORY_ERROR);
       err = EIO;
       to_copy -= sigcode - window;
-      longjmp (buf, 1);
+      siglongjmp (buf, 1);
     }
 
   if (to_copy == 0)
@@ -111,7 +112,7 @@ memobj_memcpy (memory_object_t memobj,
        ERR would not be initialized by the copy loop in this case.  */
     return 0;
 
-  if (setjmp (buf) == 0)
+  if (sigsetjmp (buf, 1) == 0)
     hurd_catch_signal (sigmask (SIGSEGV) | sigmask (SIGBUS),
 		       window, window + windowsize,
 		       &copy, (sighandler_t) &fault);

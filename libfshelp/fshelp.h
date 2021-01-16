@@ -1,6 +1,6 @@
 /* FS helper library definitions
-   Copyright (C) 1994,95,96,97,98,99,2000,01,02,13,14
-     Free Software Foundation, Inc.
+
+   Copyright (C) 1994-2002, 2013-2019 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -13,11 +13,16 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>. */
 
 #ifndef _HURD_FSHELP_
 #define _HURD_FSHELP_
+
+#ifdef FSHELP_DEFINE_EXTERN_INLINE
+#define FSHELP_EXTERN_INLINE
+#else
+#define FSHELP_EXTERN_INLINE __extern_inline
+#endif
 
 /* This library implements various things that are generic to
    all or most implementors of the filesystem protocol.  It
@@ -25,12 +30,14 @@
    is divided into separate facilities which may be used independently.  */
 
 #include <errno.h>
+#include <stdlib.h>
 #include <mach.h>
 #include <hurd/hurd_types.h>
 #include <pthread.h>
 #include <hurd/iohelp.h>
 #include <sys/stat.h>
 #include <maptime.h>
+#include <fcntl.h>
 
 
 /* Keeping track of active translators */
@@ -38,28 +45,22 @@
    require multi threading but depend on the ports library.  */
 
 struct port_info;
+struct transbox;
 
 /* Record an active translator being bound to the given file name
-   NAME.  ACTIVE is the control port of the translator.  PI references
-   a receive port that is used to request dead name notifications,
-   typically the port for the underlying node passed to the
-   translator.  */
+   NAME.  TRANSBOX is the nodes transbox.  PI references a receive
+   port that is used to request dead name notifications, typically the
+   port for the underlying node passed to the translator.  */
 error_t
 fshelp_set_active_translator (struct port_info *pi,
 			      const char *name,
-			      mach_port_t active);
+			      const struct transbox *transbox);
 
 /* Remove the active translator specified by its control port ACTIVE.
    If there is no active translator with the given control port, this
    does nothing.  */
 error_t
 fshelp_remove_active_translator (mach_port_t active);
-
-/* This kind of function is used by fshelp_get_active_translators to
-   filter the list of translators to return.  If a filter returns an
-   error for a given PATH, the translator bound to the PATH is not
-   included in the list.  */
-typedef error_t (*fshelp_filter) (const char *path);
 
 /* Records the list of active translators below PREFIX into the argz
    vector specified by TRANSLATORS filtered by FILTER.  If PREFIX is
@@ -68,8 +69,18 @@ typedef error_t (*fshelp_filter) (const char *path);
 error_t
 fshelp_get_active_translators (char **translators,
 			       size_t *translators_len,
-			       fshelp_filter filter,
-			       const char *prefix);
+			       mach_port_t **controls,
+                               size_t *controls_count);
+
+/* Call FUN for each active translator.  If FUN returns non-zero, the
+   iteration immediately stops, and returns that value.  FUN is called
+   with COOKIE, the name of the translator, and the translators
+   control port.  */
+error_t
+fshelp_map_active_translators (error_t (*fun)(void *cookie,
+					      const char *name,
+					      mach_port_t control),
+			       void *cookie);
 
 
 /* Passive translator linkage */
@@ -148,6 +159,22 @@ typedef error_t (*fshelp_fetch_root_callback1_t) (void *cookie1, void *cookie2,
 						  uid_t *uid, gid_t *gid,
 						  char **argz, size_t *argz_len);
 
+/* A cookie for fshelp_short_circuited_callback1.  Such a structure
+   must be passed to the call to fshelp_fetch_root.  */
+struct fshelp_stat_cookie2
+{
+  io_statbuf_t *statp;
+  mode_t *modep;
+  void *next;
+};
+
+/* A callback function for short-circuited translators.  S_ISLNK and
+   S_IFSOCK must be handled elsewhere.  */
+error_t fshelp_short_circuited_callback1 (void *cookie1, void *cookie2,
+					  uid_t *uid, gid_t *gid,
+					  char **argz, size_t *argz_len);
+
+
 /* This routine is called by fshelp_fetch_root to fetch more information.
    Return an unauthenticated node for the file itself in *UNDERLYING and
    *UNDERLYING_TYPE (opened with FLAGS).  COOKIE1 is the cookie passed in
@@ -208,7 +235,11 @@ struct lock_box
   int shcount;
 };
 
-/* Call when a user makes a request to acquire an lock via file_lock.
+/* Initialize lock_box BOX.  (The user int passed to fshelp_acquire_lock
+   should be initialized with LOCK_UN.).  */
+void fshelp_lock_init (struct lock_box *box);
+
+/* Call when a user makes a request to acquire a lock via file_lock.
    There should be one lock box per object and one int per open; these
    are passed as arguments BOX and USER respectively.  FLAGS are as
    per file_lock.  MUT is a mutex which will be held whenever this
@@ -216,11 +247,106 @@ struct lock_box
 error_t fshelp_acquire_lock (struct lock_box *box, int *user,
 			     pthread_mutex_t *mut, int flags);
 
+
+/* Record locking.  */
 
-/* Initialize lock_box BOX.  (The user int passed to fshelp_acquire_lock
-   should be initialized with LOCK_UN.).  */
-void fshelp_lock_init (struct lock_box *box);
+/* Unique to a node; initialize with fshelp_rlock_init.  */
+struct rlock_box
+{
+  struct rlock_list *locks;	/* List of locks on the file.  */
+};
 
+error_t fshelp_rlock_init (struct rlock_box *box);
+
+#if defined(__USE_EXTERN_INLINES) || defined(FSHELP_DEFINE_EXTERN_INLINE)
+
+/* Initialize the rlock_box BOX.  */
+FSHELP_EXTERN_INLINE
+error_t fshelp_rlock_init (struct rlock_box *box)
+{
+  box->locks = NULL;
+  return 0;
+}
+
+#endif /* Use extern inlines.  */
+
+/* Unique to a peropen.  */
+struct rlock_peropen
+{
+  /* This is a pointer to a pointer to a rlock_lock (and not a pointer
+     to a rlock_list) as it really serves two functions:
+       o the list of locks owned by this peropen
+       o the unique peropen identifier that all locks on this peropen share.  */
+  struct rlock_list **locks;
+};
+
+error_t fshelp_rlock_po_init (struct rlock_peropen *po);
+
+#if defined(__USE_EXTERN_INLINES) || defined(FSHELP_DEFINE_EXTERN_INLINE)
+
+FSHELP_EXTERN_INLINE
+error_t fshelp_rlock_po_init (struct rlock_peropen *po)
+{
+  po->locks = malloc (sizeof (struct rlock_list *));
+  if (! po->locks)
+    return ENOMEM;
+
+  *po->locks = NULL;
+  return 0;
+}
+
+#endif /* Use extern inlines.  */
+
+/* Release all of the locks held by a given peropen.
+   The mutex held during fshelp_rlock_tweak calls should be also held
+   whenver this is called. */
+error_t fshelp_rlock_drop_peropen (struct rlock_peropen *po);
+
+/* Drop the peropen identifier */
+error_t fshelp_rlock_po_fini (struct rlock_peropen *po);
+
+#if defined(__USE_EXTERN_INLINES) || defined(FSHELP_DEFINE_EXTERN_INLINE)
+
+FSHELP_EXTERN_INLINE
+error_t fshelp_rlock_po_fini (struct rlock_peropen *po)
+{
+  free (po->locks);
+  po->locks = NULL;
+  return 0;
+}
+
+#endif /* Use extern inlines.  */
+
+/* Call when a user makes a request to tweak a lock as via fcntl.  There
+   should be one rlock box per object.  BOX is the rlock box associated
+   with the object.  MUT is a mutex which should be held whenever this
+   routine is called; it should be unique on a pernode basis.  PO is the
+   peropen identifier.  OPEN_MODE is how the file was opened (from the O_*
+   set).  SIZE is the size of the object in question.  CURPOINTER is the
+   current position of the file pointer.  CMD is from the set F_GETLK64,
+   F_SETLK64, F_SETLKW64.  LOCK is passed by the user and is as defined by
+   <fcntl.h>.
+   RENDEZVOUS set to MACH_PORT_NULL indicates per opened file locking,
+   while !MACH_PORT_NULL indicates per process locking. l_pid is set
+   to -1 when a conflicting lock is taken by another process, like BSD
+   does. This and per process locking will be fixed by new proc RPCs
+   implementing proc_{server,user}_identify. */
+
+error_t fshelp_rlock_tweak (struct rlock_box *box,
+			    pthread_mutex_t *mutex,
+			    struct rlock_peropen *po, int open_mode,
+			    loff_t size, loff_t curpointer, int cmd,
+			    struct flock64 *lock, mach_port_t rendezvous);
+
+/* These functions allow for easy emulation of file_lock and
+   file_lock_stat.  */
+
+/* Returns the type (from the set LOCK_UN, LOCK_SH, LOCK_EX) of the most
+   restrictive lock held by the PEROPEN.  */
+int fshelp_rlock_peropen_status (struct rlock_peropen *po);
+
+/* Like fshelp_rlock_peropen_status except for all users of BOX.  */
+int fshelp_rlock_node_status (struct rlock_box *box);
 
 
 struct port_bucket;		/* shut up C compiler */

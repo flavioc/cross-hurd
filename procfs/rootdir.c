@@ -1,5 +1,5 @@
 /* Hurd /proc filesystem, permanent files of the root directory.
-   Copyright (C) 2010,13,14 Free Software Foundation, Inc.
+   Copyright (C) 2010,13,14,17 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -254,7 +254,7 @@ rootdir_gc_loadavg (void *hook, char **contents, ssize_t *contents_len)
   if (err)
     return err;
 
-  assert (cnt == HOST_LOAD_INFO_COUNT);
+  assert_backtrace (cnt == HOST_LOAD_INFO_COUNT);
   *contents_len = asprintf (contents,
       "%.2f %.2f %.2f 1/0 0\n",
       hli.avenrun[0] / (double) LOAD_SCALE,
@@ -272,27 +272,37 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
   struct vm_statistics vmstats;
   struct vm_cache_statistics cache_stats;
   default_pager_info_t swap;
+  FILE *m;
   error_t err;
+
+  m = open_memstream (contents, (size_t *) contents_len);
+  if (m == NULL)
+    {
+      err = ENOMEM;
+      goto out;
+    }
 
   err = vm_statistics (mach_task_self (), &vmstats);
   if (err)
-    return EIO;
+    {
+      err = EIO;
+      goto out;
+    }
 
   err = vm_cache_statistics (mach_task_self (), &cache_stats);
   if (err)
-    return EIO;
+    {
+      err = EIO;
+      goto out;
+    }
 
   cnt = HOST_BASIC_INFO_COUNT;
   err = host_info (mach_host_self (), HOST_BASIC_INFO, (host_info_t) &hbi, &cnt);
   if (err)
-    return err;
+    goto out;
 
-  err = get_swapinfo (&swap);
-  if (err)
-    return err;
-
-  assert (cnt == HOST_BASIC_INFO_COUNT);
-  *contents_len = asprintf (contents,
+  assert_backtrace (cnt == HOST_BASIC_INFO_COUNT);
+  fprintf (m,
       "MemTotal: %14lu kB\n"
       "MemFree:  %14lu kB\n"
       "Buffers:  %14lu kB\n"
@@ -300,8 +310,6 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
       "Active:   %14lu kB\n"
       "Inactive: %14lu kB\n"
       "Mlocked:  %14lu kB\n"
-      "SwapTotal:%14lu kB\n"
-      "SwapFree: %14lu kB\n"
       ,
       (long unsigned) hbi.memory_size / 1024,
       (long unsigned) vmstats.free_count * PAGE_SIZE / 1024,
@@ -309,18 +317,28 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
       (long unsigned) cache_stats.cache_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.active_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.inactive_count * PAGE_SIZE / 1024,
-      (long unsigned) vmstats.wire_count * PAGE_SIZE / 1024,
+      (long unsigned) vmstats.wire_count * PAGE_SIZE / 1024);
+
+  err = get_swapinfo (&swap);
+  if (err)
+    /* This is not fatal, we just omit the information.  */
+    err = 0;
+  else
+    fprintf (m,
+      "SwapTotal:%14lu kB\n"
+      "SwapFree: %14lu kB\n"
+      ,
       (long unsigned) swap.dpi_total_space / 1024,
       (long unsigned) swap.dpi_free_space / 1024);
 
-  return 0;
+ out:
+  fclose (m);
+  return err;
 }
 
 static error_t
 rootdir_gc_vmstat (void *hook, char **contents, ssize_t *contents_len)
 {
-  host_basic_info_data_t hbi;
-  mach_msg_type_number_t cnt;
   struct vm_statistics vmstats;
   error_t err;
 
@@ -328,12 +346,6 @@ rootdir_gc_vmstat (void *hook, char **contents, ssize_t *contents_len)
   if (err)
     return EIO;
 
-  cnt = HOST_BASIC_INFO_COUNT;
-  err = host_info (mach_host_self (), HOST_BASIC_INFO, (host_info_t) &hbi, &cnt);
-  if (err)
-    return err;
-
-  assert (cnt == HOST_BASIC_INFO_COUNT);
   *contents_len = asprintf (contents,
       "nr_free_pages %lu\n"
       "nr_inactive_anon %lu\n"
@@ -396,19 +408,7 @@ out:
   return err;
 }
 
-static int
-rootdir_fakeself_exists (void *dir_hook, const void *entry_hook)
-{
-  return opt_fake_self >= 0;
-}
-
-static error_t
-rootdir_gc_fakeself (void *hook, char **contents, ssize_t *contents_len)
-{
-  *contents_len = asprintf (contents, "%d", opt_fake_self);
-  return 0;
-}
-
+static struct node *rootdir_self_node;
 static struct node *rootdir_mounts_node;
 
 static error_t
@@ -470,6 +470,57 @@ rootdir_gc_slabinfo (void *hook, char **contents, ssize_t *contents_len)
   vm_deallocate (mach_task_self (), (vm_address_t) cache_info,
                  cache_info_count * sizeof *cache_info);
   return err;
+}
+
+static error_t
+rootdir_gc_hostinfo (void *hook, char **contents, ssize_t *contents_len)
+{
+  error_t err;
+  FILE *m;
+  host_basic_info_t basic;
+  host_sched_info_t sched;
+  host_load_info_t load;
+
+  m = open_memstream (contents, (size_t *) contents_len);
+  if (m == NULL)
+    return ENOMEM;
+
+  err = ps_host_basic_info (&basic);
+  if (! err)
+    fprintf (m, "Basic info:\n"
+             "max_cpus	= %10u	/* max number of cpus possible */\n"
+             "avail_cpus	= %10u	/* number of cpus now available */\n"
+             "memory_size	= %10u	/* size of memory in bytes */\n"
+             "cpu_type	= %10u	/* cpu type */\n"
+             "cpu_subtype	= %10u	/* cpu subtype */\n",
+             basic->max_cpus,
+             basic->avail_cpus,
+             basic->memory_size,
+             basic->cpu_type,
+             basic->cpu_subtype);
+
+  err = ps_host_sched_info (&sched);
+  if (! err)
+    fprintf (m, "\nScheduling info:\n"
+             "min_timeout	= %10u	/* minimum timeout in milliseconds */\n"
+             "min_quantum	= %10u	/* minimum quantum in milliseconds */\n",
+             sched->min_timeout,
+             sched->min_quantum);
+
+  err = ps_host_load_info (&load);
+  if (! err)
+    fprintf (m, "\nLoad info:\n"
+             "avenrun[3]	= { %.2f, %.2f, %.2f }\n"
+             "mach_factor[3]	= { %.2f, %.2f, %.2f }\n",
+             load->avenrun[0] / (double) LOAD_SCALE,
+             load->avenrun[1] / (double) LOAD_SCALE,
+             load->avenrun[2] / (double) LOAD_SCALE,
+             load->mach_factor[0] / (double) LOAD_SCALE,
+             load->mach_factor[1] / (double) LOAD_SCALE,
+             load->mach_factor[2] / (double) LOAD_SCALE);
+
+  fclose (m);
+  return 0;
 }
 
 static error_t
@@ -674,13 +725,10 @@ rootdir_translated_node_get_translator (void *hook, char **argz,
 static const struct procfs_dir_entry rootdir_entries[] = {
   {
     .name = "self",
-    .hook = & (struct procfs_node_ops) {
-      .get_contents = rootdir_gc_fakeself,
-      .cleanup_contents = procfs_cleanup_contents_with_free,
-    },
+    .hook = ROOTDIR_DEFINE_TRANSLATED_NODE (&rootdir_self_node,
+					    _HURD_MAGIC "\0pid"),
     .ops = {
-      .make_node = rootdir_symlink_make_node,
-      .exists = rootdir_fakeself_exists,
+      .make_node = rootdir_make_translated_node,
     }
   },
   {
@@ -744,6 +792,13 @@ static const struct procfs_dir_entry rootdir_entries[] = {
     .name = "slabinfo",
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_slabinfo,
+      .cleanup_contents = procfs_cleanup_contents_with_free,
+    },
+  },
+  {
+    .name = "hostinfo",
+    .hook = & (struct procfs_node_ops) {
+      .get_contents = rootdir_gc_hostinfo,
       .cleanup_contents = procfs_cleanup_contents_with_free,
     },
   },

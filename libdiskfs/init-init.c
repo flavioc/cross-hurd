@@ -38,6 +38,7 @@ mach_port_t diskfs_fsys_identity;
 
 int _diskfs_nosuid, _diskfs_noexec;
 int _diskfs_noatime;
+int _diskfs_relatime = 1;
 
 struct hurd_port _diskfs_exec_portcell;
 
@@ -46,7 +47,6 @@ int _diskfs_ncontrol_ports;
 
 struct port_class *diskfs_protid_class;
 struct port_class *diskfs_control_class;
-struct port_class *diskfs_initboot_class;
 struct port_class *diskfs_execboot_class;
 struct port_class *diskfs_shutdown_notification_class;
 
@@ -69,14 +69,16 @@ diskfs_init_diskfs (void)
 	  diskfs_default_pager = MACH_PORT_NULL;
 	  err = vm_set_default_memory_manager (host, &diskfs_default_pager);
 	  mach_port_deallocate (mach_task_self (), host);
-
-	  if (!err)
-	    err = maptime_map (1, 0, &diskfs_mtime);
 	}
+      if (err)
+	return err;
     }
-  else
-    err = maptime_map (0, 0, &diskfs_mtime);
 
+  /* First try to use /dev/time...  */
+  err = maptime_map (0, NULL, &diskfs_mtime);
+  if (err)
+    /* ... and fall back to the Mach time device.  */
+    err = maptime_map (1, NULL, &diskfs_mtime);
   if (err)
     return err;
 
@@ -89,7 +91,6 @@ diskfs_init_diskfs (void)
 
   diskfs_protid_class = ports_create_class (diskfs_protid_rele, 0);
   diskfs_control_class = ports_create_class (_diskfs_control_clean, 0);
-  diskfs_initboot_class = ports_create_class (0, 0);
   diskfs_execboot_class = ports_create_class (0, 0);
   diskfs_shutdown_notification_class = ports_create_class (0, 0);
 

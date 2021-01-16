@@ -55,10 +55,48 @@ struct store *store;
 struct store_parsed *store_parsed;
 
 char *diskfs_disk_name;
+
+pthread_spinlock_t global_lock = PTHREAD_SPINLOCK_INITIALIZER;
+pthread_spinlock_t modified_global_blocks_lock = PTHREAD_SPINLOCK_INITIALIZER;
+
+struct ext2_super_block *sblock;
+int sblock_dirty;
+
+unsigned int block_size;
+unsigned int log2_block_size;
+
+unsigned log2_dev_blocks_per_fs_block;
+
+unsigned log2_stat_blocks_per_fs_block;
+
+unsigned long frag_size;
+unsigned long frags_per_block;
+unsigned long inodes_per_block;
+
+unsigned long itb_per_group;
+unsigned long db_per_group;
+unsigned long desc_per_block;
+unsigned long addr_per_block;
+
+unsigned long groups_count;
+
+/* ---------------------------------------------------------------- */
+
+unsigned long next_generation;
+
+struct ext2_group_desc *group_desc_image;
+
+struct pokel global_pokel;
+
+int use_xattr_translator_records;
 
 #ifdef EXT2FS_DEBUG
 int ext2_debug_flag;
 #endif
+
+/* Use extended attribute-based translator records.  */
+int use_xattr_translator_records;
+#define X_XATTR_TRANSLATOR_RECORDS	-1
 
 /* Ext2fs-specific options.  */
 static const struct argp_option
@@ -69,8 +107,13 @@ options[] =
    " (not compiled in)"
 #endif
   },
+  {"x-xattr-translator-records", X_XATTR_TRANSLATOR_RECORDS, 0, 0,
+   "Store translator records in extended attributes (experimental)"},
+#ifdef ALTERNATE_SBLOCK
+  /* XXX This is not implemented.  */
   {"sblock", 'S', "BLOCKNO", 0,
    "Use alternate superblock location (1kb blocks)"},
+#endif
   {0}
 };
 
@@ -83,7 +126,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
   struct
   {
     int debug_flag;
+    int use_xattr_translator_records;
+#ifdef ALTERNATE_SBLOCK
     unsigned int sb_block;
+#endif
   } *values = state->hook;
 
   switch (key)
@@ -91,6 +137,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'D':
       values->debug_flag = 1;
       break;
+    case X_XATTR_TRANSLATOR_RECORDS:
+      values->use_xattr_translator_records = 1;
+      break;
+#ifdef ALTERNATE_SBLOCK
     case 'S':
       values->sb_block = strtoul (arg, &arg, 0);
       if (!arg || *arg != '\0')
@@ -99,6 +149,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	  return EINVAL;
 	}
       break;
+#endif
 
     case ARGP_KEY_INIT:
       state->child_inputs[0] = state->input;
@@ -107,7 +158,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	return ENOMEM;
       state->hook = values;
       memset (values, 0, sizeof *values);
+#ifdef ALTERNATE_SBLOCK
       values->sb_block = SBLOCK_BLOCK;
+#endif
       break;
 
     case ARGP_KEY_SUCCESS:
@@ -122,6 +175,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 #endif
 	}
 
+      use_xattr_translator_records = values->use_xattr_translator_records;
       break;
 
     default:
@@ -138,6 +192,9 @@ diskfs_append_args (char **argz, size_t *argz_len)
 
   /* Get the standard things.  */
   err = diskfs_append_std_options (argz, argz_len);
+
+  if (!err && use_xattr_translator_records)
+    err = argz_add (argz, argz_len, "--x-xattr-translator-records");
 
 #ifdef EXT2FS_DEBUG
   if (!err && ext2_debug_flag)

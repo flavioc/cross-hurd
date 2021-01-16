@@ -24,6 +24,7 @@
 #include "netfs.h"
 #include "fs_S.h"
 #include <sys/mman.h>
+#include <sys/sysmacros.h>
 
 error_t
 netfs_S_file_get_translator (struct protid *user,
@@ -71,8 +72,8 @@ netfs_S_file_get_translator (struct protid *user,
 			 (S_ISCHR (np->nn_stat.st_mode)
 			  ? _HURD_CHRDEV
 			  : _HURD_BLKDEV),
-			 '\0', major (np->nn_stat.st_rdev),
-			 '\0', minor (np->nn_stat.st_rdev));
+			 '\0', gnu_dev_major (np->nn_stat.st_rdev),
+			 '\0', gnu_dev_minor (np->nn_stat.st_rdev));
       if (buflen < 0)
 	err = ENOMEM;
       else

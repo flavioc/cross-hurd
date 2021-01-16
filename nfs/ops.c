@@ -25,6 +25,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <maptime.h>
+#include <sys/sysmacros.h>
 
 /* We have fresh stat information for NP; the file attribute (fattr)
    structure is at P.  Update our entry.  Return the address of the next
@@ -251,8 +252,7 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np,
 	      np->nn->dtrans = SOCK;
 	      np->nn->stat_updated = 0;
 	    }
-	  if (f)
-	    free (f);
+	  free (f);
 	  return 0;
 	}
     }
@@ -298,17 +298,12 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
   int *p;
   void *rpcbuf;
   error_t err;
-  struct timeval tv;
-  struct timespec current;
+
+  if (!atime && !mtime)
+    return 0; /* nothing to update */
 
   /* XXX For version 3 we can actually do this right, but we don't
      just yet. */
-  if (!atime || !mtime)
-    {
-      maptime_read (mapped_time, &tv);
-      current.tv_sec = tv.tv_sec;
-      current.tv_nsec = tv.tv_usec * 1000;
-    }
 
   p = nfs_initialize_rpc (NFSPROC_SETATTR (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
@@ -316,9 +311,7 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
     return errno;
 
   p = xdr_encode_fhandle (p, &np->nn->handle);
-  p = xdr_encode_sattr_times (p,
-			      atime ?: &current,
-			      mtime ?: &current);
+  p = xdr_encode_sattr_times (p, atime, mtime);
   if (protocol_version == 3)
     *(p++) = 0;			/* guard check == 0 */
 
@@ -608,7 +601,7 @@ verify_nonexistent (struct iouser *cred, struct node *dir,
   /* Don't use the lookup cache for this; we want a full sync to
      get as close to real exclusive create behavior as possible. */
 
-  assert (protocol_version == 2);
+  assert_backtrace (protocol_version == 2);
 
   p = nfs_initialize_rpc (NFSPROC_LOOKUP (protocol_version),
 			  cred, 0, &rpcbuf, dir, -1);
@@ -1045,8 +1038,8 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	  p = xdr_encode_sattr_stat (p, &np->nn_stat);
 	  if (np->nn->dtrans == BLKDEV || np->nn->dtrans == CHRDEV)
 	    {
-	      *(p++) = htonl (major (np->nn_stat.st_rdev));
-	      *(p++) = htonl (minor (np->nn_stat.st_rdev));
+	      *(p++) = htonl (gnu_dev_major (np->nn_stat.st_rdev));
+	      *(p++) = htonl (gnu_dev_minor (np->nn_stat.st_rdev));
 	    }
 	  pthread_mutex_unlock (&np->lock);
 
@@ -1134,8 +1127,8 @@ netfs_attempt_mkfile (struct iouser *cred, struct node *dir,
       return err;
     }
 
-  assert (!(*newnp)->nn->dead_dir);
-  assert (!(*newnp)->nn->dead_name);
+  assert_backtrace (!(*newnp)->nn->dead_dir);
+  assert_backtrace (!(*newnp)->nn->dead_name);
   netfs_nref (dir);
   (*newnp)->nn->dead_dir = dir;
   (*newnp)->nn->dead_name = name;
@@ -1668,7 +1661,7 @@ netfs_report_access (struct iouser *cred,
   err = netfs_attempt_read (cred, np, 0, &len, &byte);
   if (err)
     return;
-  assert (len == 1 || len == 0);
+  assert_backtrace (len == 1 || len == 0);
 
   *types |= O_READ | O_EXEC;
 
@@ -1777,7 +1770,7 @@ fetch_directory (struct iouser *cred, struct node *dir,
 	      char *newbuf;
 
 	      newbuf = realloc (buf, bufmalloced *= 2);
-	      assert (newbuf);
+	      assert_backtrace (newbuf);
 	      if (newbuf != buf)
 		bp = newbuf + (bp - buf);
 	      buf = newbuf;

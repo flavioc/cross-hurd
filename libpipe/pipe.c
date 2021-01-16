@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <string.h>		/* For memset() */
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <stdlib.h>
 
 #include <mach/time_value.h>
@@ -200,6 +200,24 @@ void _pipe_no_writers (struct pipe *pipe)
       pthread_mutex_unlock (&pipe->lock);
     }
 }
+
+/* Take any actions necessary when PIPE's writer can proceed.
+   PIPE should be locked. */
+void _pipe_wake_writers (struct pipe *pipe)
+{
+  pthread_cond_broadcast (&pipe->pending_writes);
+  pthread_mutex_unlock (&pipe->lock);
+
+  pthread_mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
+  /* Only wakeup selects if there's still writing space available.  */
+  if (pipe_readable (pipe, 1) < pipe->write_limit)
+    {
+      pthread_cond_broadcast (&pipe->pending_write_selects);
+      pipe_select_cond_broadcast (pipe);
+      /* We leave PIPE locked here, assuming the caller will soon unlock
+	 it and allow others access.  */
+    }
+}
 
 /* Return when either RPIPE is available for reading (if SELECT_READ is set
    in *SELECT_TYPE), or WPIPE is available for writing (if select_write is
@@ -316,10 +334,14 @@ pipe_send (struct pipe *pipe, int noblock, void *source,
 	   size_t *amount)
 {
   error_t err;
+  size_t done;
 
   /* Nothing to do.  */
   if (data_len == 0 && control_len == 0 && num_ports == 0)
-    return 0;
+    {
+      *amount = 0;
+      return 0;
+    }
 
   err = pipe_wait_writable (pipe, noblock);
   if (err)
@@ -359,28 +381,56 @@ pipe_send (struct pipe *pipe, int noblock, void *source,
 	      /* Trash CONTROL_PACKET somehow XXX */
 	    }
 	}
+
+      if (err)
+	return err;
     }
 
-  if (!err)
-    err = (*pipe->class->write)(pipe->queue, source, data, data_len, amount);
-
-  if (!err)
+  done = 0;
+  do
     {
-      timestamp (&pipe->write_time);
+      size_t todo = data_len - done;
+      size_t left = pipe->write_limit - pipe_readable (pipe, 1);
+      size_t partial_amount;
 
-      /* And wakeup anyone that might be interested in it.  */
-      pthread_cond_broadcast (&pipe->pending_reads);
-      pthread_mutex_unlock (&pipe->lock);
+      if (todo > left)
+	todo = left;
 
-      pthread_mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
-      /* Only wakeup selects if there's still data available.  */
-      if (pipe_is_readable (pipe, 0))
+      err = (*pipe->class->write)(pipe->queue, source, data + done, todo,
+				  &partial_amount);
+
+      if (!err)
 	{
-	  pthread_cond_broadcast (&pipe->pending_read_selects);
-	  pipe_select_cond_broadcast (pipe);
-	  /* We leave PIPE locked here, assuming the caller will soon unlock
-	     it and allow others access.  */
+	  done += partial_amount;
+	  timestamp (&pipe->write_time);
+
+	  /* And wakeup anyone that might be interested in it.  */
+	  pthread_cond_broadcast (&pipe->pending_reads);
+	  pthread_mutex_unlock (&pipe->lock);
+
+	  pthread_mutex_lock (&pipe->lock); /* Get back the lock on PIPE.  */
+	  /* Only wakeup selects if there's still data available.  */
+	  if (pipe_is_readable (pipe, 0))
+	    {
+	      pthread_cond_broadcast (&pipe->pending_read_selects);
+	      pipe_select_cond_broadcast (pipe);
+	    }
+
+	  if (!noblock && done < data_len)
+	    /* And wait for them to consume.  */
+	    err = pipe_wait_writable (pipe, 0);
 	}
+    }
+  while (!noblock && !err && done < data_len);
+
+  if (done)
+    {
+      /* We have done some of it, we have to report it even in case of
+	 errors. */
+      /* We leave PIPE locked here, assuming the caller will soon unlock
+	 it and allow others access.  */
+      *amount = done;
+      return 0;
     }
 
   return err;
@@ -435,7 +485,7 @@ pipe_recv (struct pipe *pipe, int noblock, unsigned *flags, void **source,
 	packet_read_ports (packet, ports, num_ports);
 
       packet = pq_next (pq, PACKET_TYPE_DATA, NULL);
-      assert (packet);		/* pipe_write always writes a data packet.  */
+      assert_backtrace (packet);		/* pipe_write always writes a data packet.  */
     }
   else
     /* No control data... */
@@ -471,18 +521,7 @@ pipe_recv (struct pipe *pipe, int noblock, unsigned *flags, void **source,
       timestamp (&pipe->read_time);
 
       /* And wakeup anyone that might be interested in it.  */
-      pthread_cond_broadcast (&pipe->pending_writes);
-      pthread_mutex_unlock (&pipe->lock);
-
-      pthread_mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
-      /* Only wakeup selects if there's still writing space available.  */
-      if (pipe_readable (pipe, 1) < pipe->write_limit)
-	{
-	  pthread_cond_broadcast (&pipe->pending_write_selects);
-	  pipe_select_cond_broadcast (pipe);
-	  /* We leave PIPE locked here, assuming the caller will soon unlock
-	     it and allow others access.  */
-	}
+      _pipe_wake_writers (pipe);
     }
 
   return err;

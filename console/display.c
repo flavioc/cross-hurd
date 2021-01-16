@@ -26,7 +26,7 @@
 #include <iconv.h>
 #include <argp.h>
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <error.h>
 
 #include <pthread.h>
@@ -226,7 +226,7 @@ nowait_file_changed (mach_port_t notify_port, natural_t tickno,
   {
     Request In;
   } Mess;
-  register Request *InP = &Mess.In;
+  Request *InP = &Mess.In;
 
   static const mach_msg_type_t ticknoType = {
     /* msgt_name = */           2,
@@ -325,7 +325,7 @@ do_mach_notify_port_deleted (struct port_info *pi, mach_port_t name)
 {
   /* As we cancel the dead-name notification before deallocating the
      port, this should not happen.  */
-  assert (0);
+  assert_backtrace (0);
 }
 
 /* We request dead name notifications for the user ports.  */
@@ -376,7 +376,7 @@ do_mach_notify_dead_name (struct port_info *pi, mach_port_t dead_name)
 error_t
 do_mach_notify_port_destroyed (struct port_info *pi, mach_port_t rights)
 {
-  assert (0);
+  assert_backtrace (0);
 }
 
 error_t
@@ -409,7 +409,7 @@ do_mach_notify_msg_accepted (struct port_info *pi, mach_port_t send)
      case.  */
   if (!send)
     {
-      assert(0);
+      assert_backtrace (0);
       return 0;
     }
 
@@ -424,7 +424,7 @@ do_mach_notify_msg_accepted (struct port_info *pi, mach_port_t send)
      here.  */
   if (! *preq)
     {
-      assert(0);
+      assert_backtrace (0);
       pthread_mutex_unlock (&display->lock);
       return 0;
     }
@@ -526,7 +526,7 @@ display_notice_changes (display_t display, mach_port_t notify)
       pthread_mutex_unlock (&display->lock);
       return err;
     }
-  assert (old == MACH_PORT_NULL);
+  assert_backtrace (old == MACH_PORT_NULL);
 
   req->port = notify;
   req->pending = 0;
@@ -814,6 +814,21 @@ user_create (display_t display, uint32_t width, uint32_t height,
   user->cursor.status = CONS_CURSOR_NORMAL;
   conchar_memset (user->_matrix, chr, attr,
 		  user->screen.width * user->screen.lines);
+
+  /* FIXME: it seems we don't properly handle getting paged out.
+   * For now, just wire the pages to work around the issue.  */
+  {
+    mach_port_t host;
+
+    error_t err = get_privileged_ports (&host, NULL);
+    if (err)
+      host = mach_host_self ();
+
+    vm_wire (host, mach_task_self (), (vm_offset_t) user,
+	     (vm_size_t) npages * vm_page_size, VM_PROT_READ);
+    if (host != mach_host_self ())
+	mach_port_deallocate (mach_task_self (), host);
+  }
   return 0;
 }
 
@@ -1805,7 +1820,7 @@ display_output_some (display_t display, char **buffer, size_t *length)
 #define UNICODE_REPLACEMENT_CHARACTER ((wchar_t) 0xfffd)
 	  if (saved_err == EILSEQ)
 	    {
-	      assert (*length);
+	      assert_backtrace (*length);
 	      (*length)--;
 	      (*buffer)++;
 	      display_output_one (display, UNICODE_REPLACEMENT_CHARACTER);

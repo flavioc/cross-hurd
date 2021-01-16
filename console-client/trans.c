@@ -186,14 +186,10 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
   if (! err)
     {
       if (mtime)
-	np->nn_stat.st_mtim = *mtime;
-      else
-        flags |= TOUCH_MTIME;
+        np->nn_stat.st_mtim = *mtime;
       
       if (atime)
-	np->nn_stat.st_atim = *atime;
-      else
-        flags |= TOUCH_ATIME;
+        np->nn_stat.st_atim = *atime;
       
       fshelp_touch (&np->nn_stat, flags, console_maptime);
     }
@@ -702,8 +698,8 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 
   for (first_node = node_list, count = 2;
        first_node && first_entry > count;
-       first_node = first_node->next);
-  count++;
+       first_node = first_node->next)
+    count++;
 
   count = 0;
 
@@ -715,8 +711,14 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 
   for (cn = first_node; cn; cn = cn->next)
     bump_size (cn->name);
-  
-  
+
+  if (size == 0)
+    {
+      *data_len = size;
+      *data_entries = count;
+      return 0;
+    }
+
   /* Allocate it.  */
   *data = mmap (0, size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
   err = ((void *) *data == (void *) -1) ? errno : 0;
@@ -802,6 +804,9 @@ console_client_translator (void *unused)
 error_t
 console_create_consnode (const char *name, consnode_t *cn)
 {
+  /* inode number, 2 is reserved for the root */
+  static int cn_id = 3;
+
   *cn = malloc (sizeof (struct consnode));
   if (!*cn)
     return ENOMEM;
@@ -813,6 +818,7 @@ console_create_consnode (const char *name, consnode_t *cn)
       return ENOMEM;
     }
 
+  (*cn)->id = cn_id++;
   (*cn)->readlink = NULL;
   (*cn)->mksymlink = NULL;
 
@@ -865,7 +871,6 @@ console_unregister_consnode (consnode_t cn)
 error_t
 console_setup_node (char *path)
 {
-  mach_port_t bootstrap;
   error_t err;
   struct stat ul_stat;
   file_t node;
@@ -876,8 +881,7 @@ console_setup_node (char *path)
   node = file_name_lookup (path, O_CREAT|O_NOTRANS, 0664);
   if (node == MACH_PORT_NULL)
     return errno;
-  
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
+
   netfs_init ();
   
   /* Create the root node (some attributes initialized below).  */

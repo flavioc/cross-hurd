@@ -31,7 +31,7 @@ struct passwd;
 #define USERMUX_FILENO_UID_OFFSET	10
 
 /* Handy source of time.  */
-volatile struct mapped_time_value *usermux_maptime;
+extern volatile struct mapped_time_value *usermux_maptime;
 
 /* The state associated with a user multiplexer translator.  */
 struct usermux
@@ -93,7 +93,7 @@ error_t create_user_node (struct usermux *mux, struct usermux_name *name,
 			  struct passwd *pw, struct node **node);
 
 #ifndef USERMUX_EI
-# define USERMUX_EI extern inline
+# define USERMUX_EI __extern_inline
 #endif
 
 #endif /* __USERMUX_H__ */

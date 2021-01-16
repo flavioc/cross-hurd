@@ -33,7 +33,7 @@
 #include <mach/mig_errors.h>
 #include <sys/resource.h>
 #include <hurd/auth.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pids.h>
 
 #include "proc.h"
@@ -41,6 +41,7 @@
 #include "mutated_ourmsg_U.h"
 #include "proc_exc_S.h"
 #include "proc_exc_U.h"
+#include "task_notify_S.h"
 #include <hurd/signal.h>
 
 /* Create a new id structure with the given genuine uids and gids. */
@@ -188,7 +189,7 @@ S_proc_child (struct proc *parentp,
   /* Process hierarchy.  Remove from our current location
      and place us under our new parent.  Sanity check to make sure
      parent is currently init. */
-  assert (childp->p_parent == init_proc);
+  assert_backtrace (childp->p_parent == init_proc);
   if (childp->p_sib)
     childp->p_sib->p_prevsib = childp->p_prevsib;
   *childp->p_prevsib = childp->p_sib;
@@ -222,6 +223,8 @@ S_proc_child (struct proc *parentp,
       childp->start_code = parentp->start_code;
       childp->end_code = parentp->end_code;
     }
+  if (! childp->exe && parentp->exe)
+    childp->exe = strdup (parentp->exe);
 
   if (MACH_PORT_VALID (parentp->p_task_namespace))
     {
@@ -344,6 +347,24 @@ S_proc_get_arg_locations (struct proc *p,
 {
   *argv = p->p_argv;
   *envp = p->p_envp;
+  return 0;
+}
+
+/* Implement proc_set_entry as described in <hurd/process.defs>. */
+kern_return_t
+S_proc_set_entry (struct proc *p, vm_address_t entry)
+{
+  if (!p)
+    return EOPNOTSUPP;
+  p->p_entry = entry;
+  return 0;
+}
+
+/* Implement proc_get_entry as described in <hurd/process.defs>. */
+kern_return_t
+S_proc_get_entry (struct proc *p, vm_address_t *entry)
+{
+  *entry = p->p_entry;
   return 0;
 }
 
@@ -605,7 +626,7 @@ create_init_proc (void)
   const char *rootsname = "root";
 
   p = allocate_proc (MACH_PORT_NULL);
-  assert (p);
+  assert_backtrace (p);
 
   p->p_pid = HURD_PID_INIT;
 
@@ -621,11 +642,11 @@ create_init_proc (void)
 
   p->p_noowner = 0;
   p->p_id = make_ids (&zero, 1);
-  assert (p->p_id);
+  assert_backtrace (p->p_id);
 
   p->p_loginleader = 1;
   p->p_login = malloc (sizeof (struct login) + strlen (rootsname) + 1);
-  assert (p->p_login);
+  assert_backtrace (p->p_login);
 
   p->p_login->l_refcnt = 1;
   strcpy (p->p_login->l_name, rootsname);
@@ -648,7 +669,7 @@ proc_death_notify (struct proc *p)
 					p->p_pi.port_right,
 					MACH_MSG_TYPE_MAKE_SEND_ONCE,
 					&old);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   if (old != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), old);
@@ -680,7 +701,7 @@ complete_proc (struct proc *p, pid_t pid)
          HURD_PID_INIT.  */
       static const uid_t zero;
       p->p_id = make_ids (&zero, 1);
-      assert (p->p_id);
+      assert_backtrace (p->p_id);
     }
   else
     {
@@ -731,7 +752,77 @@ new_proc (task_t task)
     complete_proc (p, genpid ());
   return p;
 }
+
 
+
+/* Task namespace support.  */
+
+/* Check if a given process is part of a task namespace but is not the
+   root.  The root is managed by us, while all other tasks are managed
+   by the root itself.  */
+int
+namespace_is_subprocess (struct proc *p)
+{
+  return (p
+          && MACH_PORT_VALID (p->p_task_namespace)
+          && p->p_parent
+          && MACH_PORT_VALID (p->p_parent->p_task_namespace));
+}
+
+/* Translate PIDs valid in NAMESPACE into PIDs valid in our own
+   process space.
+
+   Conditions: global_lock is unlocked before calling, and is locked
+   afterwards.  */
+error_t
+namespace_translate_pids (mach_port_t namespace, pid_t *pids, size_t pids_len)
+{
+  size_t i;
+  task_t *tasks;
+
+  tasks = calloc (pids_len, sizeof *tasks);
+  if (tasks == NULL)
+    {
+      pthread_mutex_lock (&global_lock);
+      return ENOMEM;
+    }
+
+  for (i = 0; i < pids_len; i++)
+    /* We handle errors by checking each returned task.  */
+    proc_pid2task (namespace, pids[i], &tasks[i]);
+
+  pthread_mutex_lock (&global_lock);
+
+  for (i = 0; i < pids_len; i++)
+    if (MACH_PORT_VALID (tasks[i]))
+      {
+        struct proc *p = task_find_nocreate (tasks[i]);
+        mach_port_deallocate (mach_task_self (), tasks[i]);
+        pids[i] = p ? p->p_pid : (pid_t) -1;
+      }
+    else
+      pids[i] = (pid_t) -1;
+
+  free (tasks);
+  return 0;
+}
+
+/* Find the creator of the task namespace that P is in.  */
+struct proc *
+namespace_find_root (struct proc *p)
+{
+  for (;
+       MACH_PORT_VALID (p->p_parent->p_task_namespace);
+       p = p->p_parent)
+    {
+      /* Walk up the process hierarchy until we find the creator of
+         the task namespace.  The last process we encounter that has a
+         valid task_namespace must be the creator.  */
+    }
+
+  return p;
+}
+
 /* Used with prociterate to terminate all tasks in a task
    namespace.  */
 static void
@@ -741,6 +832,8 @@ namespace_terminate (struct proc *p, void *cookie)
   if (p->p_task_namespace == *namespacep)
     task_terminate (p->p_task);
 }
+
+
 
 /* The task associated with process P has died.  Drop most state,
    and then record us as dead.  Our parent will eventually complete the
@@ -769,6 +862,8 @@ process_has_exited (struct proc *p)
 
   if (!--p->p_login->l_refcnt)
     free (p->p_login);
+  free (p->exe);
+  p->exe = NULL;
 
   ids_rele (p->p_id);
 
@@ -784,14 +879,7 @@ process_has_exited (struct proc *p)
 
       if (MACH_PORT_VALID (p->p_task_namespace))
 	{
-	  for (tp = p;
-	       MACH_PORT_VALID (tp->p_parent->p_task_namespace);
-	       tp = tp->p_parent)
-	    {
-	      /* Walk up the process hierarchy until we find the
-		 creator of the task namespace.	 */
-	    }
-
+          tp = namespace_find_root (p);
 	  if (p == tp)
 	    {
 	      /* The creator of the task namespace died.  Terminate
@@ -864,8 +952,8 @@ process_has_exited (struct proc *p)
 void
 complete_exit (struct proc *p)
 {
-  assert (p->p_dead);
-  assert (p->p_waited);
+  assert_backtrace (p->p_dead);
+  assert_backtrace (p->p_waited);
 
   remove_proc_from_hash (p);
   if (p->p_task != MACH_PORT_NULL)
@@ -965,16 +1053,45 @@ genpid ()
   return nextpid++;
 }
 
+
+
+/* Support for making sysvinit PID 1.  */
+
+/* We reserve PID 1 for sysvinit.  However, proc may pick up the task
+   when it is created and reserve an entry in the process table for
+   it.  When startup tells us the task that it created for sysvinit,
+   we need to locate this preliminary entry and remove it.  Otherwise,
+   we end up with two entries for sysvinit with the same task.  */
+
+/* XXX: This is a mess.  It would be nicer if startup gave us the
+   ports (e.g. sysvinit's task, the kernel task...) before starting
+   us, communicating the names using command line options.  */
+
 /* Implement proc_set_init_task as described in <hurd/process.defs>.  */
 error_t
 S_proc_set_init_task(struct proc *callerp,
 		     task_t task)
 {
+  struct proc *shadow;
+
   if (! callerp)
     return EOPNOTSUPP;
 
   if (callerp != startup_proc)
     return EPERM;
+
+  /* Check if TASK already made it into the process table, and if so
+     remove it.  */
+  shadow = task_find_nocreate (task);
+  if (shadow)
+    {
+      /* Cheat a little so we can use complete_exit.  */
+      shadow->p_dead = 1;
+      shadow->p_waited = 1;
+      mach_port_deallocate (mach_task_self (), shadow->p_task);
+      shadow->p_task = MACH_PORT_NULL;
+      complete_exit (shadow);
+    }
 
   init_proc->p_task = task;
   proc_death_notify (init_proc);
@@ -982,6 +1099,8 @@ S_proc_set_init_task(struct proc *callerp,
 
   return 0;
 }
+
+
 
 /* Implement proc_mark_important as described in <hurd/process.defs>. */
 kern_return_t
@@ -994,9 +1113,9 @@ S_proc_mark_important (struct proc *p)
      exempt from this restriction, as startup_proc calls this on their
      behalf.  The kernel process is a notable example of an process
      that needs this exemption.  That is not an problem however, since
-     all children of /hurd/init are important and we mark them as such
-     anyway.  */
-  if (! check_uid (p, 0) && ! check_owner (startup_proc, p))
+     all children of /hurd/startup are important and we mark them as
+     such anyway.  */
+  if (! check_uid (p, 0) && p->p_parent != startup_proc)
     return EPERM;
 
   p->p_important = 1;
@@ -1048,13 +1167,15 @@ S_proc_get_code (struct proc *callerp,
 
 /* Handle new task notifications from the kernel.  */
 error_t
-S_mach_notify_new_task (mach_port_t notify,
+S_mach_notify_new_task (struct port_info *notify,
 			mach_port_t task,
 			mach_port_t parent)
 {
   struct proc *parentp, *childp;
 
-  if (notify != generic_port)
+  if (! notify
+      || (kernel_proc == NULL && notify->class != generic_port_class)
+      || (kernel_proc != NULL && notify != (struct port_info *) kernel_proc))
     return EOPNOTSUPP;
 
   parentp = task_find_nocreate (parent);
@@ -1079,9 +1200,10 @@ S_mach_notify_new_task (mach_port_t notify,
 	 proc_child, so we do it on their behalf.  */
       mach_port_mod_refs (mach_task_self (), task, MACH_PORT_RIGHT_SEND, +1);
       err = S_proc_child (parentp, task);
-      if (! err)
-	/* Relay the notification.  This consumes TASK and PARENT.  */
-	return mach_notify_new_task (childp->p_task_namespace, task, parent);
+      assert_perror_backtrace (err);
+
+      /* Relay the notification.  This consumes task and parent.  */
+      return mach_notify_new_task (childp->p_task_namespace, task, parent);
     }
 
   mach_port_deallocate (mach_task_self (), task);

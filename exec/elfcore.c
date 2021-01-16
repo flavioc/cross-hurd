@@ -27,6 +27,7 @@
 #include <sys/utsname.h>
 #include <sys/procfs.h>
 #include <stddef.h>
+#include <alloca.h>
 
 #define ELF_CLASS	PASTE (ELFCLASS, __ELF_NATIVE_CLASS)
 #define PASTE(a, b)	PASTE_1 (a, b)
@@ -40,7 +41,8 @@
 #endif
 
 #include <mach/thread_status.h>
-#include <assert.h>
+#include <mach/vm_param.h>
+#include <assert-backtrace.h>
 
 #ifdef i386_THREAD_STATE
 # define ELF_MACHINE		EM_386
@@ -56,9 +58,9 @@ fetch_thread_regset (thread_t thread, prgregset_t *gregs)
     prgregset_t gregs;
   } *u = (void *) gregs;
   mach_msg_type_number_t count = i386_THREAD_STATE_COUNT;
-  assert (sizeof (struct i386_thread_state) < sizeof (prgregset_t));
-  assert (offsetof (struct i386_thread_state, gs) == REG_GS * 4);
-  assert (offsetof (struct i386_thread_state, eax) == REG_EAX * 4);
+  assert_backtrace (sizeof (struct i386_thread_state) < sizeof (prgregset_t));
+  assert_backtrace (offsetof (struct i386_thread_state, gs) == REG_GS * 4);
+  assert_backtrace (offsetof (struct i386_thread_state, eax) == REG_EAX * 4);
 
   (void) thread_get_state (thread, i386_THREAD_STATE,
 			   (thread_state_t) &u->state, &count);
@@ -82,7 +84,7 @@ fetch_thread_fpregset (thread_t thread, prfpregset_t *fpregs)
 				  (thread_state_t) &st, &count);
   if (err == 0 && st.initialized)
     {
-      assert (sizeof *fpregs >= sizeof st.hw_state);
+      assert_backtrace (sizeof *fpregs >= sizeof st.hw_state);
       memcpy (fpregs, st.hw_state, sizeof st.hw_state);
     }
 }
@@ -96,7 +98,7 @@ static inline void
 fetch_thread_regset (thread_t thread, prgregset_t *gregs)
 {
   mach_msg_type_number_t count = ALPHA_THREAD_STATE_COUNT;
-  assert (sizeof (struct alpha_thread_state) <= sizeof (prgregset_t));
+  assert_backtrace (sizeof (struct alpha_thread_state) <= sizeof (prgregset_t));
   (void) thread_get_state (thread, ALPHA_THREAD_STATE,
 			   (thread_state_t) gregs, &count);
   /* XXX
@@ -110,7 +112,7 @@ static inline void
 fetch_thread_fpregset (thread_t thread, prfpregset_t *fpregs)
 {
   mach_msg_type_number_t count = ALPHA_FLOAT_STATE_COUNT;
-  assert (sizeof (struct alpha_float_state) == sizeof *fpregs);
+  assert_backtrace (sizeof (struct alpha_float_state) == sizeof *fpregs);
   (void) thread_get_state (thread, ALPHA_FLOAT_STATE,
 			   (thread_state_t) fpregs, &count);
 }
@@ -331,6 +333,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
   {
     DEFINE_NOTE (psinfo_t) psinfo;
     DEFINE_NOTE (pstatus_t) pstatus;
+    DEFINE_NOTE (ElfW(auxv_t)) at_entry;
     int flags = PI_FETCH_TASKINFO | PI_FETCH_THREADS | PI_FETCH_THREAD_BASIC;
     char *waits = 0;
     mach_msg_type_number_t num_waits = 0;
@@ -408,8 +411,20 @@ dump_core (task_t task, file_t file, off_t corelimit,
 	if (err == 0)
 	  {
 	    err = proc_get_arg_locations (proc,
-					  (vm_address_t *) &psinfo.data.pr_argv,
-					  (vm_address_t *) &psinfo.data.pr_envp);
+					  &psinfo.data.pr_argv,
+					  &psinfo.data.pr_envp);
+	    if (err == 0)
+	      {
+		/* Write position of executable.  */
+		vm_address_t addr;
+		err = proc_get_entry (proc, &addr);
+		if (err == 0)
+		  {
+		    at_entry.data.a_type = AT_ENTRY;
+		    at_entry.data.a_un.a_val = addr;
+		    err = WRITE_NOTE (NT_AUXV, at_entry);
+		  }
+	      }
 	    mach_port_deallocate (mach_task_self (), proc);
 	  }
 	{

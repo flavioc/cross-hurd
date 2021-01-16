@@ -20,7 +20,7 @@
 #include <hurd/hurd_types.h>
 #include <mach/message.h>
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <stdio.h>
 
 #include "proc.h"
@@ -40,8 +40,7 @@ struct msg_sig_post_request
   mach_port_t refport;
 };
 
-/* Send the Mach message indicated by msg_spec.   call cthread_exit
-   when it has been delivered. */
+/* Send the Mach message indicated by msg_spec.  */
 static void *
 blocking_message_send (void *arg)
 {
@@ -61,7 +60,7 @@ blocking_message_send (void *arg)
     case MACH_SEND_INVALID_NOTIFY:
     case MACH_SEND_NO_NOTIFY:
     case MACH_SEND_NOTIFY_IN_PROGRESS:
-      assert_perror (err);
+      assert_perror_backtrace (err);
       break;
 
     default:			/* Other errors are safe to ignore.  */
@@ -77,6 +76,7 @@ blocking_message_send (void *arg)
 void
 send_signal (mach_port_t msgport,
 	     int signal,
+	     int sigcode,
 	     mach_port_t refport)
 {
   error_t err;
@@ -92,7 +92,7 @@ send_signal (mach_port_t msgport,
 			 MACH_MSG_TYPE_MAKE_SEND_ONCE)), /* msgh_bits */
       sizeof message,		/* msgh_size */
       msgport,			/* msgh_remote_port */
-      MACH_PORT_NULL,		/* msgh_local_port */
+      { MACH_PORT_NULL },	/* msgh_local_port */
       0,			/* msgh_seqno */
       RPCID_SIG_POST,		/* msgh_id */
     },
@@ -119,7 +119,7 @@ send_signal (mach_port_t msgport,
       0,			/* msgt_unused */
     },
     /* Sigcode */
-    0,
+    sigcode,
     {
       /* Type descriptor for refport */
       MACH_MSG_TYPE_COPY_SEND, /* msgt_name */
@@ -169,7 +169,7 @@ send_signal (mach_port_t msgport,
     case MACH_SEND_INVALID_NOTIFY:
     case MACH_SEND_NO_NOTIFY:
     case MACH_SEND_NOTIFY_IN_PROGRESS:
-      assert_perror (err);
+      assert_perror_backtrace (err);
       break;
 
     default:			/* Other errors are safe to ignore.  */

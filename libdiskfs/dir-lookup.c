@@ -1,6 +1,7 @@
 /* libdiskfs implementation of fs.defs:dir_lookup
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-     2002, 2008, 2013, 2014 Free Software Foundation, Inc.
+
+   Copyright (C) 1992-2002, 2008, 2013-2019
+   Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -13,13 +14,13 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
 #include <sys/file.h>
+#include <hurd/fshelp.h>
 #include <hurd/fsys.h>
 #include <hurd/paths.h>
 
@@ -27,25 +28,24 @@
 #include "fs_S.h"
 
 /* Implement dir_lookup as described in <hurd/fs.defs>. */
-kern_return_t
+error_t
 diskfs_S_dir_lookup (struct protid *dircred,
-		     char *path,
+		     char *filename,
 		     int flags,
 		     mode_t mode,
-		     enum retry_type *retry,
-		     char *retryname,
-		     file_t *returned_port,
-		     mach_msg_type_name_t *returned_port_poly)
+		     retry_type *do_retry,
+		     char *retry_name,
+		     mach_port_t *retry_port,
+		     mach_msg_type_name_t *retry_port_type)
 {
   struct node *dnp;
   struct node *np;
-  int nsymlink = 0;
+  int nsymlinks = 0;
   char *nextname;
   char *relpath;
   int nextnamelen;
   error_t err = 0;
   char *pathbuf = 0;
-  int pathbuflen = 0;
   int newnamelen;
   int create, excl;
   int lastcomp = 0;
@@ -66,23 +66,23 @@ diskfs_S_dir_lookup (struct protid *dircred,
   excl = (flags & O_EXCL);
 
   /* Skip leading slashes */
-  while (path[0] == '/')
-    path++;
+  while (*filename == '/')
+    filename++;
 
-  /* Preserve the path relative to diruser->po->path.  */
-  relpath = strdup (path);
+  /* Preserve the path relative to dircred->po->path.  */
+  relpath = strdup (filename);
   if (! relpath)
     return ENOMEM;
 
-  /* Keep a pointer to the start of the path for length
+  /* Keep a pointer to the start of the filename for length
      calculations.  */
-  char *path_start = path;
+  char *filename_start = filename;
 
-  *returned_port_poly = MACH_MSG_TYPE_MAKE_SEND;
-  *retry = FS_RETRY_NORMAL;
-  retryname[0] = '\0';
+  *retry_port_type = MACH_MSG_TYPE_MAKE_SEND;
+  *do_retry = FS_RETRY_NORMAL;
+  *retry_name = '\0';
 
-  if (path[0] == '\0')
+  if (*filename == '\0')
     {
       /* Set things up in the state expected by the code from gotit: on. */
       dnp = 0;
@@ -93,18 +93,16 @@ diskfs_S_dir_lookup (struct protid *dircred,
     }
 
   dnp = dircred->po->np;
-
   pthread_mutex_lock (&dnp->lock);
-  np = 0;
 
   diskfs_nref (dnp);		/* acquire a reference for later diskfs_nput */
 
   do
     {
-      assert (!lastcomp);
+      assert_backtrace (!lastcomp);
 
       /* Find the name of the next pathname component */
-      nextname = index (path, '/');
+      nextname = index (filename, '/');
 
       if (nextname)
 	{
@@ -132,10 +130,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	{
 	  if (!ds)
 	    ds = alloca (diskfs_dirstat_size);
-	  err = diskfs_lookup (dnp, path, CREATE, &np, ds, dircred);
+	  err = diskfs_lookup (dnp, filename, CREATE, &np, ds, dircred);
 	}
       else
-	err = diskfs_lookup (dnp, path, LOOKUP, &np, 0, dircred);
+	err = diskfs_lookup (dnp, filename, LOOKUP, &np, 0, dircred);
 
       if (lastcomp && create && excl && (!err || err == EAGAIN))
 	err = EEXIST;
@@ -158,13 +156,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      else
 		{
 		  /* Punt the client up to the shadow root parent.  */
-		  *retry = FS_RETRY_REAUTH;
-		  *returned_port = dircred->po->shadow_root_parent;
-		  *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
+		  *do_retry = FS_RETRY_REAUTH;
+		  *retry_port = dircred->po->shadow_root_parent;
+		  *retry_port_type = MACH_MSG_TYPE_COPY_SEND;
 		  if (lastcomp && mustbedir) /* Trailing slash.  */
-		    strcpy (retryname, "/");
+		    strcpy (retry_name, "/");
 		  else if (!lastcomp)
-		    strcpy (retryname, nextname);
+		    strcpy (retry_name, nextname);
 		  err = 0;
 		  goto out;
 		}
@@ -174,13 +172,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	       shadow root, we can get here if its in a directory that was
 	    renamed out from under it...  */
 	    {
-	      *retry = FS_RETRY_REAUTH;
-	      *returned_port = dircred->po->root_parent;
-	      *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
+	      *do_retry = FS_RETRY_REAUTH;
+	      *retry_port = dircred->po->root_parent;
+	      *retry_port_type = MACH_MSG_TYPE_COPY_SEND;
 	      if (lastcomp && mustbedir) /* Trailing slash.  */
-		strcpy (retryname, "/");
+		strcpy (retry_name, "/");
 	      else if (!lastcomp)
-		strcpy (retryname, nextname);
+		strcpy (retry_name, nextname);
 	      err = 0;
 	      goto out;
 	    }
@@ -200,7 +198,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    {
 	      mode &= ~(S_IFMT | S_ISPARE | S_ISVTX | S_ITRANS);
 	      mode |= S_IFREG;
-	      err = diskfs_create_node (dnp, path, mode, &np, dircred, ds);
+	      err = diskfs_create_node (dnp, filename, mode, &np, dircred, ds);
 	      if (diskfs_synchronous)
 		{
 		  diskfs_file_update (dnp, 1);
@@ -227,41 +225,6 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  mach_port_t dirport;
 	  struct iouser *user;
 
-	  /* A callback function for short-circuited translators.
-	     Symlink & ifsock are handled elsewhere.  */
-	  error_t short_circuited_callback1 (void *cookie1, void *cookie2,
-					     uid_t *uid, gid_t *gid,
-					     char **argz, size_t *argz_len)
-	    {
-	      struct node *node = cookie1;
-
-	      switch (node->dn_stat.st_mode & S_IFMT)
-		{
-		case S_IFCHR:
-		case S_IFBLK:
-		  asprintf (argz, "%s%c%d%c%d",
-			    (S_ISCHR (node->dn_stat.st_mode)
-			     ? _HURD_CHRDEV : _HURD_BLKDEV),
-			    0, major (node->dn_stat.st_rdev),
-			    0, minor (node->dn_stat.st_rdev));
-		  *argz_len = strlen (*argz) + 1;
-		  *argz_len += strlen (*argz + *argz_len) + 1;
-		  *argz_len += strlen (*argz + *argz_len) + 1;
-		  break;
-		case S_IFIFO:
-		  asprintf (argz, "%s", _HURD_FIFO);
-		  *argz_len = strlen (*argz) + 1;
-		  break;
-		default:
-		  return ENOENT;
-		}
-
-	      *uid = node->dn_stat.st_uid;
-	      *gid = node->dn_stat.st_gid;
-
-	      return 0;
-	    }
-
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
 	  err = iohelp_create_empty_iouser (&user);
@@ -285,21 +248,21 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  if (np != dnp)
 	    pthread_mutex_unlock (&dnp->lock);
 
-	  /* Check if an active translator is currently running.  If
-	     not, fshelp_fetch_root will start one.  In that case, we
-	     need to register it in the list of active
-	     translators.  */
-	  boolean_t register_translator =
-	    np->transbox.active == MACH_PORT_NULL;
-
-	  err = fshelp_fetch_root (&np->transbox, dircred->po,
-				     dirport, dircred->user,
-				     lastcomp ? flags : 0,
-				     ((np->dn_stat.st_mode & S_IPTRANS)
-				      ? _diskfs_translator_callback1
-				      : short_circuited_callback1),
-				     _diskfs_translator_callback2,
-				     retry, retryname, returned_port);
+	  struct fshelp_stat_cookie2 cookie = {
+	    .statp = &np->dn_stat,
+	    .modep = &np->dn_stat.st_mode,
+	    .next = dircred->po,
+	  };
+	  err = fshelp_fetch_root (&np->transbox,
+				   &cookie,
+				   dirport,
+				   dircred->user,
+				   lastcomp ? flags : 0,
+				   ((np->dn_stat.st_mode & S_IPTRANS)
+				    ? _diskfs_translator_callback1
+				    : fshelp_short_circuited_callback1),
+				   _diskfs_translator_callback2,
+				   do_retry, retry_name, retry_port);
 
 	  /* fetch_root copies DIRPORT for success, so we always should
 	     deallocate our send right.  */
@@ -307,44 +270,49 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  if (err != ENOENT)
 	    {
-	      *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
+	      *retry_port_type = MACH_MSG_TYPE_MOVE_SEND;
 	      if (!err)
 		{
-		  char *end = strchr (retryname, '\0');
+		  char *end = strchr (retry_name, '\0');
+		  char *translator_path = strdupa (relpath);
+		  char *complete_path;
+
 		  if (mustbedir)
 		    *end++ = '/'; /* Trailing slash.  */
 		  else if (!lastcomp) {
-		    if (end != retryname)
+		    if (end != retry_name)
 		      *end++ = '/';
 		    strcpy (end, nextname);
 		  }
-		}
 
-	      if (register_translator)
-		{
-		  char *translator_path = strdupa (relpath);
-		  char *complete_path;
 		  if (nextname != NULL)
 		    {
 		      /* This was not the last path component.
 			 NEXTNAME points to the next component, locate
 			 the end of the current component and use it
 			 to trim TRANSLATOR_PATH.  */
-		      char *end = nextname;
+		      end = nextname;
 		      while (*end != 0)
 			end--;
-		      translator_path[end - path_start] = '\0';
+		      translator_path[end - filename_start] = '\0';
 		    }
 
-		  if (dircred->po->path == NULL || !strcmp (dircred->po->path,"."))
-		      /* dircred is the root directory.  */
-		      complete_path = translator_path;
+		  /* Trim trailing slashes.  */
+		  end = &translator_path[strlen (translator_path) - 1];
+		  while (*end == '/' && end >= translator_path)
+		    *end = '\0', end--;
+
+		  if (dircred->po->path == NULL
+		      || !strcmp (dircred->po->path,"."))
+		    /* dircred is the root directory.  */
+		    complete_path = translator_path;
 		  else
-		      asprintf (&complete_path, "%s/%s", dircred->po->path, translator_path);
+		    asprintf (&complete_path, "%s/%s", dircred->po->path,
+			      translator_path);
 
 		  err = fshelp_set_active_translator (&newpi->pi,
-							complete_path,
-							np->transbox.active);
+						      complete_path,
+						      &np->transbox);
 		  if (complete_path != translator_path)
 		    free(complete_path);
 		  if (err)
@@ -363,7 +331,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  err = 0;
 	  if (np != dnp)
 	    {
-	      if (!strcmp (path, ".."))
+	      if (!strcmp (filename, ".."))
 		pthread_mutex_lock (&dnp->lock);
 	      else
 		{
@@ -384,7 +352,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	{
 	  /* Handle symlink interpretation */
 
-	  if (nsymlink++ > diskfs_maxsymlinks)
+	  if (nsymlinks++ > diskfs_maxsymlinks)
 	    {
 	      err = ELOOP;
 	      goto out;
@@ -392,11 +360,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  nextnamelen = nextname ? strlen (nextname) + 1 : 0;
 	  newnamelen = nextnamelen + np->dn_stat.st_size + 1 + 1;
-	  if (pathbuflen < newnamelen)
-	    {
-	      pathbuf = alloca (newnamelen);
-	      pathbuflen = newnamelen;
-	    }
+
+	  pathbuf = alloca (newnamelen);
 
 	  if (diskfs_read_symlink_hook)
 	    err = (*diskfs_read_symlink_hook)(np, pathbuf);
@@ -406,13 +371,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
 					0, np->dn_stat.st_size, 0,
 					dircred, &amt);
 	      if (!err)
-		assert (amt == np->dn_stat.st_size);
+		assert_backtrace (amt == np->dn_stat.st_size);
 	    }
 	  if (err)
 	    goto out;
 
 	  if (np->dn_stat.st_size == 0)	/* symlink to "" */
-	    path = nextname;
+	    filename = nextname;
 	  else
 	    {
 	      if (nextname)
@@ -432,13 +397,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      if (pathbuf[0] == '/')
 		{
 		  /* Punt to the caller.  */
-		  *retry = FS_RETRY_MAGICAL;
-		  *returned_port = MACH_PORT_NULL;
-		  strcpy (retryname, pathbuf);
+		  *do_retry = FS_RETRY_MAGICAL;
+		  *retry_port = MACH_PORT_NULL;
+		  strcpy (retry_name, pathbuf);
 		  goto out;
 		}
 
-	      path = pathbuf;
+	      filename = pathbuf;
 	      mustbedir = 0;
 	    }
 
@@ -448,7 +413,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  diskfs_nput (np);
 	  np = 0;
 
-	  if (path == 0)	/* symlink to "" was the last component */
+	  if (filename == 0)	/* symlink to "" was the last component */
 	    {
 	      np = dnp;
 	      dnp = 0;
@@ -458,7 +423,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
       else
 	{
 	  /* Handle normal nodes */
-	  path = nextname;
+	  filename = nextname;
 	  if (np == dnp)
 	    diskfs_nrele (dnp);
 	  else
@@ -471,7 +436,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  else
 	    dnp = 0;
 	}
-    } while (path && *path);
+    }
+  while (filename && *filename);
 
   /* At this point, np is the node to return.  If newnode is set, then
      we just created this node.  */
@@ -488,11 +454,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
   if (!newnode)
     /* Check permissions on existing nodes, but not new ones. */
     {
-      if (((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR ||
+      if ((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR ||
 	    type == S_IFIFO)
 	   && (flags & (O_READ|O_WRITE|O_EXEC)))
-	  || (type == S_IFLNK && (flags & (O_WRITE|O_EXEC))))
 	err = EACCES;
+
+      if (!err && type == S_IFLNK && (flags & (O_WRITE|O_EXEC)))
+	err = ELOOP;
 
       if (!err && (flags & O_READ))
 	err = fshelp_access (&np->dn_stat, S_IREAD, dircred->user);
@@ -527,12 +495,28 @@ diskfs_S_dir_lookup (struct protid *dircred,
   if (! err)
     {
       newpo = 0;
+      mach_port_t rendezvous = MACH_PORT_NULL;
+      struct flock64 lock =
+        {
+         l_start: 0,
+         l_len: 0,
+         l_whence: SEEK_SET
+       };
+
       if (flags & O_EXLOCK)
-	err = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
-				     &np->lock, LOCK_EX);
+        {
+         lock.l_type = F_WRLCK;
+         err = fshelp_rlock_tweak (&np->userlock, &np->lock,
+				   &newpi->po->lock_status, flags, 0, 0,
+				   F_SETLK64, &lock, rendezvous);
+       }
       else if (flags & O_SHLOCK)
-	err = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
-				     &np->lock, LOCK_SH);
+        {
+         lock.l_type = F_RDLCK;
+         err = fshelp_rlock_tweak (&np->userlock, &np->lock,
+				   &newpi->po->lock_status, flags, 0, 0,
+				   F_SETLK64, &lock, rendezvous);
+       }
     }
 
   if (! err)
@@ -553,7 +537,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
       if (! newpi->po->path)
 	err = errno;
 
-      *returned_port = ports_get_right (newpi);
+      *retry_port = ports_get_right (newpi);
       ports_port_deref (newpi);
       newpi = 0;
     }

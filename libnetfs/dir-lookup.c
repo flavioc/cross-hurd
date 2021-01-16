@@ -1,6 +1,5 @@
 /*
-   Copyright (C) 1995,96,97,98,99,2000,01,02,13,14
-     Free Software Foundation, Inc.
+   Copyright (C) 1995-2002, 2013-2019 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -16,11 +15,10 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include <fcntl.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 #include <stdio.h>
 #include <hurd/paths.h>
@@ -30,7 +28,7 @@
 #include "misc.h"
 
 error_t
-netfs_S_dir_lookup (struct protid *diruser,
+netfs_S_dir_lookup (struct protid *dircred,
 		    char *filename,
 		    int flags,
 		    mode_t mode,
@@ -48,11 +46,11 @@ netfs_S_dir_lookup (struct protid *diruser,
   struct node *dnp, *np;
   char *nextname;
   char *relpath;
-  error_t error;
+  error_t err;
   struct protid *newpi = NULL;
   struct iouser *user;
 
-  if (!diruser)
+  if (!dircred)
     return EOPNOTSUPP;
 
   create = (flags & O_CREAT);
@@ -62,7 +60,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   while (*filename == '/')
     filename++;
 
-  /* Preserve the path relative to diruser->po->path.  */
+  /* Preserve the path relative to dircred->po->path.  */
   relpath = strdup (filename);
   if (! relpath)
     return ENOMEM;
@@ -79,20 +77,20 @@ netfs_S_dir_lookup (struct protid *diruser,
     {
       /* Set things up in the state expected by the code from gotit: on. */
       dnp = 0;
-      np = diruser->po->np;
+      np = dircred->po->np;
       pthread_mutex_lock (&np->lock);
       netfs_nref (np);
       goto gotit;
     }
 
-  dnp = diruser->po->np;
+  dnp = dircred->po->np;
   pthread_mutex_lock (&dnp->lock);
 
   netfs_nref (dnp);		/* acquire a reference for later netfs_nput */
 
   do
     {
-      assert (!lastcomp);
+      assert_backtrace (!lastcomp);
 
       /* Find the name of the next pathname component */
       nextname = index (filename, '/');
@@ -120,68 +118,81 @@ netfs_S_dir_lookup (struct protid *diruser,
 
     retry_lookup:
 
-      if ((dnp == netfs_root_node || dnp == diruser->po->shadow_root)
+      if ((dnp == netfs_root_node || dnp == dircred->po->shadow_root)
 	  && filename[0] == '.' && filename[1] == '.' && filename[2] == '\0')
-	if (dnp == diruser->po->shadow_root)
+	if (dnp == dircred->po->shadow_root)
 	  /* We're at the root of a shadow tree.  */
 	  {
-	    *do_retry = FS_RETRY_REAUTH;
-	    *retry_port = diruser->po->shadow_root_parent;
-	    *retry_port_type = MACH_MSG_TYPE_COPY_SEND;
-	    if (lastcomp && mustbedir) /* Trailing slash.  */
-	      strcpy (retry_name, "/");
-	    else if (!lastcomp)
-	      strcpy (retry_name, nextname);
-	    error = 0;
-	    pthread_mutex_unlock (&dnp->lock);
-	    goto out;
+	    if (dircred->po->shadow_root_parent == MACH_PORT_NULL)
+	      {
+		/* This is a shadow root with no parent, meaning
+		   we should treat it as a virtual root disconnected
+		   from its real .. directory.	*/
+		err = 0;
+		np = dnp;
+		netfs_nref (np);
+	      }
+	    else
+	      {
+		/* Punt the client up to the shadow root parent.  */
+		*do_retry = FS_RETRY_REAUTH;
+		*retry_port = dircred->po->shadow_root_parent;
+		*retry_port_type = MACH_MSG_TYPE_COPY_SEND;
+		if (lastcomp && mustbedir) /* Trailing slash.  */
+		  strcpy (retry_name, "/");
+		else if (!lastcomp)
+		  strcpy (retry_name, nextname);
+		err = 0;
+		pthread_mutex_unlock (&dnp->lock);
+		goto out;
+	      }
 	  }
-	else if (diruser->po->root_parent != MACH_PORT_NULL)
-	  /* We're at a real translator root; even if DIRUSER->po has a
+	else if (dircred->po->root_parent != MACH_PORT_NULL)
+	  /* We're at a real translator root; even if DIRCRED->po has a
 	     shadow root, we can get here if its in a directory that was
 	     renamed out from under it...  */
 	  {
 	    *do_retry = FS_RETRY_REAUTH;
-	    *retry_port = diruser->po->root_parent;
+	    *retry_port = dircred->po->root_parent;
 	    *retry_port_type = MACH_MSG_TYPE_COPY_SEND;
 	    if (lastcomp && mustbedir) /* Trailing slash.  */
 	      strcpy (retry_name, "/");
 	    else if (!lastcomp)
 	      strcpy (retry_name, nextname);
-	    error = 0;
+	    err = 0;
 	    pthread_mutex_unlock (&dnp->lock);
 	    goto out;
 	  }
 	else
 	  /* We are global root */
 	  {
-	    error = 0;
+	    err = 0;
 	    np = dnp;
 	    netfs_nref (np);
 	  }
       else
 	/* Attempt a lookup on the next pathname component. */
-	error = netfs_attempt_lookup (diruser->user, dnp, filename, &np);
+	err = netfs_attempt_lookup (dircred->user, dnp, filename, &np);
 
       /* At this point, DNP is unlocked */
 
       /* Implement O_EXCL flag here */
-      if (lastcomp && create && excl && !error)
-	error = EEXIST;
+      if (lastcomp && create && excl && !err)
+	err = EEXIST;
 
       /* Create the new node if necessary */
-      if (lastcomp && create && error == ENOENT)
+      if (lastcomp && create && err == ENOENT)
 	{
 	  mode &= ~(S_IFMT | S_ISPARE | S_ISVTX);
 	  mode |= S_IFREG;
 	  pthread_mutex_lock (&dnp->lock);
-	  error = netfs_attempt_create_file (diruser->user, dnp,
-					     filename, mode, &np);
+	  err = netfs_attempt_create_file (dircred->user, dnp,
+					   filename, mode, &np);
 
 	  /* If someone has already created the file (between our lookup
 	     and this create) then we just got EEXIST.  If we are
 	     EXCL, that's fine; otherwise, we have to retry the lookup. */
-	  if (error == EEXIST && !excl)
+	  if (err == EEXIST && !excl)
 	    {
 	      pthread_mutex_lock (&dnp->lock);
 	      goto retry_lookup;
@@ -191,11 +202,11 @@ netfs_S_dir_lookup (struct protid *diruser,
 	}
 
       /* All remaining errors get returned to the user */
-      if (error)
+      if (err)
 	goto out;
 
-      error = netfs_validate_stat (np, diruser->user);
-      if (error)
+      err = netfs_validate_stat (np, dircred->user);
+      if (err)
 	goto out;
 
       if ((((flags & O_NOTRANS) == 0) || !lastcomp || mustbedir)
@@ -207,92 +218,50 @@ netfs_S_dir_lookup (struct protid *diruser,
 	{
 	  mach_port_t dirport;
 
-	  /* A callback function for short-circuited translators.
-	     S_ISLNK and S_IFSOCK are handled elsewhere. */
-	  error_t short_circuited_callback1 (void *cookie1, void *cookie2,
-					     uid_t *uid, gid_t *gid,
-					     char **argz, size_t *argz_len)
-	    {
-	      struct node *np = cookie1;
-	      error_t err;
-
-	      err = netfs_validate_stat (np, diruser->user);
-	      if (err)
-		return err;
-
-	      switch (np->nn_translated & S_IFMT)
-		{
-		case S_IFCHR:
-		case S_IFBLK:
-		  if (asprintf (argz, "%s%c%d%c%d",
-				(S_ISCHR (np->nn_translated)
-				 ? _HURD_CHRDEV : _HURD_BLKDEV),
-				0, major (np->nn_stat.st_rdev),
-				0, minor (np->nn_stat.st_rdev)) < 0)
-		    return ENOMEM;
-		  *argz_len = strlen (*argz) + 1;
-		  *argz_len += strlen (*argz + *argz_len) + 1;
-		  *argz_len += strlen (*argz + *argz_len) + 1;
-		  break;
-		case S_IFIFO:
-		  if (asprintf (argz, "%s", _HURD_FIFO) < 0)
-		    return ENOMEM;
-		  *argz_len = strlen (*argz) + 1;
-		  break;
-		default:
-		  return ENOENT;
-		}
-
-	      *uid = np->nn_stat.st_uid;
-	      *gid = np->nn_stat.st_gid;
-
-	      return 0;
-	    }
-
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
-	  error = iohelp_create_empty_iouser (&user);
-	  if (! error)
+	  err = iohelp_create_empty_iouser (&user);
+	  if (! err)
 	    {
 	      newpi = netfs_make_protid (netfs_make_peropen (dnp, 0,
-							     diruser->po),
+							     dircred->po),
 					 user);
 	      if (! newpi)
 	        {
-		  error = errno;
+		  err = errno;
 		  iohelp_free_iouser (user);
 		}
 	    }
 
-	  boolean_t register_translator = 0;
-	  if (! error)
+	  if (! err)
 	    {
+	      struct fshelp_stat_cookie2 cookie = {
+		.statp = &np->nn_stat,
+		.modep = &np->nn_translated,
+		.next = dircred->po,
+	      };
+
 	      dirport = ports_get_send_right (newpi);
 
-	      /* Check if an active translator is currently running.  If
-		 not, fshelp_fetch_root will start one.  In that case, we
-		 need to register it in the list of active
-		 translators.  */
-	      register_translator = np->transbox.active == MACH_PORT_NULL;
-
-	      error = fshelp_fetch_root (&np->transbox, diruser->po,
-					 dirport,
-					 diruser->user,
-					 lastcomp ? flags : 0,
-					 ((np->nn_translated & S_IPTRANS)
-					 ? _netfs_translator_callback1
-					   : short_circuited_callback1),
-					 _netfs_translator_callback2,
-					 do_retry, retry_name, retry_port);
+	      err = fshelp_fetch_root (&np->transbox,
+				       &cookie,
+				       dirport,
+				       dircred->user,
+				       lastcomp ? flags : 0,
+				       ((np->nn_translated & S_IPTRANS)
+					? _netfs_translator_callback1
+					: fshelp_short_circuited_callback1),
+				       _netfs_translator_callback2,
+				       do_retry, retry_name, retry_port);
 	      /* fetch_root copies DIRPORT for success, so we always should
 		 deallocate our send right.  */
 	      mach_port_deallocate (mach_task_self (), dirport);
 	    }
 
-	  if (error != ENOENT)
+	  if (err != ENOENT)
 	    {
 	      *retry_port_type = MACH_MSG_TYPE_MOVE_SEND;
-	      if (!error)
+	      if (!err)
 		{
 		  char *end = strchr (retry_name, '\0');
 		  if (mustbedir)
@@ -304,39 +273,46 @@ netfs_S_dir_lookup (struct protid *diruser,
 		  }
 		}
 
-	      if (register_translator)
-		{
-		  char *translator_path = strdupa (relpath);
-		  char *complete_path;
-		  if (nextname != NULL)
-		    {
-		      /* This was not the last path component.
-			 NEXTNAME points to the next component, locate
-			 the end of the current component and use it
-			 to trim TRANSLATOR_PATH.  */
-		      char *end = nextname;
-		      while (*end != 0)
-			end--;
-		      translator_path[end - filename_start] = '\0';
-		    }
+	      {
+		char *translator_path = strdupa (relpath);
+		char *end;
+		char *complete_path;
+		if (nextname != NULL)
+		  {
+		    /* This was not the last path component.
+		       NEXTNAME points to the next component, locate
+		       the end of the current component and use it
+		       to trim TRANSLATOR_PATH.  */
+		    end = nextname;
+		    while (*end != 0)
+		      end--;
+		    translator_path[end - filename_start] = '\0';
+		  }
 
-		  if (diruser->po->path == NULL || !strcmp (diruser->po->path,"."))
-		      /* diruser is the root directory.  */
-		      complete_path = translator_path;
-		  else
-		      asprintf (&complete_path, "%s/%s", diruser->po->path, translator_path);
+		/* Trim trailing slashes.  */
+		end = &translator_path[strlen (translator_path) - 1];
+		while (*end == '/' && end >= translator_path)
+		  *end = '\0', end--;
 
-		  error = fshelp_set_active_translator (&newpi->pi,
-							complete_path,
-							np->transbox.active);
-		  if (complete_path != translator_path)
-		    free(complete_path);
-		  if (error)
-		    {
-		      ports_port_deref (newpi);
-		      goto out;
-		    }
-		}
+		if (dircred->po->path == NULL
+		    || !strcmp (dircred->po->path,"."))
+		  /* dircred is the root directory.  */
+		  complete_path = translator_path;
+		else
+		  asprintf (&complete_path, "%s/%s", dircred->po->path,
+			    translator_path);
+
+		err = fshelp_set_active_translator (&newpi->pi,
+						    complete_path,
+						    &np->transbox);
+		if (complete_path != translator_path)
+		  free(complete_path);
+		if (err)
+		  {
+		    ports_port_deref (newpi);
+		    goto out;
+		  }
+	      }
 
 	      ports_port_deref (newpi);
 	      goto out;
@@ -346,7 +322,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 
 	  /* ENOENT means there was a hiccup, and the translator vanished
 	     while NP was unlocked inside fshelp_fetch_root; continue as normal. */
-	  error = 0;
+	  err = 0;
 	}
 
       if (S_ISLNK (np->nn_translated)
@@ -360,7 +336,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  /* Handle symlink interpretation */
 	  if (nsymlinks++ > netfs_maxsymlinks)
 	    {
-	      error = ELOOP;
+	      err = ELOOP;
 	      goto out;
 	    }
 
@@ -370,8 +346,8 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  newnamelen = nextnamelen + linklen + 1 + 1;
 	  linkbuf = alloca (newnamelen);
 
-	  error = netfs_attempt_readlink (diruser->user, np, linkbuf);
-	  if (error)
+	  err = netfs_attempt_readlink (dircred->user, np, linkbuf);
+	  if (err)
 	    goto out;
 
 	  if (nextname)
@@ -433,51 +409,77 @@ netfs_S_dir_lookup (struct protid *diruser,
 
   if (mustbedir)
     {
-      netfs_validate_stat (np, diruser->user);
+      netfs_validate_stat (np, dircred->user);
       if (!S_ISDIR (np->nn_stat.st_mode))
 	{
-	  error = ENOTDIR;
+	  err = ENOTDIR;
 	  goto out;
 	}
     }
-  error = netfs_check_open_permissions (diruser->user, np,
-					flags, newnode);
-  if (error)
+  err = netfs_check_open_permissions (dircred->user, np,
+				      flags, newnode);
+  if (err)
     goto out;
 
   flags &= ~OPENONLY_STATE_MODES;
 
-  error = iohelp_dup_iouser (&user, diruser->user);
-  if (error)
+  err = iohelp_dup_iouser (&user, dircred->user);
+  if (err)
     goto out;
 
-  newpi = netfs_make_protid (netfs_make_peropen (np, flags, diruser->po),
+  newpi = netfs_make_protid (netfs_make_peropen (np, flags, dircred->po),
 			     user);
   if (! newpi)
     {
       iohelp_free_iouser (user);
-      error = errno;
+      err = errno;
       goto out;
     }
 
-  free (newpi->po->path);
-  if (diruser->po->path == NULL || !strcmp (diruser->po->path,"."))
+  mach_port_t rendezvous = MACH_PORT_NULL;
+  struct flock64 lock =
     {
-      /* diruser is the root directory.  */
-      newpi->po->path = relpath;
-      relpath = NULL; /* Do not free relpath.  */
+    l_start: 0,
+    l_len: 0,
+    l_whence: SEEK_SET
+    };
+
+  if (flags & O_EXLOCK)
+    {
+      lock.l_type = F_WRLCK;
+      err = fshelp_rlock_tweak (&np->userlock, &np->lock,
+				&newpi->po->lock_status, flags, 0, 0,
+				F_SETLK64, &lock, rendezvous);
     }
-  else
+  else if (flags & O_SHLOCK)
     {
-      newpi->po->path = NULL;
-      asprintf (&newpi->po->path, "%s/%s", diruser->po->path, relpath);
+      lock.l_type = F_RDLCK;
+      err = fshelp_rlock_tweak (&np->userlock, &np->lock,
+				&newpi->po->lock_status, flags, 0, 0,
+				F_SETLK64, &lock, rendezvous);
     }
 
-  if (! newpi->po->path)
-    error = errno;
+  if (! err)
+    {
+      free (newpi->po->path);
+      if (dircred->po->path == NULL || !strcmp (dircred->po->path,"."))
+	{
+	  /* dircred is the root directory.  */
+	  newpi->po->path = relpath;
+	  relpath = NULL; /* Do not free relpath.  */
+	}
+      else
+	{
+	  newpi->po->path = NULL;
+	  asprintf (&newpi->po->path, "%s/%s", dircred->po->path, relpath);
+	}
 
-  *retry_port = ports_get_right (newpi);
-  ports_port_deref (newpi);
+      if (! newpi->po->path)
+	err = errno;
+
+      *retry_port = ports_get_right (newpi);
+      ports_port_deref (newpi);
+    }
 
  out:
   if (np)
@@ -485,5 +487,5 @@ netfs_S_dir_lookup (struct protid *diruser,
   if (dnp)
     netfs_nrele (dnp);
   free (relpath);
-  return error;
+  return err;
 }

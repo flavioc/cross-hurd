@@ -80,6 +80,7 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 {
   error_t err;
   struct sock *peer;
+  int deref = 1;
 
   if (! addr)
     return ECONNREFUSED;
@@ -137,7 +138,12 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 		    {
 		      err = sock_connect (sock, server);
 		      if (!err)
-			connq_connect_complete (peer->listen_queue, server);
+			{
+			  /* Keep the ref of on the peer for the connection
+			     request in the queue.  */
+			  deref = 0;
+			  connq_connect_complete (peer->listen_queue, server);
+			}
 		      else
 			sock_free (server);
 		    }
@@ -157,7 +163,8 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
       else
 	err = ECONNREFUSED;
 
-      sock_deref (peer);
+      if (deref)
+	sock_deref (peer);
     }
 
   return err;
@@ -190,6 +197,10 @@ S_socket_accept (struct sock_user *user,
       if (!err)
 	{
 	  struct addr *peer_addr;
+
+	  /* Release the reference for the connection request in the queue */
+	  sock_deref (sock);
+
 	  *port_type = MACH_MSG_TYPE_MAKE_SEND;
 	  err = sock_create_port (peer_sock, port);
 	  if (!err)
@@ -282,6 +293,7 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
 	       size_t *amount)
 {
   error_t err = 0;
+  int noblock;
   struct pipe *pipe;
   struct sock *sock, *dest_sock;
   struct addr *source_addr;
@@ -333,8 +345,9 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
 	
       if (!err)
 	{
-	  err = pipe_send (pipe, sock->flags & PFLOCAL_SOCK_NONBLOCK,
-			   source_addr, data, data_len,
+	  noblock = (user->sock->flags & PFLOCAL_SOCK_NONBLOCK)
+		    || (flags & MSG_DONTWAIT);
+	  err = pipe_send (pipe, noblock, source_addr, data, data_len,
 			   control, control_len, ports, num_ports,
 			   amount);
 	  if (dest_sock)
@@ -373,6 +386,7 @@ S_socket_recv (struct sock_user *user,
 {
   error_t err;
   unsigned flags;
+  int noblock;
   struct pipe *pipe;
   void *source_addr = NULL;
 
@@ -398,10 +412,11 @@ S_socket_recv (struct sock_user *user,
     }
   else if (!err)
     {
+      noblock = (user->sock->flags & PFLOCAL_SOCK_NONBLOCK)
+		|| (in_flags & MSG_DONTWAIT);
       err =
-	pipe_recv (pipe, user->sock->flags & PFLOCAL_SOCK_NONBLOCK, &flags,
-		   &source_addr, data, data_len, amount,
-		   control, control_len, ports, num_ports);
+	pipe_recv (pipe, noblock, &flags, &source_addr, data, data_len,
+		   amount, control, control_len, ports, num_ports);
       pipe_release_reader (pipe);
     }
 
@@ -430,11 +445,15 @@ S_socket_getopt (struct sock_user *user,
 		 data_t *value, size_t *value_len)
 {
   int ret = 0;
+  struct pipe *pipe;
+  struct sock *sock;
 
   if (!user)
     return EOPNOTSUPP;
 
-  pthread_mutex_lock (&user->sock->lock);
+  sock = user->sock;
+
+  pthread_mutex_lock (&sock->lock);
   switch (level)
     {
     case SOL_SOCKET:
@@ -446,7 +465,35 @@ S_socket_getopt (struct sock_user *user,
 	      ret = EINVAL;
 	      break;
 	    }
-	  *(int *)*value = user->sock->pipe_class->sock_type;
+	  *(int *)*value = sock->pipe_class->sock_type;
+	  *value_len = sizeof (int);
+	  break;
+	case SO_RCVBUF:
+	  if (*value_len < sizeof (int))
+	    {
+	      ret = EINVAL;
+	      break;
+	    }
+	  pipe = sock->read_pipe;
+	  if (!pipe)
+	    {
+	      ret = ENOTCONN;
+	      break;
+	    }
+	  *(int *)*value = pipe->write_limit;
+	  *value_len = sizeof (int);
+	  break;
+	case SO_SNDBUF:
+	  if (*value_len < sizeof (int))
+	    {
+	      ret = EINVAL;
+	      break;
+	    }
+	  pipe = sock->write_pipe;
+	  if (pipe)
+	    *(int *)*value = pipe->write_limit;
+	  else
+	    *(int *)*value = sock->req_write_limit;
 	  *value_len = sizeof (int);
 	  break;
 	case SO_ERROR:
@@ -477,7 +524,7 @@ S_socket_getopt (struct sock_user *user,
       ret = ENOPROTOOPT;
       break;
     }
-  pthread_mutex_unlock (&user->sock->lock);
+  pthread_mutex_unlock (&sock->lock);
 
   return ret;
 }
@@ -487,18 +534,98 @@ S_socket_setopt (struct sock_user *user,
 		 int level, int opt, data_t value, size_t value_len)
 {
   int ret = 0;
+  struct pipe *pipe;
+  struct sock *sock;
 
   if (!user)
     return EOPNOTSUPP;
 
-  pthread_mutex_lock (&user->sock->lock);
+  sock = user->sock;
+
+  pthread_mutex_lock (&sock->lock);
   switch (level)
     {
+    case SOL_SOCKET:
+      switch (opt)
+	{
+	case SO_RCVBUF:
+	  {
+	    int new, old;
+
+	    if (value_len < sizeof (int))
+	      {
+		ret = EINVAL;
+		break;
+	      }
+	    new = *(int *)value;
+	    if (new <= 0)
+	      {
+		ret = EINVAL;
+		break;
+	      }
+	    if (new > PFLOCAL_WRITE_LIMIT_MAX)
+	      new = PFLOCAL_WRITE_LIMIT_MAX;
+
+	    pipe = sock->read_pipe;
+	    if (!pipe)
+	      {
+		ret = ENOTCONN;
+		break;
+	      }
+
+	    pthread_mutex_lock (&pipe->lock);
+	    old = pipe->write_limit;
+	    pipe->write_limit = new;
+	    if (new > old)
+	      _pipe_wake_writers (pipe);
+	    pthread_mutex_unlock (&pipe->lock);
+	    break;
+	  }
+
+	case SO_SNDBUF:
+	  {
+	    int new, old;
+
+	    if (value_len < sizeof (int))
+	      {
+		ret = EINVAL;
+		break;
+	      }
+	    new = *(int *)value;
+	    if (new <= 0)
+	      {
+		ret = EINVAL;
+		break;
+	      }
+	    if (new > PFLOCAL_WRITE_LIMIT_MAX)
+	      new = PFLOCAL_WRITE_LIMIT_MAX;
+
+	    pipe = sock->write_pipe;
+	    if (!pipe)
+	      {
+		sock->req_write_limit = new;
+		break;
+	      }
+
+	    pthread_mutex_lock (&pipe->lock);
+	    old = pipe->write_limit;
+	    pipe->write_limit = new;
+	    if (new > old)
+	      _pipe_wake_writers (pipe);
+	    pthread_mutex_unlock (&pipe->lock);
+	    break;
+	  }
+
+	default:
+	  ret = ENOPROTOOPT;
+	  break;
+	}
+      break;
     default:
       ret = ENOPROTOOPT;
       break;
     }
-  pthread_mutex_unlock (&user->sock->lock);
+  pthread_mutex_unlock (&sock->lock);
 
   return ret;
 }

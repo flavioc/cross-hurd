@@ -19,7 +19,7 @@
 #include <hurd.h>
 #include "proc.h"
 #include <hurd/startup.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -35,11 +35,11 @@ check_message_return (struct proc *p, void *availpaddr)
     }
 }
 
-/* Register ourselves with init. */
+/* Register ourselves with statup. */
 static void *
-tickle_init (void *initport)
+tickle_statup (void *statupport)
 {
-  startup_essential_task ((mach_port_t) initport, mach_task_self (),
+  startup_essential_task ((mach_port_t) statupport, mach_task_self (),
 			  MACH_PORT_NULL, "proc", _hurd_host_priv);
   return NULL;
 }
@@ -65,11 +65,11 @@ S_proc_setmsgport (struct proc *p,
 
   if (p == startup_proc && startup_fallback)
     {
-    /* Init is single threaded, so we can't delay our reply for
+    /* Statup is single threaded, so we can't delay our reply for
        the essential task RPC; spawn a thread to do it. */
       pthread_t thread;
       error_t err;
-      err = pthread_create (&thread, NULL, tickle_init,
+      err = pthread_create (&thread, NULL, tickle_statup,
 			    (void*) (uintptr_t) msgport);
       if (!err)
 	pthread_detach (thread);
@@ -126,7 +126,8 @@ S_proc_getmsgport (struct proc *callerp,
 		   mach_port_t reply_port,
 		   mach_msg_type_name_t reply_port_type,
 		   pid_t pid,
-		   mach_port_t *msgport)
+		   mach_port_t *msgport,
+                   mach_msg_type_name_t *msgport_type)
 {
   int cancel;
   struct proc *p;
@@ -136,7 +137,31 @@ S_proc_getmsgport (struct proc *callerp,
 
   p = pid_find_allow_zombie (pid);
 
-restart:  
+  if (namespace_is_subprocess (p))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+      pid_t pid_sub;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2pid (p->p_task_namespace, p->p_task, &pid_sub);
+      if (! err)
+        err = proc_getmsgport (p->p_task_namespace, pid_sub, msgport);
+
+      pthread_mutex_lock (&global_lock);
+
+      if (! err)
+	{
+	  *msgport_type = MACH_MSG_TYPE_MOVE_SEND;
+	  return 0;
+	}
+
+      /* Fallback.  */
+    }
+
+ restart:
   while (p && p->p_deadmsg && !p->p_dead)
     {
       callerp->p_msgportwait = 1;
@@ -156,7 +181,8 @@ restart:
 
   if (check_msgport_death (p))
     goto restart;
-  
+
+  *msgport_type = MACH_MSG_TYPE_COPY_SEND;
   *msgport = p->p_msgport;
 
   return 0;

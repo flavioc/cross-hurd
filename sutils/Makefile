@@ -20,7 +20,7 @@
 dir := sutils
 makemode := utilities
 
-progs = reboot halt fsck swapon swapoff
+progs = reboot halt fsck swapon swapoff bless
 scripts = e2os MAKEDEV losetup
 targets = $(special-targets) $(progs)
 special-targets = $(scripts)
@@ -36,8 +36,8 @@ fsck: fstab.o clookup.o
 swapon swapoff: ../libstore/libstore.a default_pagerUser.o
 $(progs): %: %.o ../libshouldbeinlibc/libshouldbeinlibc.a
 
-install: $(prefix)/dev/MAKEDEV
-$(prefix)/dev/MAKEDEV: $(prefix)/dev
+install: $(DESTDIR)$(prefix)/dev/MAKEDEV
+$(DESTDIR)$(prefix)/dev/MAKEDEV: $(DESTDIR)$(prefix)/dev
 	ln -sf ../sbin/MAKEDEV $@
-$(prefix)/dev:
+$(DESTDIR)$(prefix)/dev:
 	@$(MKINSTALLDIRS) $@

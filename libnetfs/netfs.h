@@ -1,6 +1,6 @@
 /*
-
-   Copyright (C) 1994,95,96,97,99,2000,02,13 Free Software Foundation, Inc.
+   Copyright (C) 1994-1997, 1999, 2000, 2002, 2013-2019
+   Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -13,8 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #ifndef _HURD_NETFS_H_
 #define _HURD_NETFS_H_
@@ -22,8 +21,9 @@
 #include <hurd/ports.h>
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>
+#include <refcount.h>
 
 /* This library supports client-side network file system
    implementations.  It is analogous to the diskfs library provided for
@@ -50,7 +50,7 @@ struct protid
 struct peropen
 {
   loff_t filepointer;
-  int lock_status;
+  struct rlock_peropen lock_status;
   refcount_t refcnt;
   int openstat;
 
@@ -70,6 +70,8 @@ struct peropen
 /* A unique one of these exists for each node currently in use. */
 struct node
 {
+  struct node *next, **prevp;
+
   /* Protocol specific stuff; defined by user.  */
   struct netnode *nn;
 
@@ -91,7 +93,7 @@ struct node
 
   struct transbox transbox;
 
-  struct lock_box userlock;
+  struct rlock_box userlock;
 
   struct conch conch;
 
@@ -171,7 +173,7 @@ error_t netfs_attempt_chflags (struct iouser *cred, struct node *np,
 /* The user must define this function.  This should attempt a utimes
    call for the user specified by CRED on locked node NP, to change
    the atime to ATIME and the mtime to MTIME.  If ATIME or MTIME is
-   null, then set to the current time.  */
+   null, then do not change it.  */
 error_t netfs_attempt_utimes (struct iouser *cred, struct node *np,
 			      struct timespec *atime, struct timespec *mtime);
 
@@ -318,11 +320,10 @@ error_t netfs_file_get_storage_info (struct iouser *cred,
 				     mach_msg_type_number_t *data_len);
 
 /* The user may define this function.  The function must set source to
-   the source of CRED. The function may return an EOPNOTSUPP to
-   indicate that the concept of a source device is not applicable. The
-   default function always returns EOPNOTSUPP. */
-error_t netfs_get_source (struct protid *cred,
-                          char *source, size_t source_len);
+   the source of the translator. The function may return an EOPNOTSUPP
+   to indicate that the concept of a source device is not
+   applicable. The default function always returns EOPNOTSUPP.  */
+error_t netfs_get_source (char *source, size_t source_len);
 
 /* Option parsing */
 
@@ -481,5 +482,46 @@ extern auth_t netfs_auth_server_port;
 typedef struct protid *protid_t;
 typedef struct netfs_control *control_t;
 
+
+/* The following extracts from io_S.h and fs_S.h catch loff_t erroneously
+   written off_t and stat64 erroneously written stat,
+   or missing -D_FILE_OFFSET_BITS=64 build flag. */
+
+kern_return_t netfs_S_io_write (protid_t io_object,
+				data_t data,
+				mach_msg_type_number_t dataCnt,
+				loff_t offset,
+				vm_size_t *amount);
+
+kern_return_t netfs_S_io_read (protid_t io_object,
+			       data_t *data,
+			       mach_msg_type_number_t *dataCnt,
+			       loff_t offset,
+			       vm_size_t amount);
+
+kern_return_t netfs_S_io_seek (protid_t io_object,
+			       loff_t offset,
+			       int whence,
+			       loff_t *newp);
+
+kern_return_t netfs_S_io_stat (protid_t stat_object,
+			       io_statbuf_t *stat_info);
+
+kern_return_t netfs_S_file_set_size (protid_t trunc_file,
+				     loff_t new_size);
+
+kern_return_t netfs_S_file_get_storage_info (protid_t file,
+					     portarray_t *ports,
+					     mach_msg_type_name_t *portsPoly,
+					     mach_msg_type_number_t *portsCnt,
+					     intarray_t *ints,
+					     mach_msg_type_number_t *intsCnt,
+					     off_array_t *offsets,
+					     mach_msg_type_number_t *offsetsCnt,
+					     data_t *data,
+					     mach_msg_type_number_t *dataCnt);
+
+kern_return_t netfs_S_file_statfs (protid_t file,
+				   fsys_statfsbuf_t *info);
 
 #endif /* _HURD_NETFS_H_ */

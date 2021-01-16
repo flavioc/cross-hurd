@@ -24,11 +24,14 @@
 #include <hurd.h>
 #include <fcntl.h>
 #include <hurd/trivfs.h>
+#include <hurd/msg.h>
 #include <sys/wait.h>
 #include <error.h>
 #include <argp.h>
 #include <argz.h>
 #include <sys/mman.h>
+#include <assert-backtrace.h>
+#include <pthread.h>
 
 #include <version.h>
 
@@ -69,7 +72,106 @@ enum crash_action
 #define CRASH_ORPHANS_DEFAULT	crash_corefile
 
 static enum crash_action crash_how, crash_orphans_how;
+static char *corefile_template;
+pthread_mutex_t corefile_template_lock = PTHREAD_MUTEX_INITIALIZER;
 
+
+
+/* Template parsing.  */
+static int
+template_valid (const char *template, const char **errp)
+{
+  int valid = 0;
+  const char *t;
+  int specifier = 0;
+
+  for (t = template; *t; t++)
+    {
+      if (specifier)
+	switch (*t)
+	  {
+	  case '%':
+	  case 'p':
+	  case 's':
+	  case 't':
+	    specifier = 0;
+	    break;
+	  default:
+	    goto out;
+	  }
+      else if (*t == '%')
+	specifier = 1;
+    }
+
+ out:
+  valid = ! specifier;
+  *errp = valid? NULL: t;
+  return valid;
+}
+
+static char *
+template_make_file_name (const char *template,
+			 task_t task,
+			 int signo)
+{
+  const char *t;
+  char *file_name = NULL;
+  size_t file_name_len = 0;
+  FILE *stream;
+  int specifier = 0;
+
+  if (! template_valid (template, &t))
+    {
+      errno = EINVAL;
+      return NULL;
+    }
+
+  stream = open_memstream (&file_name, &file_name_len);
+  if (stream == NULL)
+    return NULL;
+
+  for (t = template; *t; t++)
+    {
+      if (specifier)
+	{
+	  switch (*t)
+	    {
+	    case '%':
+	      fprintf (stream, "%%");
+	      break;
+
+	    case 'p':
+	      fprintf (stream, "%d", task2pid (task));
+	      break;
+
+	    case 's':
+	      fprintf (stream, "%d", signo);
+	      break;
+
+	    case 't':
+	      fprintf (stream, "%lld", (long long) time (NULL));
+	      break;
+
+	    default:
+	      assert_backtrace (!"reached!");
+	    }
+	  specifier = 0;
+	}
+      else if (*t == '%')
+	specifier = 1;
+      else
+	fprintf (stream, "%c", *t);
+    }
+
+  assert_backtrace (! specifier);
+
+  fprintf (stream, "%c", 0);
+  fclose (stream);
+
+  return file_name;
+}
+
+
 
 /* This is defined in ../exec/elfcore.c, or we could have
    different implementations for other formats.  */
@@ -216,7 +318,9 @@ S_crash_dump_task (mach_port_t port,
 	      proc_mark_stop (user_proc, signo, sigcode);
 
 	      c->task = task;
+	      task = MACH_PORT_NULL;
 	      c->core_file = core_file;
+	      core_file = MACH_PORT_NULL;
 	      c->core_limit = (off_t) -1; /* XXX should core limit in RPC */
 	      c->signo = signo;
 	      c->sigcode = sigcode;
@@ -234,10 +338,47 @@ S_crash_dump_task (mach_port_t port,
       err = task_suspend (task);
       if (!err)
 	{
-	  err = dump_core (task, core_file,
+	  file_t sink = core_file;
+	  pthread_mutex_lock (&corefile_template_lock);
+	  if (corefile_template)
+	    {
+	      char *file_name;
+
+	      file_name = template_make_file_name (corefile_template,
+						   task, signo);
+	      pthread_mutex_unlock (&corefile_template_lock);
+
+	      if (file_name == NULL)
+		error (0, errno, "template_make_file_name");
+	      else
+		{
+		  sink = file_name_lookup (file_name, O_WRONLY|O_CREAT,
+					   S_IRUSR);
+		  if (! MACH_PORT_VALID (sink))
+		    {
+		      error (0, errno, "%s", file_name);
+		      sink = core_file;
+		    }
+		  free (file_name);
+		}
+	    }
+	  else
+	    pthread_mutex_unlock (&corefile_template_lock);
+
+	  err = dump_core (task, sink,
 			   (off_t) -1,	/* XXX should get core limit in RPC */
 			   signo, sigcode, sigerror);
 	  task_resume (task);
+
+	  if (sink != core_file)
+	    {
+	      mach_port_deallocate (mach_task_self (), sink);
+
+	      /* We return an error so that the libc discards
+		 CORE_FILE.  */
+	      if (! err)
+		err = EEXIST;
+	    }
 	}
       break;
 
@@ -250,17 +391,20 @@ S_crash_dump_task (mach_port_t port,
 	if (!err)
 	  err = proc_mark_exit (user_proc, W_EXITCODE (0, signo), sigcode);
 	err = task_terminate (task);
-	if (!err)
-	  {
-	    mach_port_deallocate (mach_task_self (), task);
-	    mach_port_deallocate (mach_task_self (), core_file);
-	    mach_port_deallocate (mach_task_self (), ctty_id);
-	  }
       }
     }
 
   if (user_proc != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), user_proc);
+  if (err == 0 || err == MIG_NO_REPLY)
+    {
+      if (MACH_PORT_VALID (task))
+	mach_port_deallocate (mach_task_self (), task);
+      if (MACH_PORT_VALID (core_file))
+	mach_port_deallocate (mach_task_self (), core_file);
+      if (MACH_PORT_VALID (ctty_id))
+	mach_port_deallocate (mach_task_self (), ctty_id);
+    }
 
   ports_port_deref (cred);
   return err;
@@ -444,13 +588,25 @@ static const struct argp_option options[] =
   {"kill",	'k', 0,		0, "Kill the process", 2},
   {"core-file", 'c', 0,		0, "Dump a core file", 2},
   {"dump-core",   0, 0,		OPTION_ALIAS },
+  {"core-file-name", 'C', "TEMPLATE", 0,
+   "Specify core file name (see below)", 2},
   {0}
 };
 static const char doc[] =
 "Server to handle crashing tasks and dump core files or equivalent.\v"
 "The ACTION values can be `suspend', `kill', or `core-file'.\n\n"
 "If `--orphan-action' is not specified, the `--action' value is used for "
-"orphans.  The default is `--action=suspend --orphan-action=core-file'.";
+"orphans.  The default is `--action=suspend --orphan-action=core-file'.\n"
+"\n"
+"The core file is either written to the file provided by the "
+"crashing process, or if a TEMPLATE value is given, to the file "
+"with the name constructed by expanding TEMPLATE value.  "
+"TEMPLATE may contain % specifiers:\n"
+"\n"
+"\t%%  just %\n"
+"\t%p  the process' PID\n"
+"\t%s  the signal number that caused the dump\n"
+"\t%t  time of crash in seconds since the EPOCH\n";
 
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
@@ -488,6 +644,31 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case 's': crash_how = crash_suspend;	break;
     case 'k': crash_how = crash_kill;		break;
     case 'c': crash_how = crash_corefile;	break;
+    case 'C':
+      {
+	char *errp;
+	if (! template_valid (arg, &errp))
+	  {
+	    argp_error (state, "Invalid template: ...'%s'", errp);
+	    return EINVAL;
+	  }
+      }
+      pthread_mutex_lock (&corefile_template_lock);
+      free (corefile_template);
+      if (strlen (arg) == 0)
+	corefile_template = NULL;
+      else
+	{
+	  corefile_template = strdup (arg);
+	  if (corefile_template == NULL)
+	    {
+	      pthread_mutex_unlock (&corefile_template_lock);
+	      argp_failure (state, 1, errno, "strdup");
+	      return errno;
+	    }
+	}
+      pthread_mutex_unlock (&corefile_template_lock);
+      break;
 
     case ARGP_KEY_SUCCESS:
       if (crash_orphans_how == crash_unspecified)
@@ -529,6 +710,20 @@ trivfs_append_args (struct trivfs_control *fsys,
         }
       err = argz_add (argz, argz_len, opt);
     }
+
+  pthread_mutex_lock (&corefile_template_lock);
+  if (!err && corefile_template)
+    {
+      char *template;
+      if (asprintf (&template, "--core-file-name=%s", corefile_template) < 0)
+	err = errno;
+      else
+	{
+	  err = argz_add (argz, argz_len, template);
+	  free (template);
+	}
+    }
+  pthread_mutex_unlock (&corefile_template_lock);
 
   return err;
 }

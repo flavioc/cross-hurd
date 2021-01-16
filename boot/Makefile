@@ -18,35 +18,16 @@
 dir := boot
 makemode := utility
 
-SRCS = mach-crt0.c boot.c ux.c sigvec.S syscall.S \
-       boot_script.c userland-boot.c
+SRCS = boot.c boot_script.c userland-boot.c
 COMMON-OBJS = notifyServer.o deviceServer.o \
        ioServer.o io_replyUser.o device_replyUser.o \
-       termServer.o bootstrapServer.o boot_script.o userland-boot.o
-OBJS = boot.o $(COMMON-OBJS)
-UX-OBJS = mach-crt0.o uxboot.o sigvec.o syscall.o ux.o $(COMMON-OBJS)
+       termServer.o boot_script.o userland-boot.o
+MIGSTUBS = machServer.o mach_hostServer.o gnumachServer.o task_notifyServer.o
+OBJS = boot.o $(COMMON-OBJS) $(MIGSTUBS)
 target = boot
-io-MIGSFLAGS=-DREPLY_PORTS
-HURDLIBS = store shouldbeinlibc
+MIGSFLAGS=-imacros $(srcdir)/mig-mutate.h -DHURD_DEFAULT_PAYLOAD_TO_PORT=1
+io-MIGSFLAGS=-DREPLY_PORTS -DHURD_DEFAULT_PAYLOAD_TO_PORT=1
+HURDLIBS = store shouldbeinlibc ihash
 LDLIBS += -lpthread
 
 include ../Makeconf
-
-#install: /usr/local/bin/uxboot
-#
-#/usr/local/bin/uxboot: uxboot
-#	cp $< $@
-
-MIGSFLAGS = -DHURD_DEFAULT_PAYLOAD_TO_PORT=1
-
-all: boot # uxboot
-
-uxboot.o: boot.c
-	$(COMPILE.c) -DUX $< -o $@
-
-uxboot.0: $(UX-OBJS)
-	$(LINK.o) -o $@ -static -nostartfiles -Wl,-T -Wl,$(srcdir)/frank1.ld $^
-uxboot.1: frankemul.ld uxboot.0
-	$(LD) -o $@ -T $^
-uxboot: uxboot.1
-	-$(OBJCOPY) -S --remove-section=.comment -O a.out-mach3 $< $@

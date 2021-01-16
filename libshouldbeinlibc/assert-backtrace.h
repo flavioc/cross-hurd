@@ -23,9 +23,11 @@
 #ifdef NDEBUG
 
 #define assert_backtrace(expr)		((void) 0)
-#define assert_backtrace_perror(errnum)	((void) 0)
+#define assert_perror_backtrace(errnum)	((void) 0)
 
 #else /* NDEBUG */
+
+#include <sys/cdefs.h>
 
 /* This prints an "Assertion failed" message, prints a stack trace,
    and aborts.	*/

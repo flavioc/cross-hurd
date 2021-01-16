@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <error.h>
 #include <stdio.h>
 #include <mach/message.h>
@@ -68,6 +68,11 @@ adjust_priority (unsigned int totalthreads)
     goto error_pset_priv;
 
   err = thread_max_priority (self, pset_priv, 0);
+  /* If we are running in an unprivileged subhurd, we got a faked
+     privileged processor set port.  This is indeed a kind of
+     permission problem, and we treat it as such.  */
+  if (err == KERN_INVALID_ARGUMENT)
+    err = EPERM;
   if (err)
     goto error_max_priority;
 
@@ -121,7 +126,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       int status;
       struct port_info *pi;
       struct rpc_info link;
-      register mig_reply_header_t *outp = (mig_reply_header_t *) outheadp;
+      mig_reply_header_t *outp = (mig_reply_header_t *) outheadp;
       static const mach_msg_type_t RetCodeType = {
 		/* msgt_name = */		MACH_MSG_TYPE_INTEGER_32,
 		/* msgt_size = */		32,

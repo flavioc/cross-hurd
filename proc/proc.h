@@ -68,9 +68,11 @@ struct proc
   pthread_cond_t p_wakeup;
 
   /* Miscellaneous information */
+  char *exe;			/* path to binary executable */
   vm_address_t p_argv, p_envp;
   vm_address_t start_code;	/* all executable segments are in this range */
   vm_address_t end_code;
+  vm_address_t p_entry;		/* executable entry */
   int p_status;			/* to return via wait */
   int p_sigcode;
   struct rusage p_rusage;	/* my usage if I'm dead, to return via wait */
@@ -92,6 +94,7 @@ struct proc
   unsigned int p_loginleader:1;	/* leader of login collection */
   unsigned int p_dead:1;	/* process is dead */
   unsigned int p_important:1;	/* has called proc_mark_important */
+  unsigned int p_continued:1;	/* has called proc_mark_cont */
 };
 
 typedef struct proc *pstruct_t;
@@ -137,19 +140,20 @@ struct exc
   natural_t thread_state[0];
 };
 
-mach_port_t authserver;
-struct proc *self_proc;		/* process HURD_PID_PROC (us) */
-struct proc *init_proc;		/* process 1 (sysvinit) */
-struct proc *startup_proc;	/* process 2 (hurd/init) */
+extern mach_port_t authserver;
+extern struct proc *self_proc;		/* process HURD_PID_PROC (us) */
+extern struct proc *init_proc;		/* process 1 (sysvinit) */
+extern struct proc *startup_proc;	/* process 2 (hurd/startup) */
 
-struct port_bucket *proc_bucket;
-struct port_class *proc_class;
-struct port_class *generic_port_class;
-struct port_class *exc_class;
+extern struct port_bucket *proc_bucket;
+extern struct port_class *proc_class;
+extern struct port_class *generic_port_class;
+extern struct port_class *exc_class;
 
-mach_port_t generic_port;	/* messages not related to a specific proc */
+extern mach_port_t generic_port;	/* messages not related to a specific proc */
+extern struct proc *kernel_proc;
 
-pthread_mutex_t global_lock;
+extern pthread_mutex_t global_lock;
 
 extern int startup_fallback;	/* (ab)use /hurd/startup's message port */
 
@@ -200,6 +204,9 @@ void leave_pgrp (struct proc *);
 void join_pgrp (struct proc *);
 void boot_setsid (struct proc *);
 
+int namespace_is_subprocess (struct proc *p);
+error_t namespace_translate_pids (mach_port_t namespace, pid_t *pids, size_t pids_len);
+struct proc *namespace_find_root (struct proc *);
 void process_has_exited (struct proc *);
 void alert_parent (struct proc *);
 void reparent_zombies (struct proc *);
@@ -207,7 +214,7 @@ void complete_exit (struct proc *);
 
 void initialize_version_info (void);
 
-void send_signal (mach_port_t, int, mach_port_t);
+void send_signal (mach_port_t, int, int, mach_port_t);
 
 
 #endif

@@ -19,7 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <errno.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <error.h>
 #include <stdio.h>
 
@@ -49,12 +49,11 @@ static struct pager_requests *pager_requests;
 void
 pager_clear_user_data (struct user_pager_info *upi)
 {
-  int idx;
+  size_t idx;
 
   for (idx = 0; idx < upi->memobj_npages; idx++)
     if (upi->memobj_pages[idx])
       vm_deallocate (mach_task_self (), upi->memobj_pages[idx], vm_page_size);
-  free (upi);
 }
 
 
@@ -81,7 +80,7 @@ error_t
 pager_write_page (struct user_pager_info *upi, vm_offset_t page,
                   vm_address_t buf)
 {
-  assert (upi->memobj_pages[page / vm_page_size] == (vm_address_t) NULL);
+  assert_backtrace (upi->memobj_pages[page / vm_page_size] == (vm_address_t) NULL);
   upi->memobj_pages[page / vm_page_size] = buf;
   return 0;
 }
@@ -91,7 +90,7 @@ error_t
 pager_unlock_page (struct user_pager_info *pager,
                    vm_offset_t address)
 {
-  assert (!"unlocking requested on unlocked page");
+  assert_backtrace (!"unlocking requested on unlocked page");
   return 0;
 }
 
@@ -100,7 +99,7 @@ void
 pager_notify_evict (struct user_pager_info *pager,
 		    vm_offset_t page)
 {
-  assert (!"unrequested notification on eviction");
+  assert_backtrace (!"unrequested notification on eviction");
 }
 
 
@@ -148,21 +147,17 @@ user_pager_create (struct user_pager *user_pager, unsigned int npages,
   error_t err;
   struct user_pager_info *upi;
 
-  upi = calloc (1, sizeof (struct user_pager_info)
-		+ sizeof (vm_address_t) * npages);
-  if (!upi)
+  /* XXX Are the values 1 and MEMORY_OBJECT_COPY_DELAY correct? */
+  user_pager->pager = \
+    pager_create_alloc (sizeof *upi + sizeof (vm_address_t) * npages,
+                        pager_bucket, 1, MEMORY_OBJECT_COPY_DELAY, 0);
+  if (!user_pager->pager)
     return errno;
 
+  upi = pager_get_upi (user_pager->pager);
   upi->memobj_npages = npages;
+  memset (upi->memobj_pages, 0, sizeof (vm_address_t) * npages);
 
-  /* XXX Are the values 1 and MEMORY_OBJECT_COPY_DELAY correct? */
-  user_pager->pager = pager_create (upi, pager_bucket,
-				    1, MEMORY_OBJECT_COPY_DELAY, 0);
-  if (!user_pager->pager)
-    {
-      free (upi);
-      return errno;
-    }
   user_pager->memobj = pager_get_port (user_pager->pager);
   ports_port_deref (user_pager->pager);
 
@@ -182,7 +177,6 @@ user_pager_create (struct user_pager *user_pager, unsigned int npages,
                 VM_INHERIT_NONE);
   if (err)
     {
-      /* UPI will be cleaned up by libpager.  */
       mach_port_deallocate (mach_task_self (), user_pager->memobj);
       return err;
     }
@@ -213,7 +207,7 @@ user_pager_get_filemap (struct user_pager *user_pager, vm_prot_t prot)
   /* Add a reference for each call, the caller will deallocate it.  */
   err = mach_port_mod_refs (mach_task_self (), user_pager->memobj,
                             MACH_PORT_RIGHT_SEND, +1);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   return user_pager->memobj;
 }

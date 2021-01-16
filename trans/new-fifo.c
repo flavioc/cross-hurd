@@ -24,7 +24,7 @@
 #include <error.h>
 #include <string.h>
 #include <fcntl.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include <pthread.h>
 #include <hurd.h>
@@ -220,7 +220,7 @@ main (int argc, char **argv)
   if (err)
     error (1, 0, "error creating protid port class");
 
-    err = trivfs_add_protid_port_class (&server_port_class);
+  err = trivfs_add_protid_port_class (&server_port_class);
   if (err)
     error (1, 0, "error creating protid port class");
 
@@ -536,7 +536,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
   else
     {
       struct pipe *pipe = cred->po->hook;
-      assert (pipe);
+      assert_backtrace (pipe);
       pthread_mutex_lock (&pipe->lock);
       err = pipe_read (pipe, cred->po->openmodes & O_NONBLOCK, NULL,
 		       data, data_len, amount);
@@ -565,7 +565,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
   else
     {
       struct pipe *pipe = cred->po->hook;
-      assert (pipe);
+      assert_backtrace (pipe);
       pthread_mutex_lock (&pipe->lock);
       *amount = pipe_readable (pipe, 1);
       pthread_mutex_unlock (&pipe->lock);
@@ -623,7 +623,6 @@ io_select_common (struct trivfs_protid *cred,
 	}
       else
 	{
-	  err = EBADF;
 	  ready |= SELECT_READ;	/* Error immediately available...  */
 	}
       if (err)
@@ -645,7 +644,6 @@ io_select_common (struct trivfs_protid *cred,
 	}
       else
 	{
-	  err = EBADF;
 	  ready |= SELECT_WRITE;	/* Error immediately available...  */
 	}
     }
@@ -837,7 +835,7 @@ trivfs_S_fsys_forward (mach_port_t server,
     return EOPNOTSUPP;
 
   server_trans = cred->po->cntl->hook;
-  assert (server_trans->server);
+  assert_backtrace (server_trans->server);
 
   argz_extract (argz, argz_len, argv);
 

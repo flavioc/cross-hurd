@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994,95,96,97,99,2002,13 Free Software Foundation, Inc.
+   Copyright (C) 1994-1999, 2002, 2013-2019 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -12,8 +12,8 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #ifndef __TRIVFS_H__
 #define __TRIVFS_H__
@@ -24,6 +24,7 @@
 #include <mach/mach.h>
 #include <hurd/ports.h>
 #include <hurd/iohelp.h>
+#include <hurd/fshelp.h>
 #include <refcount.h>
 
 struct trivfs_protid
@@ -45,6 +46,21 @@ struct trivfs_peropen
   int openmodes;
   refcount_t refcnt;
   struct trivfs_control *cntl;
+
+  struct rlock_peropen lock_status;
+  struct trivfs_node *tp;
+};
+
+/* A unique one of these exists for each node currently in use. */
+struct trivfs_node
+{
+  pthread_mutex_t lock;
+
+  /* The number of references to this node.  */
+  int references;
+
+  struct transbox transbox;
+  struct rlock_box credlock;
 };
 
 struct trivfs_control
@@ -85,10 +101,10 @@ void trivfs_modify_stat (struct trivfs_protid *cred, io_statbuf_t *);
    file permits to USER instead of checking the underlying node.
    REALNODE is the underlying node, and CNTL is the trivfs control
    object.  The access permissions are returned in ALLOWED.  */
-error_t (*trivfs_check_access_hook) (struct trivfs_control *cntl,
-				     struct iouser *user,
-				     mach_port_t realnode,
-				     int *allowed);
+extern error_t (*trivfs_check_access_hook) (struct trivfs_control *cntl,
+					    struct iouser *user,
+					    mach_port_t realnode,
+					    int *allowed);
 
 /* If this variable is set, it is called every time an open happens.
    USER and FLAGS are from the open; CNTL identifies the
@@ -96,45 +112,45 @@ error_t (*trivfs_check_access_hook) (struct trivfs_control *cntl,
    node.  This call can block as necessary, unless O_NONBLOCK is set
    in FLAGS.  Any desired error can be returned, which will be reflected
    to the user and prevent the open from succeeding.  */
-error_t (*trivfs_check_open_hook) (struct trivfs_control *cntl,
-				   struct iouser *user, int flags);
+extern error_t (*trivfs_check_open_hook) (struct trivfs_control *cntl,
+					  struct iouser *user, int flags);
 
 /* If this variable is set, it is called in place of `trivfs_open' (below).  */
-error_t (*trivfs_open_hook) (struct trivfs_control *fsys,
-			     struct iouser *user,
-			     mach_port_t dotdot,
-			     int flags,
-			     mach_port_t realnode,
-			     struct trivfs_protid **cred);
+extern error_t (*trivfs_open_hook) (struct trivfs_control *fsys,
+				    struct iouser *user,
+				    mach_port_t dotdot,
+				    int flags,
+				    mach_port_t realnode,
+				    struct trivfs_protid **cred);
 
 /* If this variable is set, it is called every time a new protid
    structure is created and initialized. */
-error_t (*trivfs_protid_create_hook) (struct trivfs_protid *);
+extern error_t (*trivfs_protid_create_hook) (struct trivfs_protid *);
 
 /* If this variable is set, it is called every time a new peropen
    structure is created and initialized. */
-error_t (*trivfs_peropen_create_hook) (struct trivfs_peropen *);
+extern error_t (*trivfs_peropen_create_hook) (struct trivfs_peropen *);
 
 /* If this variable is set, it is called every time a protid structure
    is about to be destroyed. */
-void (*trivfs_protid_destroy_hook) (struct trivfs_protid *);
+extern void (*trivfs_protid_destroy_hook) (struct trivfs_protid *);
 
 /* If this variable is set, it is called every time a peropen structure
    is about to be destroyed. */
-void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *);
+extern void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *);
 
 /* If this variable is set, it is called by trivfs_S_fsys_getroot before any
    other processing takes place; if the return value is EAGAIN, normal trivfs
    getroot processing continues, otherwise the rpc returns with that return
    value.  */
-error_t (*trivfs_getroot_hook) (struct trivfs_control *cntl,
-				mach_port_t reply_port,
-				mach_msg_type_name_t reply_port_type,
-				mach_port_t dotdot,
-				uid_t *uids, u_int nuids, uid_t *gids, u_int ngids,
-				int flags,
-				retry_type *do_retry, char *retry_name,
-				mach_port_t *node, mach_msg_type_name_t *node_type);
+extern error_t (*trivfs_getroot_hook) (struct trivfs_control *cntl,
+				       mach_port_t reply_port,
+				       mach_msg_type_name_t reply_port_type,
+				       mach_port_t dotdot,
+				       uid_t *uids, u_int nuids, uid_t *gids, u_int ngids,
+				       int flags,
+				       retry_type *do_retry, char *retry_name,
+				       mach_port_t *node, mach_msg_type_name_t *node_type);
 
 /* Creates a control port for this filesystem and sends it to BOOTSTRAP with
    fsys_startup.  CONTROL_CLASS & CONTROL_BUCKET are passed to the ports
@@ -170,8 +186,12 @@ trivfs_create_control (mach_port_t underlying,
 void trivfs_clean_protid (void *);
 void trivfs_clean_cntl (void *);
 
-/* This demultiplees messages for trivfs ports. */
+/* This demultiplexes messages for trivfs ports. */
 int trivfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
+
+/* FIXME: Add descriptions */
+struct trivfs_node *trivfs_make_node (struct trivfs_peropen *po);
+struct trivfs_peropen *trivfs_make_peropen (struct trivfs_protid *cred);
 
 /* Return a new protid pointing to a new peropen in CRED, with REALNODE as
    the underlying node reference, with the given identity, and open flags in
@@ -215,12 +235,11 @@ error_t trivfs_set_options (struct trivfs_control *fsys,
 error_t trivfs_append_args (struct trivfs_control *fsys,
 			    char **argz, size_t *argz_len);
 
-/* The user may define this function.  The function must set source to
-   the source device of CRED. The function may return an EOPNOTSUPP to
-   indicate that the concept of a source device is not applicable. The
-   default function always returns EOPNOTSUPP. */
-error_t trivfs_get_source (struct trivfs_protid *cred,
-                           char *source, size_t source_len);
+/* The user may define this function.  The function must set SOURCE to
+   the source of the translator. The function may return an EOPNOTSUPP
+   to indicate that the concept of a source device is not
+   applicable. The default function always returns EOPNOTSUPP. */
+error_t trivfs_get_source (char *source, size_t source_len);
 
 /* Add the port class *CLASS to the list of control port classes recognized
    by trivfs; if *CLASS is 0, an attempt is made to allocate a new port
@@ -252,5 +271,61 @@ void trivfs_remove_port_bucket (struct port_bucket *bucket);
 /* Type-aliases for mig.  */
 typedef struct trivfs_protid *trivfs_protid_t;
 typedef struct trivfs_control *trivfs_control_t;
+
+
+/* The following extracts from io_S.h and fs_S.h catch loff_t erroneously
+   written off_t and stat64 erroneously written stat,
+   or missing -D_FILE_OFFSET_BITS=64 build flag. */
+
+kern_return_t trivfs_S_io_write (trivfs_protid_t io_object,
+				 mach_port_t reply,
+				 mach_msg_type_name_t replyPoly,
+				 data_t data,
+				 mach_msg_type_number_t dataCnt,
+				 loff_t offset,
+				 vm_size_t *amount);
+
+kern_return_t trivfs_S_io_read (trivfs_protid_t io_object,
+				mach_port_t reply,
+				mach_msg_type_name_t replyPoly,
+				data_t *data,
+				mach_msg_type_number_t *dataCnt,
+				loff_t offset,
+				vm_size_t amount);
+
+kern_return_t trivfs_S_io_seek (trivfs_protid_t io_object,
+				mach_port_t reply,
+				mach_msg_type_name_t replyPoly,
+				loff_t offset,
+				int whence,
+				loff_t *newp);
+
+kern_return_t trivfs_S_io_stat (trivfs_protid_t stat_object,
+				mach_port_t reply,
+				mach_msg_type_name_t replyPoly,
+				io_statbuf_t *stat_info);
+
+kern_return_t trivfs_S_file_set_size (trivfs_protid_t trunc_file,
+				      mach_port_t reply,
+				      mach_msg_type_name_t replyPoly,
+				      loff_t new_size);
+
+kern_return_t trivfs_S_file_get_storage_info (trivfs_protid_t file,
+					      mach_port_t reply,
+					      mach_msg_type_name_t replyPoly,
+					      portarray_t *ports,
+					      mach_msg_type_name_t *portsPoly,
+					      mach_msg_type_number_t *portsCnt,
+					      intarray_t *ints,
+					      mach_msg_type_number_t *intsCnt,
+					      off_array_t *offsets,
+					      mach_msg_type_number_t *offsetsCnt,
+					      data_t *data,
+					      mach_msg_type_number_t *dataCnt);
+
+kern_return_t trivfs_S_file_statfs (trivfs_protid_t file,
+				    mach_port_t reply,
+				    mach_msg_type_name_t replyPoly,
+				    fsys_statfsbuf_t *info);
 
 #endif /* __TRIVFS_H__ */

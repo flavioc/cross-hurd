@@ -79,7 +79,7 @@ CPPFLAGS += $(INCLUDES) \
 	     -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 \
 	    $($*-CPPFLAGS)
 CFLAGS += -std=gnu99 $(gnu89-inline-CFLAGS) -Wall -g -O3 \
-	    $($*-CFLAGS)
+	    -fno-strict-aliasing $($*-CFLAGS)
 
 # Include the configure-generated file of parameters.
 # This sets up variables for build tools and installation directories.
@@ -238,8 +238,10 @@ ifneq ($(makemode),library)
 installable := $(sort $(linktarg) $(targets))
 install-targets := $(targets) $(filter $(build-static:=.static),$(linktarg))
 all: $(install-targets)
-install: $(installationdir) $(addprefix $(installationdir)/,$(install-targets))
-$(addprefix $(installationdir)/,$(installable)): $(installationdir)/%: %
+install: $(DESTDIR)$(installationdir) $(addprefix $(DESTDIR)$(installationdir)/,$(install-targets))
+$(DESTDIR)$(installationdir):
+	@$(MKINSTALLDIRS) $@
+$(addprefix $(DESTDIR)$(installationdir)/,$(installable)): $(DESTDIR)$(installationdir)/%: %
 	$(INSTALL_PROGRAM) $(INSTALL-$<-ops) $< $@
 else
 
@@ -248,11 +250,11 @@ else
 all: libs
 install libs: add-to-librecord
 add-to-librecord: $(targets)
-install: $(libdir) $(includedir)/$(installhdrsubdir) $(libdir)/$(libname).so.$(hurd-version) $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
+install: $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/$(installhdrsubdir) $(DESTDIR)$(libdir)/$(libname).so.$(hurd-version) $(addprefix $(DESTDIR)$(libdir)/,$(targets)) $(addprefix $(DESTDIR)$(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
-install-headers: $(includedir)/$(installhdrsubdir) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
+install-headers: $(DESTDIR)$(includedir)/$(installhdrsubdir) $(addprefix $(DESTDIR)$(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
-$(includedir)/$(installhdrsubdir): $(includedir)
+$(DESTDIR)$(includedir)/$(installhdrsubdir): $(DESTDIR)$(includedir)
 	@$(MKINSTALLDIRS) $@
 
 # Arrange to have the headers installed locally anytime we build the library.
@@ -272,17 +274,17 @@ $(patsubst %.o,%.d,$(filter %.o,$(OBJS))): $(INSTALLED_LOCAL_HEADERS)
 # relative names with ../$(dir) and make won't notice that's us.
 ../$(dir)/%: % ;
 
-$(addprefix $(libdir)/$(libname),_p.a .a _pic.a): $(libdir)/%: %
+$(addprefix $(DESTDIR)$(libdir)/$(libname),_p.a .a _pic.a): $(DESTDIR)$(libdir)/%: %
 	$(INSTALL_DATA) $< $@
 	$(RANLIB) $@
 
-$(libdir)/$(libname).so.$(hurd-version): $(libname).so.$(hurd-version)
+$(DESTDIR)$(libdir)/$(libname).so.$(hurd-version): $(libname).so.$(hurd-version)
 	$(INSTALL_DATA) $< $@
 
-$(libdir)/$(libname).so: $(libdir)/$(libname).so.$(hurd-version)
+$(DESTDIR)$(libdir)/$(libname).so: $(DESTDIR)$(libdir)/$(libname).so.$(hurd-version)
 	ln -f -s $(<F) $@
 
-$(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(installhdrsubdir)/%: %
+$(addprefix $(DESTDIR)$(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(DESTDIR)$(includedir)/$(installhdrsubdir)/%: %
 	$(INSTALL_DATA) $< $@
 
 # Arrange to have the shared libraries available locally in one single
@@ -301,7 +303,7 @@ install:
 install-headers:
 
 # Making installation directories
-$(installationdirlist): %:
+$(addprefix $(DESTDIR),$(installationdirlist)): %:
 	@$(MKINSTALLDIRS) $@
 
 # Building the target
@@ -323,7 +325,8 @@ _libsubst=${libsubst$(patsubst %,-override,${libsubst-override})}
 
 # Direct the linker where to find shared objects specified in the
 # dependencies of other shared objects it encounters.
-lpath := -L. $(patsubst %,-L%,$(dir $(wildcard ../lib*/lib*.so)))
+lib_dirs := $(dir $(wildcard ../lib*/lib*.so))
+lpath := -L. $(lib_dirs:%=-L%) $(lib_dirs:%=-Wl,-rpath-link=%)
 
 # Main rule to link executables
 #
@@ -548,7 +551,7 @@ MIGCOMFLAGS := -subrprefix __
 	  -DHURD_SERVER=1 \
 	  -MD -MF $*.sdefs.d.new \
 	  $< -o $*.sdefsi
-	sed -e 's/[^:]*:/$*Server.c $(mig-sheader-prefix)$*_S.h:/' \
+	sed -e 's#[^:]*:#$*Server.c $(mig-sheader-prefix)$*_S.h:#' \
 	  < $*.sdefs.d.new > $*.sdefs.d
 	rm $*.sdefs.d.new
 
@@ -561,7 +564,7 @@ $(mig-sheader-prefix)%_S.h %Server.c: %.sdefsi
 	$(CPP) $(CPPFLAGS) $(MIGUFLAGS) $($*-MIGUFLAGS) \
 	  -MD -MF $*.udefs.d.new \
 	  $< -o $*.udefsi
-	sed -e 's/[^:]*:/$*User.c $*_U.h:/' \
+	sed -e 's#[^:]*:#$*User.c $*_U.h:#' \
 	  < $*.udefs.d.new > $*.udefs.d
 	rm $*.udefs.d.new
 
@@ -579,15 +582,19 @@ mach_defs_names = bootstrap exc mach mach4 \
 	gnumach \
 	task_notify \
 
+mach_i386_defs_names = mach_i386
 mach_debug_defs_names = mach_debug
 device_defs_names = dev_forward device device_reply device_request
 
 mach_defs = $(addsuffix .defs,$(mach_defs_names))
+mach_i386_defs = $(addsuffix .defs,$(mach_i386_defs_names))
 mach_debug_defs = $(addsuffix .defs,$(mach_debug_defs_names))
 device_defs = $(addsuffix .defs,$(device_defs_names))
 
 $(mach_defs): %.defs:
 	echo '#include <mach/$@>' > $@
+$(mach_i386_defs): %.defs:
+	echo '#include <mach/i386/$@>' > $@
 $(mach_debug_defs): %.defs:
 	echo '#include <mach_debug/$@>' > $@
 $(device_defs): %.defs:

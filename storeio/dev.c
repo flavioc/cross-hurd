@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <hurd.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 #include <hurd/pager.h>
 #include <hurd/store.h>
@@ -87,6 +87,14 @@ dev_buf_fill (struct dev *dev, off_t offs)
   if (err)
     return err;
 
+  if (buf_len < store->block_size)
+    {
+      /* Short read, translate this to EIO */
+      if (buf != dev->buf)
+	munmap (buf, buf_len);
+      return EIO;
+    }
+
   if (buf != dev->buf)
     {
       munmap (dev->buf, store->block_size);
@@ -106,7 +114,7 @@ dev_buf_rw (struct dev *dev, size_t buf_offs, size_t *io_offs, size_t *len,
 {
   size_t block_size = dev->store->block_size;
 
-  assert (dev_buf_is_active (dev));
+  assert_backtrace (dev_buf_is_active (dev));
 
   if (buf_offs + *len >= block_size)
     /* Only part of BUF lies within the buffer (or everything up
@@ -141,7 +149,7 @@ dev_open (struct dev *dev)
   const int flags = ((dev->readonly ? STORE_READONLY : 0)
 		     | (dev->no_fileio ? STORE_NO_FILEIO : 0));
 
-  assert (dev->store == 0);
+  assert_backtrace (dev->store == 0);
 
   if (dev->store_name == 0)
     {
@@ -161,8 +169,11 @@ dev_open (struct dev *dev)
      to support this.  */
   store_set_flags (dev->store, STORE_INACTIVE);
 
-  dev->buf = mmap (0, dev->store->block_size, PROT_READ|PROT_WRITE,
-		   MAP_ANON, 0, 0);
+  if (! dev->store->block_size)
+    dev->buf = NULL;
+  else
+    dev->buf = mmap (0, dev->store->block_size, PROT_READ|PROT_WRITE,
+		     MAP_ANON, 0, 0);
   if (dev->buf == MAP_FAILED)
     {
       store_free (dev->store);
@@ -188,7 +199,7 @@ dev_open (struct dev *dev)
 void
 dev_close (struct dev *dev)
 {
-  assert (dev->store);
+  assert_backtrace (dev->store);
 
   if (!dev->inhibit_cache)
     {

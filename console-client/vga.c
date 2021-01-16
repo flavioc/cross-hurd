@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <errno.h>
 #include <error.h>
 #include <fcntl.h>
@@ -385,14 +385,10 @@ vga_display_fini (void *handle, int force)
   free (disp);
   dynacolor_fini ();
   vga_fini ();
-  if (vga_display_font)
-    free (vga_display_font);
-  if (vga_display_font_italic)
-    free (vga_display_font_italic);
-  if (vga_display_font_bold)
-    free (vga_display_font_bold);
-  if (vga_display_font_bold_italic)
-    free (vga_display_font_bold_italic);
+  free (vga_display_font);
+  free (vga_display_font_italic);
+  free (vga_display_font_bold);
+  free (vga_display_font_bold_italic);
 
   return 0;
 }

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Make standard devices
 #
@@ -11,6 +11,7 @@ DEVDIR=`pwd`	# Reset below by -D/--devdir command line option.
 STFLAGS="-g"	# Set to -k if active translators are to be kept.
 KEEP=		# Set to something if existing files are to be left alone.
 USE_PARTSTORE=	# Whether to use the newer part: stores
+MASTER=		# Where to get master device from
 
 while :; do
   case "$1" in
@@ -21,6 +22,7 @@ Make filesystem nodes for accessing standard system devices
 
   -D, --devdir=DIR           Use DIR when a device node name must be
                              embedded in a translator; default is the cwd
+  -M, --master-device=FILE   Use FILE as master device node.
   -k, --keep-active          Leave any existing active translator running
   -K, --keep-all             Don't overwrite existing files
   -p, --parted               Prefer user-space parted stores to kernel devices
@@ -32,9 +34,13 @@ Make filesystem nodes for accessing standard system devices
   -V, --version              Print program version"
       exit 0;;
     --devdir)   DEVDIR="$2"; shift 2;;
-    --devdir=*) DEVDIR="`echo "$1" | sed 's/^--devdir=//'`"; shift 1;;
+    --devdir=*) DEVDIR="${1#--devdir=}"; shift 1;;
     -D)         DEVDIR="$2"; shift 2;;
-    -D*)        DEVDIR="`echo "$1" | sed 's/^-D//'`"; shift 1;;
+    -D*)        DEVDIR="${1#-D}"; shift 1;;
+    --master-device)   MASTER="$2":; shift 2;;
+    --master-device=*) MASTER="${1#--master-device=}"; shift 1;;
+    -M)         MASTER="$2":; shift 2;;
+    -M*)        MASTER="${1#-M}"; shift 1;;
     --keep-active|-k) STFLAGS="-k"; shift;;
     --keep-all|-K) KEEP=1; shift;;
     --parted|-p) USE_PARTSTORE=1; shift;;
@@ -100,7 +106,7 @@ mkdev() {
 	;;
 
       std)
-	mkdev console tty urandom null zero full fd time mem klog shm
+	mkdev console tty random urandom null zero full fd time mem klog shm
 	;;
       console|com[0-9])
 	st $I root 600 /hurd/term ${DEVDIR}/$I device $I;;
@@ -111,8 +117,12 @@ mkdev() {
 	   ${DEVDIR}/vcs/`echo $I | sed -e s/tty//`/console;;
       lpr[0-9])
         st $I root 660 /hurd/streamio "$I";;
+      random)
+	st $I root 644 /hurd/random --seed-file /var/lib/random-seed;;
       urandom)
-	st $I root 644 /hurd/random --fast --seed-file /var/lib/random-seed;;
+	# Our /dev/random is both secure and non-blocking.  Create a
+	# link for compatibility with Linux.
+	cmd ln -f -s random $I;;
       null)
 	st $I root 666 /hurd/null;;
       full)
@@ -155,7 +165,11 @@ mkdev() {
 	st $I root 640 /hurd/storeio $I
 	;;
 
-      [hrsc]d*)
+      rumpdisk)
+	st $I root 660 /hurd/rumpdisk
+	cmd ln -f -s rumpdisk disk
+	;;
+      [hrscw]d*)
 	local sliceno=
         local n="${I#?d}"
 	local major="${n%%[!0-9]*}"
@@ -190,20 +204,28 @@ mkdev() {
 	  lose "$I: Invalid slice or partition syntax"
 	  ;;
 	esac
+	case "$I" in
+	wd*|cd*)
+	  USE_PARTSTORE=1
+	  MASTER=@/dev/disk:
+	  ;;
+	esac
 
 	# The device name passed all syntax checks, so finally use it!
 	if [ "$USE_PARTSTORE" ] && [ -z "$rest" ] && [ "$sliceno" ]; then
 	  local dev=${I%s[0-9]*}
-	  st $I root 640 /hurd/storeio -T typed part:$sliceno:device:$dev
+	  st $I root 640 /hurd/storeio -T typed part:$sliceno:device:$MASTER$dev
 	else
-	  st $I root 640 /hurd/storeio $I
+	  st $I root 640 /hurd/storeio $MASTER$I
 	fi
 	;;
 
       netdde)
-	st $I root 660 /hurd/netdde;;
+	st $I root 660 /hurd/netdde
+	cmd ln -f -s netdde net
+	;;
       eth*)
-	st $I root 660 /hurd/devnode -M /dev/netdde $I;;
+	st $I root 660 /hurd/devnode -M /dev/net $I;;
 
       # /dev/shm is used by the POSIX.1 shm_open call in libc.
       # We don't want the underlying node to be written by randoms,

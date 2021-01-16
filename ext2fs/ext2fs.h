@@ -17,6 +17,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#ifndef _EXT2FS_H
+#define _EXT2FS_H
+
 #include <mach.h>
 #include <hurd.h>
 #include <hurd/ports.h>
@@ -26,7 +29,7 @@
 #include <hurd/store.h>
 #include <hurd/diskfs.h>
 #include <hurd/ihash.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>
 #include <sys/mman.h>
 
@@ -116,9 +119,13 @@ void pokel_inherit (struct pokel *pokel, struct pokel *from);
 
 #include <stdint.h>
 
+/* Forward declarations for the following functions that are usually
+   inlined.  In case inlining is disabled, or inlining is not
+   applicable, or a reference is taken to one of these functions, an
+   implementation is provided in 'xinl.c'.  */
 extern int test_bit (unsigned num, unsigned char *bitmap);
-
 extern int set_bit (unsigned num, unsigned char *bitmap);
+extern int clear_bit (unsigned num, unsigned char *bitmap);
 
 #if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
 /* Returns TRUE if bit NUM is set in BITMAP.  */
@@ -271,13 +278,15 @@ extern pthread_cond_t disk_cache_reassociation;
 
 void *disk_cache_block_ref (block_t block);
 void disk_cache_block_ref_ptr (void *ptr);
-void disk_cache_block_deref (void *ptr);
+void _disk_cache_block_deref (void *ptr);
+#define disk_cache_block_deref(PTR)                             \
+  do { _disk_cache_block_deref (PTR); PTR = NULL; } while (0)
 int disk_cache_block_is_ref (block_t block);
 
 /* Our in-core copy of the super-block (pointer into the disk_cache).  */
-struct ext2_super_block *sblock;
+extern struct ext2_super_block *sblock;
 /* True if sblock has been modified.  */
-int sblock_dirty;
+extern int sblock_dirty;
 
 /* Where the super-block is located on disk (at min-block 1).  */
 #define SBLOCK_BLOCK	1	/* Default location, second 1k block.  */
@@ -286,21 +295,21 @@ extern unsigned int sblock_block; /* Specified location (in 1k blocks).  */
 #define SBLOCK_OFFS	(sblock_block << 10) /* Byte offset of superblock.  */
 
 /* The filesystem block-size.  */
-unsigned int block_size;
+extern unsigned int block_size;
 /* The log base 2 of BLOCK_SIZE.  */
-unsigned int log2_block_size;
+extern unsigned int log2_block_size;
 
 /* The number of bits to scale min-blocks to get filesystem blocks.  */
 #define BLOCKSIZE_SCALE	(sblock->s_log_block_size)
 
 /* log2 of the number of device blocks in a filesystem block.  */
-unsigned log2_dev_blocks_per_fs_block;
+extern unsigned log2_dev_blocks_per_fs_block;
 
 /* log2 of the number of stat blocks (512 bytes) in a filesystem block.  */
-unsigned log2_stat_blocks_per_fs_block;
+extern unsigned log2_stat_blocks_per_fs_block;
 
 /* A handy page of page-aligned zeros.  */
-vm_address_t zeroblock;
+extern vm_address_t zeroblock;
 
 /* Get the superblock from the disk, point `sblock' to it, and setup
    various global info from it.  */
@@ -315,23 +324,23 @@ void map_hypermetadata ();
 /* ---------------------------------------------------------------- */
 /* Random stuff calculated from the super block.  */
 
-unsigned long frag_size;	/* Size of a fragment in bytes */
-unsigned long frags_per_block;	/* Number of fragments per block */
-unsigned long inodes_per_block;	/* Number of inodes per block */
+extern unsigned long frag_size;	/* Size of a fragment in bytes */
+extern unsigned long frags_per_block;	/* Number of fragments per block */
+extern unsigned long inodes_per_block;	/* Number of inodes per block */
 
-unsigned long itb_per_group;	/* Number of inode table blocks per group */
-unsigned long db_per_group;	/* Number of descriptor blocks per group */
-unsigned long desc_per_block;	/* Number of group descriptors per block */
-unsigned long addr_per_block;	/* Number of disk addresses per block */
+extern unsigned long itb_per_group;	/* Number of inode table blocks per group */
+extern unsigned long db_per_group;	/* Number of descriptor blocks per group */
+extern unsigned long desc_per_block;	/* Number of group descriptors per block */
+extern unsigned long addr_per_block;	/* Number of disk addresses per block */
 
-unsigned long groups_count;	/* Number of groups in the fs */
+extern unsigned long groups_count;	/* Number of groups in the fs */
 
 /* ---------------------------------------------------------------- */
 
-pthread_spinlock_t node_to_page_lock;
+extern pthread_spinlock_t node_to_page_lock;
 
-pthread_spinlock_t generation_lock;
-unsigned long next_generation;
+extern pthread_spinlock_t generation_lock;
+extern unsigned long next_generation;
 
 /* ---------------------------------------------------------------- */
 /* Functions for looking inside disk_cache */
@@ -349,6 +358,15 @@ unsigned long next_generation;
 /* pointer to in-memory block -> index in disk_cache_info */
 #define bptr_index(ptr) (((char *)ptr - (char *)disk_cache) >> log2_block_size)
 
+/* Forward declarations for the following functions that are usually
+   inlined.  In case inlining is disabled, or inlining is not
+   applicable, or a reference is taken to one of these functions, an
+   implementation is provided in 'xinl.c'.  */
+extern char *boffs_ptr (off_t offset);
+extern off_t bptr_offs (void *ptr);
+
+#if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
+
 /* byte offset on disk --> pointer to in-memory block */
 EXT2FS_EI char *
 boffs_ptr (off_t offset)
@@ -357,7 +375,7 @@ boffs_ptr (off_t offset)
   pthread_mutex_lock (&disk_cache_lock);
   char *ptr = hurd_ihash_find (disk_cache_bptr, block);
   pthread_mutex_unlock (&disk_cache_lock);
-  assert (ptr);
+  assert_backtrace (ptr);
   ptr += offset % block_size;
   ext2_debug ("(%lld) = %p", offset, ptr);
   return ptr;
@@ -369,16 +387,18 @@ bptr_offs (void *ptr)
 {
   vm_offset_t mem_offset = (char *)ptr - (char *)disk_cache;
   off_t offset;
-  assert (mem_offset < disk_cache_size);
+  assert_backtrace (mem_offset < disk_cache_size);
   pthread_mutex_lock (&disk_cache_lock);
   offset = (off_t) disk_cache_info[boffs_block (mem_offset)].block
     << log2_block_size;
-  assert (offset || mem_offset < block_size);
+  assert_backtrace (offset || mem_offset < block_size);
   offset += mem_offset % block_size;
   pthread_mutex_unlock (&disk_cache_lock);
   ext2_debug ("(%p) = %lld", ptr, offset);
   return offset;
 }
+
+#endif /* Use extern inlines.  */
 
 /* block num --> pointer to in-memory block */
 #define bptr(block) boffs_ptr(boffs(block))
@@ -389,11 +409,16 @@ bptr_offs (void *ptr)
    stored starting in the filesystem block following the super block.
    We cache a pointer into the disk image for easy lookup.  */
 #define group_desc(num)	(&group_desc_image[num])
-struct ext2_group_desc *group_desc_image;
+extern struct ext2_group_desc *group_desc_image;
 
 #define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
 
-extern struct ext2_inode *dino (ino_t inum);
+/* Forward declarations for the following functions that are usually
+   inlined.  In case inlining is disabled, or inlining is not
+   applicable, or a reference is taken to one of these functions, an
+   implementation is provided in 'xinl.c'.  */
+extern struct ext2_inode * dino_ref (ino_t inum);
+extern void _dino_deref (struct ext2_inode *inode);
 
 #if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
 /* Convert an inode number to the dinode on disk. */
@@ -412,12 +437,14 @@ dino_ref (ino_t inum)
 }
 
 EXT2FS_EI void
-dino_deref (struct ext2_inode *inode)
+_dino_deref (struct ext2_inode *inode)
 {
   ext2_debug ("(%p)", inode);
   disk_cache_block_deref (inode);
 }
 #endif /* Use extern inlines.  */
+#define dino_deref(INODE)                               \
+  do { _dino_deref (INODE); INODE = NULL; } while (0)
 
 /* ---------------------------------------------------------------- */
 /* inode.c */
@@ -429,17 +456,21 @@ void write_all_disknodes ();
 
 /* What to lock if changing global data data (e.g., the superblock or block
    group descriptors or bitmaps).  */
-pthread_spinlock_t global_lock;
+extern pthread_spinlock_t global_lock;
 
 /* Where to record such changes.  */
-struct pokel global_pokel;
+extern struct pokel global_pokel;
 
 /* If the block size is less than the page size, then this bitmap is used to
    record which disk blocks are actually modified, so we don't stomp on parts
    of the disk which are backed by file pagers.  */
-unsigned char *modified_global_blocks;
-pthread_spinlock_t modified_global_blocks_lock;
+extern unsigned char *modified_global_blocks;
+extern pthread_spinlock_t modified_global_blocks_lock;
 
+/* Forward declarations for the following functions that are usually
+   inlined.  In case inlining is disabled, or inlining is not
+   applicable, or a reference is taken to one of these functions, an
+   implementation is provided in 'xinl.c'.  */
 extern int global_block_modified (block_t block);
 extern void record_global_poke (void *ptr);
 extern void sync_global_ptr (void *bptr, int wait);
@@ -474,18 +505,18 @@ record_global_poke (void *ptr)
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
   ext2_debug ("(%p = %p)", ptr, block_ptr);
-  assert (disk_cache_block_is_ref (block));
+  assert_backtrace (disk_cache_block_is_ref (block));
   global_block_modified (block);
   pokel_add (&global_pokel, block_ptr, block_size);
 }
 
 /* This syncs a modification to a non-file block.  */
 EXT2FS_EI void
-sync_global_ptr (void *bptr, int wait)
+sync_global_ptr (void *ptr, int wait)
 {
-  block_t block = boffs_block (bptr_offs (bptr));
+  block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
-  ext2_debug ("(%p -> %u)", bptr, block);
+  ext2_debug ("(%p -> %u)", ptr, block);
   global_block_modified (block);
   disk_cache_block_deref (block_ptr);
   pager_sync_some (diskfs_disk_pager,
@@ -500,7 +531,7 @@ record_indir_poke (struct node *node, void *ptr)
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
   ext2_debug ("(%llu, %p)", node->cache_id, ptr);
-  assert (disk_cache_block_is_ref (block));
+  assert_backtrace (disk_cache_block_is_ref (block));
   global_block_modified (block);
   pokel_add (&diskfs_node_disknode (node)->indir_pokel, block_ptr, block_size);
 }
@@ -571,3 +602,23 @@ extern void _ext2_panic (const char *, const char *, ...)
 
 extern void ext2_warning (const char *, ...)
      __attribute__ ((format (printf, 1, 2)));
+
+/* ---------------------------------------------------------------- */
+/* xattr.c */
+
+error_t ext2_list_xattr (struct node *np, char *buffer, size_t *len);
+error_t ext2_get_xattr (struct node *np, const char *name, char *value, size_t *len);
+error_t ext2_set_xattr (struct node *np, const char *name, const char *value, size_t len, int flags);
+error_t ext2_free_xattr_block (struct node *np);
+
+/* Use extended attribute-based translator records.
+ *
+ * This flag allows users to opt-in to the use of extended attributes
+ * for storing translator records.  We will make this the default once
+ * we feel confident that the implementation is fine.
+ *
+ * XXX: Remove this in Hurd 1.0 (or 0.10, or whatever follows 0.9).
+ */
+extern int use_xattr_translator_records;
+
+#endif

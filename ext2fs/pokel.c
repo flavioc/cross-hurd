@@ -71,7 +71,7 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
 	{
 	  if (pokel->image == disk_cache)
 	    for (vm_offset_t i = offset; i < end; i += block_size)
-	      disk_cache_block_deref (disk_cache + i);
+	      _disk_cache_block_deref (disk_cache + i);
 
 	  break;
 	}
@@ -85,7 +85,7 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
 	      vm_offset_t i_begin = p_offs > offset ? p_offs : offset;
 	      vm_offset_t i_end = p_end < end ? p_end : end;
 	      for (vm_offset_t i = i_begin; i < i_end; i += block_size)
-		disk_cache_block_deref (disk_cache + i);
+		_disk_cache_block_deref (disk_cache + i);
 	    }
 
 	  ext2_debug ("extended 0x%x[%ul] to 0x%x[%ul]",
@@ -102,7 +102,7 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
       if (pl == NULL)
 	{
 	  pl = malloc (sizeof (struct poke));
-	  assert (pl);
+	  assert_backtrace (pl);
 	}
       else
 	pokel->free_pokes = pl->next;
@@ -140,7 +140,7 @@ _pokel_exec (struct pokel *pokel, int sync, int wait)
 	  vm_offset_t begin = trunc_block (pl->offset);
 	  vm_offset_t end = round_block (pl->offset + pl->length);
 	  for (vm_offset_t i = begin; i != end; i += block_size)
-	    disk_cache_block_deref (pokel->image + i);
+	    _disk_cache_block_deref (pokel->image + i);
 	}
     }
 
@@ -173,8 +173,8 @@ pokel_inherit (struct pokel *pokel, struct pokel *from)
 {
   struct poke *pokes, *last;
   
-  assert (pokel->pager == from->pager);
-  assert (pokel->image == from->image);
+  assert_backtrace (pokel->pager == from->pager);
+  assert_backtrace (pokel->image == from->image);
 
   /* Take all pokes from FROM...  */
   pthread_spin_lock (&from->lock);

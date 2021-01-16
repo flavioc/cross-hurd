@@ -21,7 +21,7 @@
 #ifndef __SOCK_H__
 #define __SOCK_H__
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>		/* For mutexes */
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -51,6 +51,9 @@ struct sock
      A sock always has a read pipe, and a write pipe when it's connected to
      another socket.  */
   struct pipe *read_pipe, *write_pipe;
+
+  /* The write limit that this side would like write_pipe to support.  */
+  size_t req_write_limit;
 
   /* FLAGS from SOCK_*, below.  */
   unsigned flags;
@@ -82,6 +85,10 @@ struct sock
   /* A connection queue we're attempting to connect through; a socket may
      only be attempting one connection at a time.  */
   struct connq *connect_queue;
+
+  /* Effective identity of the creator of the socket */
+  uid_t uid;
+  gid_t gid;
 };
 
 /* Socket flags */
@@ -139,12 +146,12 @@ sock_deref (struct sock *sock)
 
       /* Unbind */
       err = sock_bind (sock, NULL);
-      assert (!err);
+      assert_backtrace (!err);
 
       /* And release the ref, and thus kill SOCK.  */
       pthread_mutex_lock (&sock->lock);
       sock->refs--;
-      assert(sock->refs == 0);
+      assert_backtrace (sock->refs == 0);
       _sock_norefs (sock);
     }
   else
@@ -186,5 +193,8 @@ error_t sock_global_shutdown ();
 /* Mostly here for use by mig-decls.h.  */
 extern struct port_class *sock_user_port_class;
 extern struct port_class *addr_port_class;
+
+/* Maximum allowed size for libpipe buffers */
+#define PFLOCAL_WRITE_LIMIT_MAX (1024*1024)
 
 #endif /* __SOCK_H__ */

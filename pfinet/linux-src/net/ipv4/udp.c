@@ -127,20 +127,16 @@ struct udp_mib		udp_statistics;
 
 struct sock *udp_hash[UDP_HTABLE_SIZE];
 
-/* Shared by v4/v6 udp. */
-int udp_port_rover = 0;
-
 static int udp_v4_get_port(struct sock *sk, unsigned short snum)
 {
 	SOCKHASH_LOCK();
 	if (snum == 0) {
+		int low = sysctl_local_port_range[0];
+		int high = sysctl_local_port_range[1];
 		int best_size_so_far, best, result, i;
 
-		if (udp_port_rover > sysctl_local_port_range[1] ||
-		    udp_port_rover < sysctl_local_port_range[0])
-			udp_port_rover = sysctl_local_port_range[0];
 		best_size_so_far = 32767;
-		best = result = udp_port_rover;
+		best = result = net_random() % (high - low) + low;
 		for (i = 0; i < UDP_HTABLE_SIZE; i++, result++) {
 			struct sock *sk;
 			int size;
@@ -173,7 +169,7 @@ static int udp_v4_get_port(struct sock *sk, unsigned short snum)
 				break;
 		}
 gotit:
-		udp_port_rover = snum = result;
+		snum = result;
 	} else {
 		struct sock *sk2;
 
@@ -471,30 +467,15 @@ void udp_err(struct sk_buff *skb, unsigned char *dp, int len)
 	}
 
 	/*
-	 *	Various people wanted BSD UDP semantics. Well they've come
-	 *	back out because they slow down response to stuff like dead
-	 *	or unreachable name servers and they screw term users something
-	 *	chronic. Oh and it violates RFC1122. So basically fix your
-	 *	client code people.
-	 */
-
-	/*
 	 *      RFC1122: OK.  Passes ICMP errors back to application, as per
-	 *	4.1.3.3. After the comment above, that should be no surprise.
+	 *	4.1.3.3.
 	 */
-
-	if (!harderr && !sk->ip_recverr)
-		return;
-
-	/*
-	 *	4.x BSD compatibility item. Break RFC1122 to
-	 *	get BSD socket semantics.
-	 */
-	if(sk->bsdism && sk->state!=TCP_ESTABLISHED)
-		return;
-
-	if (sk->ip_recverr)
+	if (!sk->ip_recverr) {
+		if (!harderr || sk->state != TCP_ESTABLISHED)
+			return;
+	} else {
 		ip_icmp_error(sk, skb, err, uh->dest, info, (u8*)(uh+1));
+	}
 	sk->err = err;
 	sk->error_report(sk);
 }

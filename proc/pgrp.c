@@ -25,7 +25,7 @@
 #include <sys/errno.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include "proc.h"
 #include "process_S.h"
@@ -130,7 +130,7 @@ boot_setsid (struct proc *p)
 
   sess = new_session (p);
   p->p_pgrp = new_pgrp (p->p_pid, sess);
-  assert (p->p_pgrp);
+  assert_backtrace (p->p_pgrp);
   join_pgrp (p);
   return;
 }
@@ -146,6 +146,30 @@ S_proc_getsid (struct proc *callerp,
     return ESRCH;
 
   /* No need to check CALLERP; we don't use it. */
+
+  if (namespace_is_subprocess (p))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+      pid_t pid_sub;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2pid (p->p_task_namespace, p->p_task, &pid_sub);
+      if (! err)
+        err = proc_getsid (p->p_task_namespace, pid_sub, sid);
+      if (! err)
+	/* Acquires global_lock.  */
+	err = namespace_translate_pids (p->p_task_namespace, sid, 1);
+      else
+	pthread_mutex_lock (&global_lock);
+
+      if (! err)
+	return 0;
+
+      /* Fallback.  */
+    }
 
   *sid = p->p_pgrp->pg_session->s_sid;
   return 0;
@@ -166,6 +190,31 @@ S_proc_getsessionpids (struct proc *callerp,
   u_int npids = *npidsp;
 
   /* No need to check CALLERP; we don't use it. */
+
+  p = pid_find (sid);
+  if (namespace_is_subprocess (p))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+      pid_t pid_sub;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2pid (p->p_task_namespace, p->p_task, &pid_sub);
+      if (! err)
+        err = proc_getsessionpids (p->p_task_namespace, pid_sub, pids, npidsp);
+      if (! err)
+	/* Acquires global_lock.  */
+	err = namespace_translate_pids (p->p_task_namespace, *pids, *npidsp);
+      else
+	pthread_mutex_lock (&global_lock);
+
+      if (! err)
+	return 0;
+
+      /* Fallback.  */
+    }
 
   s = session_find (sid);
   if (!s)
@@ -206,12 +255,38 @@ S_proc_getsessionpgids (struct proc *callerp,
 			size_t *npgidsp)
 {
   int count;
+  struct proc *p;
   struct pgrp *pg;
   struct session *s;
   pid_t *pp = *pgids;
   int npgids = *npgidsp;
 
   /* No need to check CALLERP; we don't use it. */
+
+  p = pid_find (sid);
+  if (namespace_is_subprocess (p))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+      pid_t pid_sub;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2pid (p->p_task_namespace, p->p_task, &pid_sub);
+      if (! err)
+        err = proc_getsessionpgids (p->p_task_namespace, pid_sub, pgids, npgidsp);
+      if (! err)
+	/* Acquires global_lock.  */
+	err = namespace_translate_pids (p->p_task_namespace, *pgids, *npgidsp);
+      else
+	pthread_mutex_lock (&global_lock);
+
+      if (! err)
+	return 0;
+
+      /* Fallback.  */
+    }
 
   s = session_find (sid);
   if (!s)
@@ -253,6 +328,31 @@ S_proc_getpgrppids (struct proc *callerp,
   unsigned int npids = *npidsp, count;
 
   /* No need to check CALLERP; we don't use it. */
+
+  p = pid_find (pgid);
+  if (namespace_is_subprocess (p))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+      pid_t pid_sub;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2pid (p->p_task_namespace, p->p_task, &pid_sub);
+      if (! err)
+        err = proc_getpgrppids (p->p_task_namespace, pid_sub, pids, npidsp);
+      if (! err)
+	/* Acquires global_lock.  */
+	err = namespace_translate_pids (p->p_task_namespace, *pids, *npidsp);
+      else
+	pthread_mutex_lock (&global_lock);
+
+      if (! err)
+	return 0;
+
+      /* Fallback.  */
+    }
 
   if (pgid == 0)
     pg = callerp->p_pgrp;
@@ -423,8 +523,8 @@ leave_pgrp (struct proc *p)
       if (dosignal)
 	for (ip = pg->pg_plist; ip; ip = ip->p_gnext)
 	  {
-	    send_signal (ip->p_msgport, SIGHUP, ip->p_task);
-	    send_signal (ip->p_msgport, SIGCONT, ip->p_task);
+	    send_signal (ip->p_msgport, SIGHUP, 0, ip->p_task);
+	    send_signal (ip->p_msgport, SIGCONT, 0, ip->p_task);
 	  }
     }
 }

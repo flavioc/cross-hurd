@@ -1,35 +1,30 @@
 /* C declarations for Hurd server interfaces
-   Copyright (C) 1993,94,95,96,98,99,2001,02 Free Software Foundation, Inc.
 
-This file is part of the GNU Hurd.
+   Copyright (C) 1993-1996, 1998, 1999, 2001, 2002, 2010, 2014-2019
+   Free Software Foundation, Inc.
 
-The GNU Hurd is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
+   This file is part of the GNU Hurd.
 
-The GNU Hurd is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   The GNU Hurd is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
 
-You should have received a copy of the GNU General Public License
-along with the GNU Hurd; see the file COPYING.  If not, write to
-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   The GNU Hurd is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #ifndef _HURD_TYPES_H
 #define _HURD_TYPES_H
 
 #include <time.h>		/* For struct timespec.  */
 #include <mach/std_types.h>	/* For mach_port_t et al. */
-#ifndef __MIG__
 #include <mach/message.h>	/* For mach_msg_id_t et al. */
-#endif
 #include <sys/types.h>		/* For pid_t and uid_t.  */
-#include <sys/utsname.h>        /* For struct utsname.  */
-#include <sys/resource.h>       /* For struct rusage.  */
-#include <sys/statfs.h>       /* For struct statfs.  */
-#include <sys/stat.h>       /* For struct stat.  */
 
 /* A string identifying this release of the GNU Hurd.  Our
    interpretation of the term "release" is that it refers to a set of
@@ -41,7 +36,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /*   Simple type declarations   */
 
-#ifndef __MIG__
 /* These types identify certain kinds of ports used by the Hurd. */
 typedef mach_port_t file_t;
 typedef mach_port_t fsys_t;
@@ -57,27 +51,31 @@ typedef mach_port_t exec_startup_t;
 typedef mach_port_t interrupt_t;
 typedef mach_port_t proccoll_t;
 typedef mach_port_t ctty_t;
+typedef mach_port_t pci_t;
+typedef mach_port_t shutdown_t;
 
 #include <errno.h>		/* Defines `error_t'.  */
-#endif
 
 /* These names exist only because of MiG deficiencies.
    You should not use them in C source; use the normal C types instead.  */
-typedef unsigned char *data_t; MIG_INLINE(data_t, 2048);
+typedef char *data_t;
+typedef const char *const_data_t;
 typedef char string_t [1024];
-typedef int *intarray_t; MIG_INLINE(intarray_t, 512);
+typedef const char *const_string_t;
+typedef int *intarray_t;
+typedef const int *const_intarray_t;
 typedef int *fd_mask_t;
-#ifdef __MIG__
-type portarray_t = array[] of mach_port_send_t;
-//inline portarray_t/512;
-#else
+typedef const int *const_fd_mask_t;
 typedef mach_port_t *portarray_t;
-#endif
-typedef pid_t *pidarray_t; MIG_INLINE(pidarray_t, 512);
-typedef uid_t *idarray_t; MIG_INLINE(idarray_t, 512);
-typedef loff_t *off_array_t; MIG_INLINE(off_array_t, 512);
+typedef const mach_port_t *const_portarray_t;
+typedef pid_t *pidarray_t;
+typedef const pid_t *const_pidarray_t;
+typedef uid_t *idarray_t;
+typedef const uid_t *const_idarray_t;
+typedef __loff_t *off_array_t;
+typedef const __loff_t *const_off_array_t;
 typedef struct rusage rusage_t;
-typedef struct flock flock_t;
+typedef struct flock64 flock_t;
 typedef struct utsname utsname_t;
 #if _FILE_OFFSET_BITS == 64
 typedef struct stat io_statbuf_t;
@@ -94,7 +92,7 @@ typedef struct timespec timespec_t;
 /* Many such parameters and flags are also defined in various libc
    headers. */
 
-/* Bits for flags in fs.defs:file_exec and exec.defs:exec_* calls: */
+/* Bits for flags in fs.defs:file_exec_paths and exec.defs:exec_* calls: */
 #define EXEC_NEWTASK	0x00000001 /* Create new task; kill old one.  */
 #define EXEC_SECURE	0x00000002 /* Use secure values of portarray, etc. */
 #define EXEC_DEFAULTS	0x00000004 /* Use defaults for unspecified ports.  */
@@ -127,6 +125,9 @@ enum retry_type
 		    as for FS_RETRY_NORMAL.
 
      "/..." means retry "...", but starting from the users root directory.
+
+     "pid/..." means replace `pid' with the PID of the current process in %u
+               format and then retry as for FS_RETRY_NORMAL.
      */
 };
 typedef enum retry_type retry_type;
@@ -199,7 +200,7 @@ enum term_bottom_type
 
    The vectors returned by file_get_storage_info encode each of the above
    (note that the first int is always the storage type).  There are four:
-   ports, ints, offsets (off_t), and data (char); each type of store uses the
+   ports, ints, offsets (loff_t), and data (char); each type of store uses the
    following entries in each vector:
 
     -type-  -ports-  -ints-	     	     -offsets-	       -data-    -kids-
@@ -267,12 +268,10 @@ enum file_storage_class
 
 /*   Data types   */
 
-#ifndef __MIG__
 #include <mach/task_info.h>
 #include <mach/thread_info.h>
 #ifndef THREAD_SCHED_INFO
 #include <mach/policy.h>
-#endif
 #endif
 
 /* Flags sent in proc_getprocinfo request. */
@@ -313,8 +312,8 @@ struct procinfo
 #endif
     } threadinfos[0];
 };
-
-typedef int *procinfo_t; MIG_INLINE(procinfo_t, 512);
+typedef int *procinfo_t;
+typedef const int *const_procinfo_t;
 
 /* Bits in struct procinfo  state: */
 #define PI_STOPPED 0x00000001	/* Proc server thinks is stopped.  */
@@ -362,8 +361,10 @@ typedef int *procinfo_t; MIG_INLINE(procinfo_t, 512);
 #define FSTYPE_HTTP    0x00000018 /* Transparent HTTP */
 #define FSTYPE_MEMFS   0x00000019 /* In-core filesystem */
 #define FSTYPE_ISO9660 0x0000001a /* ISO9660 */
+#define FSTYPE_PCI     0x0000001b /* PCI filesystem */
+#define FSTYPE_ACPI    0x0000001c /* ACPI filesystem */
 
-/* Standard port assignments for file_exec and exec_* */
+/* Standard port assignments for file_exec_paths and exec_* */
 enum
   {
     INIT_PORT_CWDIR,
@@ -377,7 +378,7 @@ enum
     INIT_PORT_MAX
   };
 
-/* Standard ints for file_exec and exec_* */
+/* Standard ints for file_exec_paths and exec_* */
 enum
   {
     INIT_UMASK,
@@ -386,6 +387,26 @@ enum
     INIT_SIGPENDING,
     INIT_TRACEMASK,
     INIT_INT_MAX,
+  };
+
+/* PCI arbiter types*/
+#include <stdint.h>
+
+/* Memory region */
+struct pci_bar
+  {
+    uint64_t base_addr;
+    uint64_t size;
+    unsigned is_IO:1;
+    unsigned is_prefetchable:1;
+    unsigned is_64:1;
+  };
+
+/* Expansion ROM region */
+struct pci_xrom_bar
+  {
+    uint64_t base_addr;
+    uint64_t size;
   };
 
 #endif

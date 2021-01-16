@@ -27,7 +27,8 @@ struct msgid_info
   char *subsystem;
 };
 
+error_t msgids_scan_std (void);
 const struct msgid_info *msgid_info (mach_msg_id_t msgid);
-const struct argp msgid_argp;
+extern const struct argp msgid_argp;
 
 #endif	/* _HURD_MSGIDS_H_ */

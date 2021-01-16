@@ -1,6 +1,7 @@
 /* Hurdish login
 
-   Copyright (C) 1995,96,97,98,99,2002 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2002, 2010
+   Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -30,9 +31,10 @@
 #include <grp.h>
 #include <netdb.h>
 #include <time.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <version.h>
 #include <sys/mman.h>
+#include <signal.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -64,7 +66,7 @@ char *default_args[] = {
   "BACKUP_SHELLS=/bin/bash:" _PATH_BSHELL,
   "HOME=/etc/login",		/* Initial WD.  */
   "USER=login",
-  "UMASK=0",
+  "UMASK=022",
   "NAME=Not logged in",
   "HUSHLOGIN=.hushlogin",	/* Looked up relative new home dir.  */
   "MOTD=/etc/motd",
@@ -314,7 +316,7 @@ check_login (process_t proc_server, int lid)
   if (err == ESRCH)
     exit (42);			/* Nothing left to watch. */
   else
-    assert_perror (err);
+    assert_perror_backtrace (err);
 
   if (owned)
     exit (0);			/* Our task is done.  */
@@ -648,7 +650,7 @@ main(int argc, char *argv[])
   }
 
   err = proc_getsid (proc_server, pid, &sid);
-  assert_perror (err);		/* This should never fail.  */
+  assert_perror_backtrace (err);		/* This should never fail.  */
 
   if (!no_login
       && (parent_uids.num != 0
@@ -882,12 +884,22 @@ main(int argc, char *argv[])
 	}
     }
 
-  err = file_exec (exec, mach_task_self (), EXEC_DEFAULTS,
-		   sh_args, sh_args_len, env, env_len,
-		   fds, MACH_MSG_TYPE_COPY_SEND, 3,
-		   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
-		   ints, INIT_INT_MAX,
-		   0, 0, 0, 0);
+#ifdef HAVE_FILE_EXEC_PATHS
+  err = file_exec_paths (exec, mach_task_self (), EXEC_DEFAULTS, shell, shell,
+			 sh_args, sh_args_len, env, env_len,
+			 fds, MACH_MSG_TYPE_COPY_SEND, 3,
+			 ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+			 ints, INIT_INT_MAX,
+			 0, 0, 0, 0);
+  /* Fallback in case the file server hasn't been restarted.  */
+  if (err == MIG_BAD_ID)
+#endif
+    err = file_exec (exec, mach_task_self (), EXEC_DEFAULTS,
+		     sh_args, sh_args_len, env, env_len,
+		     fds, MACH_MSG_TYPE_COPY_SEND, 3,
+		     ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+		     ints, INIT_INT_MAX,
+		     0, 0, 0, 0);
   if (err)
     error(5, err, "%s", shell);
 

@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994,95,99,2002 Free Software Foundation
+   Copyright (C) 1994, 1995, 1999, 2002, 2010 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,7 +19,7 @@
 #include <hurd.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <device/device.h>
 #include <unistd.h>
 #include <errno.h>
@@ -160,15 +160,18 @@ run (char **argv, int fd0, int fd1)
 	      movefd (fd1, 1, &save1))
 	    return -1;
 
+#ifdef HAVE__HURD_EXEC_PATHS
+	  err = _hurd_exec_paths (task, file, program, program, argv, environ);
+#else
 	  err = _hurd_exec (task, file, argv, environ);
-
+#endif
 	  if (restorefd (fd0, 0, &save0) ||
 	      restorefd (fd1, 1, &save1))
 	    return -1;
 
 	  if (err)
 	    {
-	      error (0, err, "_hurd_exec");
+	      error (0, err, "_hurd_exec_paths");
 	      err = task_terminate (task);
 	      if (err)
 		error (0, err, "task_terminate");
@@ -230,7 +233,7 @@ main (int argc, char *argv[])
   size_t linebufsize = 0;
 
   proc = getproc ();
-  assert (proc);
+  assert_backtrace (proc);
 
 #if 0
   {
@@ -238,10 +241,10 @@ main (int argc, char *argv[])
     mach_port_t outp;
     mach_port_t hostp, masterd;
     err = proc_getprivports (proc, &hostp, &masterd);
-    assert (!err);
+    assert_backtrace (!err);
 
     err = device_open (masterd, D_WRITE|D_READ, "console", &outp);
-    assert (!err);
+    assert_backtrace (!err);
 
     stdin = mach_open_devstream (outp, "r");
     stdout = stderr = mach_open_devstream (outp, "w+");

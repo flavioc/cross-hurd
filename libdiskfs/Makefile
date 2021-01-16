@@ -1,4 +1,4 @@
-#   Copyright (C) 1994,95,96,97,98,99,2000,01,2006,2012
+#   Copyright (C) 1994,95,96,97,98,99,2000,01,2006,2012,2016-2019
 #     Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
@@ -12,8 +12,7 @@
 #   General Public License for more details.
 #
 #   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.
 
 dir := libdiskfs
 makemode := library
@@ -26,7 +25,8 @@ FSSRCS= dir-chg.c dir-link.c dir-lookup.c dir-mkdir.c dir-mkfile.c \
 	file-get-trans.c file-get-transcntl.c file-getcontrol.c \
 	file-getfh.c file-getlinknode.c file-lock-stat.c \
 	file-lock.c file-set-size.c file-set-trans.c file-statfs.c \
-	file-sync.c file-syncfs.c file-utimes.c file-reparent.c
+	file-sync.c file-syncfs.c file-utimes.c file-record-lock.c \
+	file-reparent.c
 IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c io-revoke.c \
 	io-map-cntl.c io-map.c io-modes-get.c io-modes-off.c \
 	io-modes-on.c io-modes-set.c io-owner-mod.c io-owner-get.c \
@@ -35,13 +35,13 @@ IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c io-revoke.c \
 	io-select.c io-stat.c io-stubs.c io-write.c io-version.c io-sigio.c
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-startup.c fsys-getfile.c \
 	fsys-options.c fsys-syncfs.c fsys-forward.c \
-	file-get-children.c file-get-source.c
+	fsys-get-children.c fsys-get-source.c
 IFSOCKSRCS=ifsock.c
 OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	extern-inline.c \
 	node-create.c node-drop.c node-make.c node-rdwr.c node-update.c \
-	node-nref.c node-nput.c node-nrele.c node-nrefl.c node-nputl.c \
-	node-nrelel.c node-cache.c \
+	node-nref.c node-nput.c node-nrele.c node-lastref.c node-nrefl.c \
+	node-nputl.c node-nrelel.c node-cache.c \
 	peropen-make.c peropen-rele.c protid-make.c protid-rele.c \
 	init-init.c init-startup.c init-first.c init-main.c \
 	rdwr-internal.c boot-start.c demuxer.c node-times.c shutdown.c \
@@ -52,7 +52,7 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	remount.c console.c disk-pager.c \
 	name-cache.c direnter.c dirrewrite.c dirremove.c lookup.c dead-name.c \
 	validate-mode.c validate-group.c validate-author.c validate-flags.c \
-	validate-rdev.c validate-owner.c extra-version.c get-source.c
+	validate-rdev.c validate-owner.c priv.c get-source.c
 SRCS = $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 installhdrs = diskfs.h diskfs-pager.h
 

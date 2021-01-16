@@ -39,6 +39,10 @@ int diskfs_link_max = INT_MAX;
 int diskfs_name_max = 255;	/* see iso9660.h: struct dirrect::namelen */
 int diskfs_maxsymlinks = 8;
 
+char *host_name;
+char *mounted_on;
+size_t logical_block_size;
+struct sblock *sblock;
 
 /* Fetch the root node */
 static void
@@ -57,11 +61,11 @@ fetch_root ()
   rrip_lookup (ctx.dr, &ctx.rr, 1);
 
   err = cache_id (ctx.dr, &ctx.rr, &id);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* And fetch the node. */
   err = diskfs_cached_lookup_context (id, &diskfs_root_node, &ctx);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   pthread_mutex_unlock (&diskfs_root_node->lock);
 }

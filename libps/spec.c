@@ -21,7 +21,8 @@
 #include <hurd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <assert-backtrace.h>
+#define assert	assert_backtrace
 #include <pwd.h>
 #include <hurd/resource.h>
 #include <unistd.h>
@@ -31,10 +32,16 @@
 
 #include "ps.h"
 #include "common.h"
+#include "../utils/msgids.h"
 
 /* XXX */
 static char *get_syscall_name (int num) { return 0; }
-static char *get_rpc_name (mach_msg_id_t it) { return 0; }
+
+static char *get_rpc_name (mach_msg_id_t it)
+{
+  const struct msgid_info *info = msgid_info (it);
+  return info ? info->name : 0;
+}
 
 /* ---------------------------------------------------------------- */
 /* Getter definitions */
@@ -357,6 +364,14 @@ ps_get_num_ports (struct proc_stat *ps)
 const struct ps_getter ps_num_ports_getter =
 {"num_ports", PSTAT_NUM_PORTS, (vf) ps_get_num_ports};
 
+static void
+ps_get_exe (struct proc_stat *ps, char **exe_p, int *exe_len_p)
+{
+  *exe_p = proc_stat_exe (ps);
+  *exe_len_p = proc_stat_exe_len (ps);
+}
+const struct ps_getter ps_exe_getter =
+{"exe", PSTAT_EXE, ps_get_exe};
 /* ---------------------------------------------------------------- */
 /* some printing functions */
 
@@ -880,7 +895,7 @@ ps_cmp_times (struct proc_stat *ps1, struct proc_stat *ps2,
     tv1.tv_sec > tv2.tv_sec ? 1
       : tv1.tv_sec < tv2.tv_sec ? -1
 	: tv1.tv_usec > tv2.tv_usec ? 1
-	  : tv2.tv_usec < tv2.tv_usec ? -1
+	  : tv1.tv_usec < tv2.tv_usec ? -1
 	    : 0;
 }
 
@@ -1022,7 +1037,7 @@ specs_add_alias (struct ps_fmt_specs *specs,
   exp->name = malloc (name_len + 1);
   if (! exp->name)
     return 0;
-  bcopy ((char *)alias->name, (char *)exp->name, name_len);
+  memcpy ((char *)exp->name, (char *)alias->name, name_len);
   ((char *)exp->name)[name_len] = '\0';
 
   /* Copy the rest of the fields from ALIAS, but defaulting to SRC.  */
@@ -1165,6 +1180,8 @@ static const struct ps_fmt_spec specs[] =
    &ps_zero_fills_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
   {"Ports",	0,	-5, -1, 0,
    &ps_num_ports_getter,       ps_emit_int,	    ps_cmp_ints,   0},
+  {"Exe",	0,	 0, -1, 0,
+   &ps_exe_getter,	   ps_emit_string,  ps_cmp_strings,ps_nominal_string},
   {0}
 };
 

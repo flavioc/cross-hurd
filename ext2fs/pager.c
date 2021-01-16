@@ -108,7 +108,7 @@ get_page_buf ()
     }
   else
     {
-      assert (free_page_bufs == 0);
+      assert_backtrace (free_page_bufs == 0);
       buf = mmap (0, vm_page_size * FREE_PAGE_BUFS,
 		  PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (buf == MAP_FAILED)
@@ -409,7 +409,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, void *buf)
       err = find_block (node, offset, &block, &lock);
       if (err)
 	break;
-      assert (block);
+      assert_backtrace (block);
       pending_blocks_add (&pb, block);
       offset += block_size;
       left -= block_size;
@@ -469,13 +469,13 @@ disk_pager_write_page (vm_offset_t page, void *buf)
   int index = offset >> log2_block_size;
 
   pthread_mutex_lock (&disk_cache_lock);
-  assert (disk_cache_info[index].block != DC_NO_BLOCK);
+  assert_backtrace (disk_cache_info[index].block != DC_NO_BLOCK);
   offset = ((store_offset_t) disk_cache_info[index].block << log2_block_size)
     + offset % block_size;
 #ifdef DEBUG_DISK_CACHE			/* Not strictly needed.  */
-  assert ((disk_cache_info[index].last_read ^ DISK_CACHE_LAST_READ_XOR)
+  assert_backtrace ((disk_cache_info[index].last_read ^ DISK_CACHE_LAST_READ_XOR)
 	  == disk_cache_info[index].last_read_xor);
-  assert (disk_cache_info[index].last_read
+  assert_backtrace (disk_cache_info[index].last_read
 	  == disk_cache_info[index].block);
 #endif
   pthread_mutex_unlock (&disk_cache_lock);
@@ -640,7 +640,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
       pthread_rwlock_unlock (&dn->alloc_lock);
 
       if (err == ENOSPC)
-	ext2_warning ("This filesystem is out of space, and will now crash.  Bye!");
+	ext2_warning ("This filesystem is out of space.");
       else if (err)
 	ext2_warning ("inode=%Ld, page=0x%lx: %s",
 		      node->cache_id, page, strerror (err));
@@ -657,7 +657,7 @@ error_t
 diskfs_grow (struct node *node, off_t size, struct protid *cred)
 {
   diskfs_check_readonly ();
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   if (size > node->allocsize)
     {
@@ -794,7 +794,7 @@ inline error_t
 pager_report_extent (struct user_pager_info *pager,
 		     vm_address_t *offset, vm_size_t *size)
 {
-  assert (pager->type == DISK || pager->type == FILE_DATA);
+  assert_backtrace (pager->type == DISK || pager->type == FILE_DATA);
 
   *offset = 0;
 
@@ -817,22 +817,32 @@ pager_clear_user_data (struct user_pager_info *upi)
 
       pthread_spin_lock (&node_to_page_lock);
       pager = diskfs_node_disknode (upi->node)->pager;
-      if (pager && pager_get_upi (pager) == upi)
-	diskfs_node_disknode (upi->node)->pager = 0;
+      assert_backtrace (!pager || pager_get_upi (pager) != upi);
       pthread_spin_unlock (&node_to_page_lock);
 
       diskfs_nrele_light (upi->node);
     }
-
-  free (upi);
 }
 
 /* This will be called when the ports library wants to drop weak references.
    The pager library creates no weak references itself.  If the user doesn't
    either, then it's OK for this function to do nothing.  */
 void
-pager_dropweak (struct user_pager_info *p __attribute__ ((unused)))
+pager_dropweak (struct user_pager_info *upi)
 {
+  if (upi->type == FILE_DATA)
+    {
+      struct pager *pager;
+
+      pthread_spin_lock (&node_to_page_lock);
+      pager = diskfs_node_disknode (upi->node)->pager;
+      if (pager && pager_get_upi (pager) == upi)
+	{
+	  diskfs_node_disknode (upi->node)->pager = NULL;
+	  ports_port_deref_weak (pager);
+	}
+      pthread_spin_unlock (&node_to_page_lock);
+    }
 }
 
 /* Cached blocks from disk.  */
@@ -934,11 +944,11 @@ disk_cache_init (void)
     + (round_block ((sizeof *group_desc_image) * groups_count)
        >> log2_block_size);
   ext2_debug ("%u-%u\n", fixed_first, fixed_last);
-  assert (fixed_last - fixed_first + 1 <= (block_t)disk_cache_blocks + 3);
+  assert_backtrace (fixed_last - fixed_first + 1 <= (block_t)disk_cache_blocks + 3);
   for (block_t i = fixed_first; i <= fixed_last; i++)
     {
       disk_cache_block_ref (i);
-      assert (disk_cache_info[i-fixed_first].block == i);
+      assert_backtrace (disk_cache_info[i-fixed_first].block == i);
       disk_cache_info[i-fixed_first].flags |= DC_FIXED;
     }
 }
@@ -1010,7 +1020,7 @@ disk_cache_block_ref (block_t block)
   void *bptr;
   hurd_ihash_locp_t slot;
 
-  assert (block < store->size >> log2_block_size);
+  assert_backtrace (block < store->size >> log2_block_size);
 
   ext2_debug ("(%u)", block);
 
@@ -1038,7 +1048,7 @@ retry_ref:
 	}
 
       /* Just increment reference and return.  */
-      assert (disk_cache_info[index].ref_count + 1
+      assert_backtrace (disk_cache_info[index].ref_count + 1
 	      > disk_cache_info[index].ref_count);
       disk_cache_info[index].ref_count++;
 
@@ -1103,7 +1113,7 @@ retry_ref:
 
   pthread_mutex_lock (&diskfs_disk_pager->interlock);
   int page = (bptr - disk_cache) / vm_page_size;
-  assert (page >= 0);
+  assert_backtrace (page >= 0);
   int is_incore = (page < diskfs_disk_pager->pagemapsize
 		   && (diskfs_disk_pager->pagemap[page] & PM_INCORE));
   pthread_mutex_unlock (&diskfs_disk_pager->interlock);
@@ -1124,9 +1134,9 @@ retry_ref:
   if (disk_cache_info[index].block != DC_NO_BLOCK)
     /* Remove old association.  */
     hurd_ihash_remove (disk_cache_bptr, disk_cache_info[index].block);
-  assert (! (disk_cache_info[index].flags & DC_DONT_REUSE & ~DC_UNTOUCHED));
+  assert_backtrace (! (disk_cache_info[index].flags & DC_DONT_REUSE & ~DC_UNTOUCHED));
   disk_cache_info[index].block = block;
-  assert (! disk_cache_info[index].ref_count);
+  assert_backtrace (! disk_cache_info[index].ref_count);
   disk_cache_info[index].ref_count = 1;
 
   /* All data structures are set up.  */
@@ -1174,11 +1184,11 @@ disk_cache_block_ref_ptr (void *ptr)
 
   pthread_mutex_lock (&disk_cache_lock);
   index = bptr_index (ptr);
-  assert (disk_cache_info[index].ref_count >= 1);
-  assert (disk_cache_info[index].ref_count + 1
+  assert_backtrace (disk_cache_info[index].ref_count >= 1);
+  assert_backtrace (disk_cache_info[index].ref_count + 1
 	  > disk_cache_info[index].ref_count);
   disk_cache_info[index].ref_count++;
-  assert (! (disk_cache_info[index].flags & DC_UNTOUCHED));
+  assert_backtrace (! (disk_cache_info[index].flags & DC_UNTOUCHED));
   ext2_debug ("(%p) (ref_count = %hu, flags = %#hx)",
 	      ptr,
 	      disk_cache_info[index].ref_count,
@@ -1187,11 +1197,11 @@ disk_cache_block_ref_ptr (void *ptr)
 }
 
 void
-disk_cache_block_deref (void *ptr)
+_disk_cache_block_deref (void *ptr)
 {
   int index;
 
-  assert (disk_cache <= ptr && ptr <= disk_cache + disk_cache_size);
+  assert_backtrace (disk_cache <= ptr && ptr <= disk_cache + disk_cache_size);
 
   pthread_mutex_lock (&disk_cache_lock);
   index = bptr_index (ptr);
@@ -1199,8 +1209,8 @@ disk_cache_block_deref (void *ptr)
 	      ptr,
 	      disk_cache_info[index].ref_count - 1,
 	      disk_cache_info[index].flags);
-  assert (! (disk_cache_info[index].flags & DC_UNTOUCHED));
-  assert (disk_cache_info[index].ref_count >= 1);
+  assert_backtrace (! (disk_cache_info[index].flags & DC_UNTOUCHED));
+  assert_backtrace (disk_cache_info[index].ref_count >= 1);
   disk_cache_info[index].ref_count--;
   if (disk_cache_info[index].ref_count == 0 &&
       !(disk_cache_info[index].flags & DC_DONT_REUSE))
@@ -1288,7 +1298,7 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
 {
   mach_port_t right;
 
-  assert (S_ISDIR (node->dn_stat.st_mode)
+  assert_backtrace (S_ISDIR (node->dn_stat.st_mode)
 	  || S_ISREG (node->dn_stat.st_mode)
 	  || (S_ISLNK (node->dn_stat.st_mode)));
 
@@ -1298,34 +1308,30 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
       struct pager *pager = diskfs_node_disknode (node)->pager;
       if (pager)
 	{
-	  /* Because PAGER is not a real reference,
-	     this might be nearly deallocated.  If that's so, then
-	     the port right will be null.  In that case, clear here
-	     and loop.  The deallocation will complete separately. */
 	  right = pager_get_port (pager);
-	  if (right == MACH_PORT_NULL)
-	    diskfs_node_disknode (node)->pager = 0;
-  	  else
-  	    pager_get_upi (pager)->max_prot |= prot;
+	  assert_backtrace (MACH_PORT_VALID (right));
+	  pager_get_upi (pager)->max_prot |= prot;
 	}
       else
 	{
-	  struct user_pager_info *upi =
-	    malloc (sizeof (struct user_pager_info));
+	  struct user_pager_info *upi;
+	  pager = pager_create_alloc (sizeof *upi, file_pager_bucket,
+				      MAY_CACHE, MEMORY_OBJECT_COPY_DELAY, 0);
+	  if (pager == NULL)
+	    {
+	      pthread_spin_unlock (&node_to_page_lock);
+	      return MACH_PORT_NULL;
+	    }
+
+	  upi = pager_get_upi (pager);
 	  upi->type = FILE_DATA;
 	  upi->node = node;
 	  upi->max_prot = prot;
 	  diskfs_nref_light (node);
-	  diskfs_node_disknode (node)->pager =
-		    pager_create (upi, file_pager_bucket, MAY_CACHE,
-				  MEMORY_OBJECT_COPY_DELAY, 0);
-	  if (diskfs_node_disknode (node)->pager == 0)
-	    {
-	      diskfs_nrele_light (node);
-	      free (upi);
-	      pthread_spin_unlock (&node_to_page_lock);
-	      return MACH_PORT_NULL;
-	    }
+	  diskfs_node_disknode (node)->pager = pager;
+
+	  /* A weak reference for being part of the node.  */
+	  ports_port_ref_weak (diskfs_node_disknode (node)->pager);
 
 	  right = pager_get_port (diskfs_node_disknode (node)->pager);
 	  ports_port_deref (diskfs_node_disknode (node)->pager);

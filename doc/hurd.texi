@@ -1,4 +1,5 @@
 \input texinfo  @c -*-texinfo-*-
+@documentencoding ISO-8859-1
 @setfilename hurd.info
 
 @c FIXME: might it be useful to have a glossary?
@@ -102,7 +103,7 @@ This file documents the GNU Hurd kernel component.  This edition of the
 documentation was last updated for version @value{VERSION} of the Hurd.
 
 Copyright @copyright{} 1994, 1996, 1998, 1999, 2000, 2001, 2002, 2003,
-2004, 2005, 2007, 2008, 2009 Free Software Foundation, Inc.
+2004, 2005, 2007, 2008, 2009, 2010 Free Software Foundation, Inc.
 
 @quotation
 Permission is granted to make and distribute verbatim copies of
@@ -318,6 +319,7 @@ Networking
 * pflocal::
 * libpipe::
 * Socket Interface::            Network communication I/O protocol.
+* eth-multiplexer::		The multiplexer of ethernet.
 
 Authentication
 
@@ -753,6 +755,10 @@ system.
 @itemx -L
 Layer multiple devices for redundancy.
 
+@item --device-map=@var{devicename}=@var{devicefile}
+@itemx -m
+Map the device in subhurd to the device in the main Hurd.
+
 @item --single-user
 @itemx -s
 Boot into single user mode.
@@ -817,14 +823,14 @@ the rest of the Hurd relies upon them quite heavily.
 
 @node Threads Library
 @section Threads Library
-@scindex libthreads
-@scindex cthreads.h
+@scindex libpthread
+@scindex pthread.h
 
 All Hurd servers and libraries are aggressively multithreaded in order
 to take full advantage of any multiprocessing capabilities provided by
 the microkernel and the underlying hardware.  The Hurd threads library,
-@code{libthreads}, contains the default Hurd thread implementation, which
-is declared in @code{<cthreads.h>}.
+@code{libpthread}, contains the default Hurd thread implementation, which
+is declared in @code{<pthread.h>}.
 
 The Hurd uses POSIX pthreads, which are documented in a lot of places.
 @c Thomas, 26-03-1998
@@ -1300,7 +1306,7 @@ The @code{<hurd/iohelp.h>} file declares several functions which are
 useful for low-level I/O implementations.  Most Hurd servers do not call
 these functions directly, but they are used by several of the Hurd
 filesystem and networking helper libraries.  @code{libiohelp} requires
-@code{libthreads}.
+@code{libpthread}.
 
 @menu
 * I/O Users::                   User authentication management.
@@ -1408,6 +1414,11 @@ created.  @var{may_cache} and @var{copy_strategy} are the original
 values of those attributes as for @code{memory_object_ready}.  Users may
 create references to pagers by use of the relevant ports library
 functions.  On errors, return null and set @code{errno}.
+@end deftypefun
+
+@deftypefun {struct pager *} pager_create_alloc (@w{size_t @var{u_pager_size}}, @w{struct port_bucket *@var{bucket}}, @w{boolean_t @var{may_cache}}, @w{memory_object_copy_strategy_t @var{copy_strategy}})
+Likewise, but allocate space for the user hook adjacent to the pager
+data.
 @end deftypefun
 
 Once you are ready to turn over control to the pager library, you should
@@ -2717,6 +2728,14 @@ the file.  Making this call must cause the @var{ctime} to be updated as
 well, even if no actual change to either the @var{mtime} or the
 @var{atime} occurs.
 
+@findex file_utimens
+The @code{file_utimens} RPC changes the @var{atime} and @var{mtime} of
+the file with nanosecond precision. Making this call must cause the
+@var{ctime} to be updated as well, even if no actual change to either the
+@var{mtime} or the @var{atime} occurs. The arguments @var{atime} and
+@var{mtime} follow the POSIX standard and may use the flags
+@code{UTIME_OMIT} and @code{UTIME_NOW}.
+
 @findex file_set_size
 The @code{file_set_size} RPC is special; not only does it change the
 status word specifying the size of the file, but it also changes the
@@ -2731,10 +2750,10 @@ write the file.
 @node Program Execution
 @subsection Program Execution
 
-@findex file_exec
+@findex file_exec_paths
 Execution of programs on the Hurd is done through fileservers with the
-@code{file_exec} RPC.  The fileserver is expected to verify that the
-user is allowed to execute the file, make whatever modifications to the
+@code{file_exec_paths} RPC.  The fileserver is expected to verify that
+the user is allowed to execute the file, make whatever modifications to the
 ports are necessary for setuid execution, and then invoke the standard
 execserver found on @file{/servers/exec}.
 
@@ -2746,13 +2765,13 @@ The file must be opened for execution; if it is not, @code{EBADF} should
 be returned.  In addition, at least one of the execute bits must be on.  A
 failure of this check should result in @code{EACCES}---not
 @code{ENOEXEC}.  It is not proper for the fileserver ever to respond to
-the @code{file_exec} RPC with @code{ENOEXEC}.
+the @code{file_exec_paths} RPC with @code{ENOEXEC}.
 
 If either the setuid or setgid bits are set, the server needs to
 construct a new authentication handle with the additional new ID's.
-Then all the ports passed to @code{file_exec} need to be reauthenticated
-with the new handle.  If the fileserver is unable to make the new
-authentication handle (for example, because it is not running as root)
+Then all the ports passed to @code{file_exec_paths} need to be
+reauthenticated with the new handle.  If the fileserver is unable to make the
+new authentication handle (for example, because it is not running as root)
 it is not acceptable to return an error; in such a case the server
 should simply silently fail to implement the setuid/setgid semantics.
 
@@ -2760,14 +2779,14 @@ If the setuid/setgid transformation adds a new uid or gid to the user's
 authentication handle that was not previously present (as opposed to
 merely reordering them), then the @code{EXEC_SECURE} and
 @code{EXEC_NEWTASK} flags should both be added in the call to
-@code{exec_exec}.
+@code{exec_exec_paths}.
 
 The server then needs to open a new port onto the executed file which
 will not share any file pointers with the port the user passed in,
 opened with @code{O_READ}.  Finally, all the information (mutated
 appropriately for setuid/setgid) should be sent to the execserver with
-@code{exec_exec}.  Whatever error code @code{exec_exec} returns should
-returned to the caller of @code{file_exec}.
+@code{exec_exec_paths}.  Whatever error code @code{exec_exec_paths}
+returns should be returned to the caller of @code{file_exec_paths}.
 
 @node File Locking
 @subsection File Locking
@@ -3954,7 +3973,9 @@ disk allocation strategies.
 
 @deftypefun void diskfs_set_node_atime (@w{struct node *@var{np}})
 If disk is not readonly and the noatime option is not enabled, set
-@code{@var{np}->dn_set_atime}.
+@code{@var{np}->dn_set_atime}. If relatime is enabled, only set
+@code{@var{np}->dn_set_atime} if the atime has not been updated today,
+or if ctime or mtime are more recent than atime.
 @end deftypefun
 
 @deftypefun void diskfs_set_node_times (@w{struct node *@var{np}})
@@ -4429,14 +4450,16 @@ file data) is used.  If it returns any other error, it is returned to
 the user.
 @end deftypefn
 
-@deftypefun error_t diskfs_rename_dir (@w{struct node *@var{fdp}}, @w{struct node *@var{fnp}}, @w{char *@var{fromname}}, @w{struct node *@var{tdp}}, @w{char *@var{toname}}, @w{struct protid *@var{fromcred}}, @w{struct protid *@var{tocred}})
+@deftypefun error_t diskfs_rename_dir (@w{struct node *@var{fdp}}, @w{struct node *@var{fnp}}, @w{char *@var{fromname}}, @w{struct node *@var{tdp}}, @w{char *@var{toname}}, @w{struct protid *@var{fromcred}}, @w{struct protid *@var{tocred}}, @w{int @var{excl}})
 Rename directory node @var{fnp} (whose parent is @var{fdp}, and which
 has name @var{fromname} in that directory) to have name @var{toname}
 inside directory @var{tdp}.  None of these nodes are locked, and none
 should be locked upon return.  This routine is serialized, so it doesn't
 have to be reentrant.  Directories will never be renamed except by this
 routine.  @var{fromcred} is the user responsible for @var{fdp} and
-@var{fnp}.  @var{tocred} is the user responsible for @var{tdp}.  This
+@var{fnp}.  @var{tocred} is the user responsible for @var{tdp}.
+If @var{excl} is set, then fail if @var{toname} already exists inside
+directory @var{tdp}. This
 routine assumes the usual convention where @file{.}  and @file{..} are
 represented by ordinary links; if that is not true for your format, you
 have to redefine this function.
@@ -4603,6 +4626,7 @@ FIXME: this subsystem is in flux @c Thomas, 26-03-1998
 * pflocal::
 * libpipe::
 * Socket Interface::            Network communication I/O protocol.
+* eth-multiplexer::		The multiplexer of ethernet.
 @end menu
 
 @node pfinet
@@ -4621,6 +4645,65 @@ FIXME: this subsystem is in flux @c Thomas, 26-03-1998
 FIXME: net frobbing stuff may be added to socket.defs
 @c Thomas, 26-03-1998
 
+@node eth-multiplexer
+@section eth-multiplexer
+
+The @dfn{eth-multiplexer} is a network multiplexer. It creates virtual
+ethernet interfaces and dispatches packets to the right client that
+connect to the virtual interface. It also works as a bridge to connect the
+real ethernet interface and the virtual ones.
+
+@menu
+* Invoking eth-multiplexer::	How to use the program.
+* Internal::			The brief introduction of the internal.
+@end menu
+
+@node Invoking eth-multiplexer
+@subsection Invoking eth-multiplexer
+
+Usage: eth-multiplexer [@var{option}@dots{}]
+
+@table @code
+@item --number_device=@var{number}
+@itemx -v
+The number of virtual network interfaces to be created.
+
+@item --interface=@var{device}
+@itemx -i
+Network interface to use.
+
+@end table
+
+Mandatory or optional arguments to long options are also mandatory or optional
+for any corresponding short options.
+
+Users can create as many virtual devices as they wants. The name of the
+virtual device follows the rule "veth%d", and the number in the name
+starts from 0.
+
+@dfn{eth-multiplexer} can only connect to one network interface. If no
+@option{--interface} is specified, the created virtual network is isolated
+with the real network completely.
+
+@node Internal
+@subsection Internal
+
+@dfn{eth-multiplexer} implements the server side functions in device.defs,
+so clients can access the virtual device as kernel devices. All information
+about the virtual interface is kept in the @dfn{vether_device} structure.
+
+When @dfn{eth-multiplexer} gets a packet from a virtual interface (which
+happens in @dfn{ds_device_write}) or from the underlying interface where it
+sit on (in @dfn{ethernet_demuxer}), it sends the packet to all other interfaces.
+@dfn{eth-multipexer} has BPF filters for each client. The BPF filter decides
+whether to deliver the packet. The packet delivery is done by
+@dfn{deliver_pack}. There is no filter for the underlying interface in 
+@dfn{eth-multiplexer}, so every packet from the virtual interface will be
+sent to the underlying interface.
+
+@dfn{eth-multiplexer} sets the underlying interface into the promiscuous mode
+if it can, so it can receive the packet with the virtual interface's hardware
+address from the underlying interface.
 
 @node Terminal Handling
 @chapter Terminal Handling

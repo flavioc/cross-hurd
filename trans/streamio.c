@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <argp.h>
@@ -74,11 +74,11 @@ static inline struct buffer *
 create_buffer (size_t size)
 {
   struct buffer *new = malloc (sizeof (struct buffer) + size);
-  assert (new);
+  assert_backtrace (new);
   new->head = new->tail = new->buf;
   new->size = size;
   new->wait = malloc (sizeof (pthread_cond_t));
-  assert (new->wait);
+  assert_backtrace (new->wait);
   pthread_cond_init (new->wait, NULL);
   return new;
 }
@@ -560,9 +560,6 @@ io_select_common (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  if (!(cred->po->openmodes & O_WRITE) && (*type & SELECT_WRITE))
-    return EBADF;
-
   *type &= SELECT_READ | SELECT_WRITE;
 
   if (*type == 0)
@@ -575,11 +572,10 @@ io_select_common (struct trivfs_protid *cred,
       pthread_mutex_lock (&global_lock);
       if ((*type & SELECT_READ) && buffer_readable (input_buffer))
 	available |= SELECT_READ;
-      if (output_buffer)
-	{
-	  if ((*type & SELECT_WRITE) && buffer_writable (output_buffer))
-	    available |= SELECT_WRITE;
-	}
+      if ((*type & SELECT_WRITE) &&
+	  (!(cred->po->openmodes & O_WRITE) ||
+	    (buffer_writable (output_buffer))))
+	available |= SELECT_WRITE;
 
       if (available)
 	{
@@ -866,12 +862,12 @@ device_open_reply (mach_port_t reply, int returncode, mach_port_t device)
     }
   else if (err == 0)
     {
-      assert (sizes_len == DEV_GET_SIZE_COUNT);
+      assert_backtrace (sizes_len == DEV_GET_SIZE_COUNT);
 
       dev_blksize = sizes[DEV_GET_SIZE_RECORD_SIZE];
       dev_size = sizes[DEV_GET_SIZE_DEVICE_SIZE];
 
-      assert (dev_blksize && dev_blksize <= IO_INBAND_MAX);
+      assert_backtrace (dev_blksize && dev_blksize <= IO_INBAND_MAX);
     }
   else
     {
@@ -994,7 +990,7 @@ dev_read (size_t amount, void **buf, size_t *len, int nowait)
     vm_allocate (mach_task_self (), (vm_address_t *)buf, max, 1);
 
   *len = buffer_read (input_buffer, *buf, max);
-  assert (*len == max);
+  assert_backtrace (*len == max);
 
   err = start_input (nowait);
   return err;
@@ -1061,7 +1057,7 @@ start_output (int nowait)
 {
   int size;
 
-  assert (output_buffer);
+  assert_backtrace (output_buffer);
 
   size = buffer_size (output_buffer);
 

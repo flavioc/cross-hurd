@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <sys/sysmacros.h>
 #include "isofs.h"
 
 /* These tell whether the specified extensions are on or not. */
@@ -280,7 +281,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	    nmbuf = malloc ((nmbufsize = nmlen) + 1);
 	  else
 	    nmbuf = realloc (nmbuf, (nmbufsize += nmlen) + 1);
-	  assert (nmbuf);
+	  assert_backtrace (nmbuf);
 
 	  memcpy (nmbuf + nmbufsize - nmlen, nm->name, nmlen);
 
@@ -307,7 +308,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	  if (name != nmbuf)
 	    {
 	      rr->name = strdup (name);
-	      assert (rr->name);
+	      assert_backtrace (rr->name);
 	    }
 	  else
 	    {
@@ -347,7 +348,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	  struct rr_pn *pn = body;
 
 	  rr->valid |= VALID_PN;
-	  rr->rdev = makedev (isonum_733 (pn->high), isonum_733 (pn->low));
+	  rr->rdev = gnu_dev_makedev (isonum_733 (pn->high), isonum_733 (pn->low));
 
 	  goto next_field;
 	}
@@ -373,7 +374,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 		}
 	      else while (targused + cnamelen > targalloced)
 		rr->target = realloc (rr->target, targalloced *= 2);
-	      assert (rr->target);
+	      assert_backtrace (rr->target);
 
 	      memcpy (rr->target + targused, cname, cnamelen);
 	      targused += cnamelen;
@@ -389,7 +390,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	    slbuf = malloc (slbufsize = crlen);
 	  else
 	    slbuf = realloc (slbuf, slbufsize += crlen);
-	  assert (slbuf);
+	  assert_backtrace (slbuf);
 
 	  memcpy (slbuf + slbufsize - crlen, sl->data, crlen);
 
@@ -572,7 +573,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 
 	  rr->translen = tr->len;
 	  rr->trans = malloc (rr->translen);
-	  assert (rr->trans);
+	  assert_backtrace (rr->trans);
 	  memcpy (tr->data, rr->trans, rr->translen);
 	  rr->valid |= VALID_TR;
 

@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 2015-2019 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -15,23 +15,30 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "netfs.h"
 #include "fs_S.h"
+
+#include <fcntl.h>
+#include <sys/file.h>
 
 error_t
 netfs_S_file_lock_stat (struct protid *user,
 			int *mystatus,
 			int *otherstatus)
 {
+
+  struct node *node;
+
   if (!user)
     return EOPNOTSUPP;
-  
-  pthread_mutex_lock (&user->po->np->lock);
-  *mystatus = user->po->lock_status;
-  *otherstatus = user->po->np->userlock.type;
-  pthread_mutex_unlock (&user->po->np->lock);
+
+  node = user->po->np;
+  pthread_mutex_lock (&node->lock);
+  *mystatus = fshelp_rlock_peropen_status (&user->po->lock_status);
+  *otherstatus = fshelp_rlock_node_status (&node->userlock);
+  pthread_mutex_unlock (&node->lock);
+
   return 0;
 }

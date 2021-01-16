@@ -1,6 +1,6 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel.
-   Copyright (C) 1993,94,95,96,97,98,99,2000,01,02,2006
+   Copyright (C) 1993,94,95,96,97,98,99,2000,01,02,2006,14,16
      Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
@@ -24,20 +24,20 @@
 #include <mach.h>
 #include <mach/notify.h>
 #include <device/device.h>
-#include <a.out.h>
 #include <mach/message.h>
 #include <mach/mig_errors.h>
+#include <mach/task_notify.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <fcntl.h>
-#include <elf.h>
 #include <mach/mig_support.h>
 #include <mach/default_pager.h>
-#include <mach/machine/vm_param.h> /* For VM_XXX_ADDRESS */
 #include <argp.h>
 #include <hurd/store.h>
+#include <hurd/ihash.h>
+#include <sys/reboot.h>
 #include <sys/mman.h>
 #include <version.h>
 
@@ -49,22 +49,14 @@
 #include "term_S.h"
 #include "bootstrap_S.h"
 /* #include "tioctl_S.h" */
+#include "mach_S.h"
+#include "mach_host_S.h"
+#include "gnumach_S.h"
+#include "task_notify_S.h"
 
 #include "boot_script.h"
 
 #include <hurd/auth.h>
-
-#ifdef UX
-#undef STORE			/* We can't use libstore when under UX.  */
-#else
-#define STORE
-#endif
-
-#ifdef UX
-
-#include "ux.h"
-
-#else  /* !UX */
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -74,7 +66,17 @@
 #include <termios.h>
 #include <error.h>
 #include <hurd.h>
-#include <assert.h>
+#include <assert-backtrace.h>
+
+#include "private.h"
+
+/* We support two modes of operation.  Traditionally, Subhurds were
+   privileged, i.e. they had the privileged kernel ports.  This has a
+   few drawbacks.  Privileged subhurds can manipulate all tasks on the
+   system and halt the system.  Nowadays we allow an unprivileged
+   mode.  */
+static int privileged;
+static int want_privileged;
 
 static struct termios orig_tty_state;
 static int isig;
@@ -105,15 +107,30 @@ restore_termstate ()
 
 #define host_fstat fstat
 typedef struct stat host_stat_t;
-#define host_exit exit
 
-#endif /* UX */
+void __attribute__ ((__noreturn__))
+host_exit (int status)
+{
+  restore_termstate ();
+  exit (status);
+}
+
+int verbose;
 
 mach_port_t privileged_host_port, master_device_port;
+mach_port_t pseudo_privileged_host_port;
 mach_port_t pseudo_master_device_port;
 mach_port_t receive_set;
 mach_port_t pseudo_console, pseudo_root, pseudo_time;
+mach_port_t pseudo_pset;
+task_t pseudo_kernel;
+mach_port_t task_notification_port;
+mach_port_t dead_task_notification_port;
 auth_t authserver;
+
+/* The proc server registers for new task notifications which we will
+   send to this port.  */
+mach_port_t new_task_notification;
 
 struct store *root_store;
 
@@ -145,29 +162,7 @@ void safe_gets (char *buf, int buf_len)
   fgets (buf, buf_len, stdin);
 }
 
-char *useropen_dir;
-
-int
-useropen (const char *name, int flags, int mode)
-{
-  if (useropen_dir)
-    {
-      static int dlen;
-      if (!dlen) dlen = strlen (useropen_dir);
-      {
-	int len = strlen (name);
-	char try[dlen + 1 + len + 1];
-	int fd;
-	memcpy (try, useropen_dir, dlen);
-	try[dlen] = '/';
-	memcpy (&try[dlen + 1], name, len + 1);
-	fd = open (try, flags, mode);
-	if (fd >= 0)
-	  return fd;
-      }
-    }
-  return open (name, flags, mode);
-}
+extern char *useropen_dir;
 
 /* XXX: glibc should provide mig_reply_setup but does not.  */
 /* Fill in default response.  */
@@ -201,16 +196,74 @@ mig_reply_setup (
 #undef OutP
 }
 
+error_t
+mach_msg_forward (mach_msg_header_t *inp,
+                  mach_port_t destination, mach_msg_type_name_t destination_type)
+{
+  /* Put the reply port back at the correct position, insert new
+     destination.  */
+  inp->msgh_local_port = inp->msgh_remote_port;
+  inp->msgh_remote_port = destination;
+  inp->msgh_bits =
+    MACH_MSGH_BITS (destination_type, MACH_MSGH_BITS_REMOTE (inp->msgh_bits))
+    | MACH_MSGH_BITS_OTHER (inp->msgh_bits);
+
+  /* A word about resources carried in complex messages.
+
+     "In a received message, msgt_deallocate is TRUE in type
+     descriptors for out-of-line memory".  Therefore, "[the
+     out-of-line memory] is implicitly deallocated from the sender
+     [when we resend the message], as if by vm_deallocate".
+
+     Similarly, rights in messages will be either
+     MACH_MSG_TYPE_PORT_SEND, MACH_MSG_TYPE_PORT_SEND_ONCE, or
+     MACH_MSG_TYPE_PORT_RECEIVE.  These types are aliases for,
+     respectively, MACH_MSG_TYPE_MOVE_SEND,
+     MACH_MSG_TYPE_MOVE_SEND_ONCE, and MACH_MSG_TYPE_MOVE_RECEIVE.
+     Therefore, the rights are moved when we resend the message.  */
+
+  return mach_msg (inp, MACH_SEND_MSG, inp->msgh_size,
+                   0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+}
+
 int
 boot_demuxer (mach_msg_header_t *inp,
 	      mach_msg_header_t *outp)
 {
+  error_t err;
   mig_routine_t routine;
   mig_reply_setup (inp, outp);
+
+  if (inp->msgh_local_port == task_notification_port
+      && MACH_PORT_VALID (new_task_notification)
+      && 24000 <= inp->msgh_id && inp->msgh_id < 24100)
+    {
+      /* This is a message of the Process subsystem.  We relay this to
+         allow the "outer" proc servers to communicate with the "inner"
+         one.  */
+      mig_reply_header_t *reply = (mig_reply_header_t *) outp;
+
+      if (MACH_PORT_VALID (new_task_notification))
+        err = mach_msg_forward (inp, new_task_notification, MACH_MSG_TYPE_COPY_SEND);
+      else
+        err = EOPNOTSUPP;
+
+      if (err)
+        reply->RetCode = err;
+      else
+        reply->RetCode = MIG_NO_REPLY;
+
+      return TRUE;
+    }
+
   if ((routine = io_server_routine (inp)) ||
       (routine = device_server_routine (inp)) ||
       (routine = notify_server_routine (inp)) ||
-      (routine = term_server_routine (inp))
+      (routine = term_server_routine (inp)) ||
+      (routine = mach_server_routine (inp)) ||
+      (routine = mach_host_server_routine (inp)) ||
+      (routine = gnumach_server_routine (inp)) ||
+      (routine = task_notify_server_routine (inp))
       /* (routine = tioctl_server_routine (inp)) */)
     {
       (*routine) (inp, outp);
@@ -220,224 +273,70 @@ boot_demuxer (mach_msg_header_t *inp,
     return FALSE;
 }
 
-vm_address_t
-load_image (task_t t,
-	    char *file)
-{
-  int fd;
-  union
-    {
-      struct exec a;
-      Elf32_Ehdr e;
-    } hdr;
-  char msg[] = ": cannot open bootstrap file\n";
-
-  fd = useropen (file, O_RDONLY, 0);
-
-  if (fd == -1)
-    {
-      write (2, file, strlen (file));
-      write (2, msg, sizeof msg - 1);
-      task_terminate (t);
-      host_exit (1);
-    }
-
-  read (fd, &hdr, sizeof hdr);
-  /* File must have magic ELF number.  */
-  if (hdr.e.e_ident[0] == 0177 && hdr.e.e_ident[1] == 'E' &&
-      hdr.e.e_ident[2] == 'L' && hdr.e.e_ident[3] == 'F')
-    {
-      Elf32_Phdr phdrs[hdr.e.e_phnum], *ph;
-      lseek (fd, hdr.e.e_phoff, SEEK_SET);
-      read (fd, phdrs, sizeof phdrs);
-      for (ph = phdrs; ph < &phdrs[sizeof phdrs/sizeof phdrs[0]]; ++ph)
-	if (ph->p_type == PT_LOAD)
-	  {
-	    vm_address_t buf;
-	    vm_size_t offs = ph->p_offset & (ph->p_align - 1);
-	    vm_size_t bufsz = round_page (ph->p_filesz + offs);
-
-	    buf = (vm_address_t) mmap (0, bufsz,
-				       PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-
-	    lseek (fd, ph->p_offset, SEEK_SET);
-	    read (fd, (void *)(buf + offs), ph->p_filesz);
-
-	    ph->p_memsz = ((ph->p_vaddr + ph->p_memsz + ph->p_align - 1)
-			   & ~(ph->p_align - 1));
-	    ph->p_vaddr &= ~(ph->p_align - 1);
-	    ph->p_memsz -= ph->p_vaddr;
-
-	    vm_allocate (t, (vm_address_t*)&ph->p_vaddr, ph->p_memsz, 0);
-	    vm_write (t, ph->p_vaddr, buf, bufsz);
-	    munmap ((caddr_t) buf, bufsz);
-	    vm_protect (t, ph->p_vaddr, ph->p_memsz, 0,
-			((ph->p_flags & PF_R) ? VM_PROT_READ : 0) |
-			((ph->p_flags & PF_W) ? VM_PROT_WRITE : 0) |
-			((ph->p_flags & PF_X) ? VM_PROT_EXECUTE : 0));
-	  }
-      return hdr.e.e_entry;
-    }
-  else
-    {
-      /* a.out */
-      int magic = N_MAGIC (hdr.a);
-      int headercruft;
-      vm_address_t base = 0x10000;
-      int rndamount, amount;
-      vm_address_t bsspagestart, bssstart;
-      char *buf;
-
-      headercruft = sizeof (struct exec) * (magic == ZMAGIC);
-
-      amount = headercruft + hdr.a.a_text + hdr.a.a_data;
-      rndamount = round_page (amount);
-      buf = mmap (0, rndamount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      lseek (fd, sizeof hdr.a - headercruft, SEEK_SET);
-      read (fd, buf, amount);
-      vm_allocate (t, &base, rndamount, 0);
-      vm_write (t, base, (vm_address_t) buf, rndamount);
-      if (magic != OMAGIC)
-	vm_protect (t, base, trunc_page (headercruft + hdr.a.a_text),
-		    0, VM_PROT_READ | VM_PROT_EXECUTE);
-      munmap ((caddr_t) buf, rndamount);
-
-      bssstart = base + hdr.a.a_text + hdr.a.a_data + headercruft;
-      bsspagestart = round_page (bssstart);
-      vm_allocate (t, &bsspagestart,
-		   hdr.a.a_bss - (bsspagestart - bssstart), 0);
-
-      return hdr.a.a_entry;
-    }
-}
-
-
 void read_reply ();
 void * msg_thread (void *);
 
-/* Callbacks for boot_script.c; see boot_script.h.  */
-int
-boot_script_exec_cmd (void *hook,
-		      mach_port_t task, char *path, int argc,
-		      char **argv, char *strings, int stringlen)
-{
-  char *args, *p;
-  int arg_len, i;
-  size_t reg_size;
-  void *arg_pos;
-  vm_offset_t stack_start, stack_end;
-  vm_address_t startpc, str_start;
-  thread_t thread;
-
-  write (2, path, strlen (path));
-  for (i = 1; i < argc; ++i)
-    {
-      write (2, " ", 1);
-      write (2, argv[i], strlen (argv[i]));
-    }
-  write (2, "\r\n", 2);
-
-  startpc = load_image (task, path);
-  arg_len = stringlen + (argc + 2) * sizeof (char *) + sizeof (integer_t);
-  arg_len += 5 * sizeof (int);
-  stack_end = VM_MAX_ADDRESS;
-  stack_start = VM_MAX_ADDRESS - 16 * 1024 * 1024;
-  vm_allocate (task, &stack_start, stack_end - stack_start, FALSE);
-  arg_pos = (void *) ((stack_end - arg_len) & ~(sizeof (natural_t) - 1));
-  args = mmap (0, stack_end - trunc_page ((vm_offset_t) arg_pos),
-	       PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-  str_start = ((vm_address_t) arg_pos
-	       + (argc + 2) * sizeof (char *) + sizeof (integer_t));
-  p = args + ((vm_address_t) arg_pos & (vm_page_size - 1));
-  *(int *) p = argc;
-  p = (void *) p + sizeof (int);
-  for (i = 0; i < argc; i++)
-    {
-      *(char **) p = argv[i] - strings + (char *) str_start;
-      p = (void *) p + sizeof (char *);
-    }
-  *(char **) p = 0;
-  p = (void *) p + sizeof (char *);
-  *(char **) p = 0;
-  p = (void *) p + sizeof (char *);
-  memcpy (p, strings, stringlen);
-  memset (args, 0, (vm_offset_t)arg_pos & (vm_page_size - 1));
-  vm_write (task, trunc_page ((vm_offset_t) arg_pos), (vm_address_t) args,
-	    stack_end - trunc_page ((vm_offset_t) arg_pos));
-  munmap ((caddr_t) args,
-	  stack_end - trunc_page ((vm_offset_t) arg_pos));
-
-  thread_create (task, &thread);
-#ifdef i386_THREAD_STATE_COUNT
-  {
-    struct i386_thread_state regs;
-    reg_size = i386_THREAD_STATE_COUNT;
-    thread_get_state (thread, i386_THREAD_STATE,
-		      (thread_state_t) &regs, &reg_size);
-    regs.eip = (int) startpc;
-    regs.uesp = (int) arg_pos;
-    thread_set_state (thread, i386_THREAD_STATE,
-		      (thread_state_t) &regs, reg_size);
-  }
-#elif defined(ALPHA_THREAD_STATE_COUNT)
-  {
-    struct alpha_thread_state regs;
-    reg_size = ALPHA_THREAD_STATE_COUNT;
-    thread_get_state (thread, ALPHA_THREAD_STATE,
-		      (thread_state_t) &regs, &reg_size);
-    regs.r30 = (natural_t) arg_pos;
-    regs.pc = (natural_t) startpc;
-    thread_set_state (thread, ALPHA_THREAD_STATE,
-		      (thread_state_t) &regs, reg_size);
-  }
-#else
-# error needs to be ported
-#endif
-
-  thread_resume (thread);
-  mach_port_deallocate (mach_task_self (), thread);
-  return 0;
-}
-
 const char *argp_program_version = STANDARD_HURD_VERSION (boot);
+
+#define OPT_PRIVILEGED	-1
+#define OPT_BOOT_SCRIPT	-2
 
 static struct argp_option options[] =
 {
+  { NULL, 0, NULL, 0, "Boot options:" },
+  { "boot-script", OPT_BOOT_SCRIPT, "BOOT-SCRIPT", 0,
+    "boot script to execute" },
   { "boot-root",   'D', "DIR", 0,
     "Root of a directory tree in which to find files specified in BOOT-SCRIPT" },
   { "single-user", 's', 0, 0,
     "Boot in single user mode" },
   { "kernel-command-line", 'c', "COMMAND LINE", 0,
     "Simulated multiboot command line to supply" },
+  { "verbose",     'v', 0, 0,
+    "Be verbose" },
   { "pause" ,      'd', 0, 0,
     "Pause for user confirmation at various times during booting" },
   { "isig",      'I', 0, 0,
-    "Do not disable terminal signals, so you can suspend and interrupt boot."},
-  { "device",	   'f', "device_name=device_file", 0,
-    "Specify a device file used by subhurd and its virtual name."},
+    "Do not disable terminal signals, so you can suspend and interrupt boot"},
+  { "device",	   'f', "SUBHURD_NAME=DEVICE_FILE", 0,
+    "Pass the given DEVICE_FILE to the Subhurd as device SUBHURD_NAME"},
+  { "privileged", OPT_PRIVILEGED, NULL, 0,
+    "Allow the subhurd to access privileged kernel ports"},
   { 0 }
 };
-static char args_doc[] = "BOOT-SCRIPT";
 static char doc[] = "Boot a second hurd";
 
-struct dev_map 
+
+
+/* Device pass through.  */
+
+struct dev_map
 {
-  char *name;
-  mach_port_t port;
+  char *device_name;	/* The name of the device in the Subhurd.  */
+  char *file_name;	/* The filename outside the Subhurd.  */
   struct dev_map *next;
 };
 
 static struct dev_map *dev_map_head;
 
-static struct dev_map *add_dev_map (char *dev_name, char *dev_file)
+static struct dev_map *
+add_dev_map (const char *dev_name, const char *dev_file)
 {
-  struct dev_map *map = malloc (sizeof (*map));
+  file_t node;
+  struct dev_map *map;
 
-  assert (map);
-  map->name = dev_name;
-  map->port = file_name_lookup (dev_file, 0, 0);
-  if (map->port == MACH_PORT_NULL)
-    error (1, errno, "file_name_lookup: %s", dev_file);
+  /* See if we can open the file.  */
+  node = file_name_lookup (dev_file, 0, 0);
+  if (! MACH_PORT_VALID (node))
+    error (1, errno, "%s", dev_file);
+  mach_port_deallocate (mach_task_self (), node);
+
+  map = malloc (sizeof *map);
+  if (map == NULL)
+    return NULL;
+
+  map->device_name = strdup (dev_name);
+  map->file_name = strdup (dev_file);
   map->next = dev_map_head;
   dev_map_head = map;
   return map;
@@ -449,7 +348,7 @@ static struct dev_map *lookup_dev (char *dev_name)
 
   for (map = dev_map_head; map; map = map->next)
     {
-      if (strcmp (map->name, dev_name) == 0)
+      if (strcmp (map->device_name, dev_name) == 0)
 	return map;
     }
   return NULL;
@@ -470,6 +369,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
 
     case 'I':  isig = 1; break;
 
+    case 'v':
+      verbose += 1;
+      break;
+
     case 's': case 'd':
       len = strlen (bootstrap_args);
       if (len >= sizeof bootstrap_args - 1)
@@ -486,12 +389,16 @@ parse_opt (int key, char *arg, struct argp_state *state)
       add_dev_map (arg, dev_file+1);
       break;
 
-    case ARGP_KEY_ARG:
-      if (state->arg_num == 0)
-	bootscript = arg;
-      else
-	return ARGP_ERR_UNKNOWN;
+    case OPT_PRIVILEGED:
+      want_privileged = 1;
       break;
+
+    case OPT_BOOT_SCRIPT:
+      bootscript = arg;
+      break;
+
+    case ARGP_KEY_ARG:
+      return ARGP_ERR_UNKNOWN;
 
     case ARGP_KEY_INIT:
       state->child_inputs[0] = state->input; break;
@@ -502,17 +409,143 @@ parse_opt (int key, char *arg, struct argp_state *state)
   return 0;
 }
 
+static error_t
+allocate_pseudo_ports (void)
+{
+  mach_port_t old;
+
+  /* Allocate a port that we hand out as the privileged host port.  */
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+		      &pseudo_privileged_host_port);
+  mach_port_insert_right (mach_task_self (),
+			  pseudo_privileged_host_port,
+			  pseudo_privileged_host_port,
+			  MACH_MSG_TYPE_MAKE_SEND);
+  mach_port_move_member (mach_task_self (), pseudo_privileged_host_port,
+			 receive_set);
+  mach_port_request_notification (mach_task_self (),
+                                  pseudo_privileged_host_port,
+				  MACH_NOTIFY_NO_SENDERS, 1,
+				  pseudo_privileged_host_port,
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &old);
+  assert_backtrace (old == MACH_PORT_NULL);
+
+  /* Allocate a port that we hand out as the privileged processor set
+     port.  */
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+		      &pseudo_pset);
+  mach_port_move_member (mach_task_self (), pseudo_pset,
+			 receive_set);
+  /* Make one send right that we copy when handing it out.  */
+  mach_port_insert_right (mach_task_self (),
+			  pseudo_pset,
+			  pseudo_pset,
+			  MACH_MSG_TYPE_MAKE_SEND);
+
+  /* We will receive new task notifications on this port.  */
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+		      &task_notification_port);
+  mach_port_move_member (mach_task_self (), task_notification_port,
+			 receive_set);
+
+  /* And information about dying tasks here.  */
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+		      &dead_task_notification_port);
+  mach_port_move_member (mach_task_self (), dead_task_notification_port,
+			 receive_set);
+
+  return 0;
+}
+
+void
+read_boot_script (char **buffer, size_t *length)
+{
+  char *p, *buf;
+  static const char filemsg[] = "Can't open boot script\n";
+  static const char memmsg[] = "Not enough memory\n";
+  int i, fd;
+  size_t amt, len;
+
+  fd = open (bootscript, O_RDONLY, 0);
+  if (fd < 0)
+    {
+      write (2, filemsg, sizeof (filemsg));
+      host_exit (1);
+    }
+  p = buf = malloc (500);
+  if (!buf)
+    {
+      write (2, memmsg, sizeof (memmsg));
+      host_exit (1);
+    }
+  len = 500;
+  amt = 0;
+  while (1)
+    {
+      i = read (fd, p, len - (p - buf));
+      if (i <= 0)
+        break;
+      p += i;
+      amt += i;
+      if (p == buf + len)
+        {
+          char *newbuf;
+
+          len += 500;
+          newbuf = realloc (buf, len);
+          if (!newbuf)
+            {
+              write (2, memmsg, sizeof (memmsg));
+              host_exit (1);
+            }
+          p = newbuf + (p - buf);
+          buf = newbuf;
+        }
+    }
+
+  close (fd);
+  *buffer = buf;
+  *length = amt;
+}
+
+
+/* Boot script file for booting contemporary GNU Hurd systems.  Each
+   line specifies a file to be loaded by the boot loader (the first
+   word), and actions to be done with it.  */
+const char *default_boot_script =
+  /* First, the bootstrap filesystem.  It needs several ports as
+     arguments, as well as the user flags from the boot loader.  */
+  "/hurd/ext2fs.static"
+  " --readonly"
+  " --multiboot-command-line=${kernel-command-line}"
+  " --host-priv-port=${host-port}"
+  " --device-master-port=${device-port}"
+  " --kernel-task=${kernel-task}"
+  " --exec-server-task=${exec-task}"
+  " -T device ${root-device} $(task-create) $(task-resume)"
+  "\n"
+
+  /* Now the exec server; to load the dynamically-linked exec server
+     program, we have the boot loader in fact load and run ld.so,
+     which in turn loads and runs /hurd/exec.  This task is created,
+     and its task port saved in ${exec-task} to be passed to the fs
+     above, but it is left suspended; the fs will resume the exec task
+     once it is ready.  */
+  "/lib/ld.so /hurd/exec $(exec-task=task-create)"
+  "\n";
+
+
 int
 main (int argc, char **argv, char **envp)
 {
   error_t err;
   mach_port_t foo;
   char *buf = 0;
-  int i, len;
   pthread_t pthread_id;
   char *root_store_name;
-  const struct argp_child kids[] = { { &store_argp }, { 0 }};
-  struct argp argp = { options, parse_opt, args_doc, doc, kids };
+  const struct argp_child kids[] = { { &store_argp, 0, "Store options:", -2 },
+                                     { 0 }};
+  struct argp argp = { options, parse_opt, NULL, doc, kids };
   struct store_argp_params store_argp_params = { 0 };
 
   argp_parse (&argp, argc, argv, 0, 0, &store_argp_params);
@@ -524,16 +557,26 @@ main (int argc, char **argv, char **envp)
   if (err)
     error (4, err, "%s", root_store_name);
 
-  get_privileged_ports (&privileged_host_port, &master_device_port);
+  if (want_privileged)
+    {
+      get_privileged_ports (&privileged_host_port, &master_device_port);
+      privileged = MACH_PORT_VALID (master_device_port);
 
-  strcat (bootstrap_args, "f");
+      if (! privileged)
+        error (1, 0, "Must be run as root for privileged subhurds");
+    }
+
+  if (privileged)
+    strcat (bootstrap_args, "f");
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
 		      &receive_set);
 
   if (root_store->class == &store_device_class && root_store->name
       && (root_store->flags & STORE_ENFORCED)
-      && root_store->num_runs == 1 && root_store->runs[0].start == 0)
+      && root_store->num_runs == 1
+      && root_store->runs[0].start == 0
+      && privileged)
     /* Let known device nodes pass through directly.  */
     bootdevice = root_store->name;
   else
@@ -578,15 +621,37 @@ main (int argc, char **argv, char **envp)
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
 
+  if (! privileged)
+    {
+      err = allocate_pseudo_ports ();
+      if (err)
+        error (1, err, "Allocating pseudo ports");
+
+      /* Create a new task namespace for us.  */
+      err = proc_make_task_namespace (getproc (), task_notification_port,
+                                      MACH_MSG_TYPE_MAKE_SEND);
+      if (err)
+        error (1, err, "proc_make_task_namespace");
+
+      /* Create an empty task that the subhurds can freely frobnicate.  */
+      err = task_create (mach_task_self (), 0, &pseudo_kernel);
+      if (err)
+        error (1, err, "task_create");
+    }
+
   if (kernel_command_line == 0)
     asprintf (&kernel_command_line, "%s %s root=%s",
 	      argv[0], bootstrap_args, bootdevice);
 
   /* Initialize boot script variables.  */
   if (boot_script_set_variable ("host-port", VAL_PORT,
-				(int) privileged_host_port)
+                                privileged
+                                ? (int) privileged_host_port
+				: (int) pseudo_privileged_host_port)
       || boot_script_set_variable ("device-port", VAL_PORT,
 				   (integer_t) pseudo_master_device_port)
+      || boot_script_set_variable ("kernel-task", VAL_PORT,
+				   (integer_t) pseudo_kernel)
       || boot_script_set_variable ("kernel-command-line", VAL_STR,
 				   (integer_t) kernel_command_line)
       || boot_script_set_variable ("root-device",
@@ -619,7 +684,7 @@ main (int argc, char **argv, char **envp)
            char *msg;
            asprintf (&msg, "cannot set boot-script variable %s: %s\n",
                      word, boot_script_error_string (err));
-           assert (msg);
+           assert_backtrace (msg);
            write (2, msg, strlen (msg));
            free (msg);
            host_exit (1);
@@ -630,46 +695,12 @@ main (int argc, char **argv, char **envp)
   /* Parse the boot script.  */
   {
     char *p, *line;
-    static const char filemsg[] = "Can't open boot script\n";
-    static const char memmsg[] = "Not enough memory\n";
-    int amt, fd, err;
+    size_t amt;
+    if (bootscript)
+      read_boot_script (&buf, &amt);
+    else
+      buf = strdup (default_boot_script), amt = strlen (default_boot_script);
 
-    fd = open (bootscript, O_RDONLY, 0);
-    if (fd < 0)
-      {
-	write (2, filemsg, sizeof (filemsg));
-	host_exit (1);
-      }
-    p = buf = malloc (500);
-    if (!buf)
-      {
-	write (2, memmsg, sizeof (memmsg));
-	host_exit (1);
-      }
-    len = 500;
-    amt = 0;
-    while (1)
-      {
-	i = read (fd, p, len - (p - buf));
-	if (i <= 0)
-	  break;
-	p += i;
-	amt += i;
-	if (p == buf + len)
-	  {
-	    char *newbuf;
-
-	    len += 500;
-	    newbuf = realloc (buf, len);
-	    if (!newbuf)
-	      {
-		write (2, memmsg, sizeof (memmsg));
-		host_exit (1);
-	      }
-	    p = newbuf + (p - buf);
-	    buf = newbuf;
-	  }
-      }
     line = p = buf;
     while (1)
       {
@@ -709,8 +740,6 @@ main (int argc, char **argv, char **envp)
   /* The boot script has now been parsed into internal data structures.
      Now execute its directives.  */
   {
-    int err;
-
     err = boot_script_exec ();
     if (err)
       {
@@ -742,7 +771,8 @@ main (int argc, char **argv, char **envp)
       FD_SET (0, &rmask);
       if (select (1, &rmask, 0, 0, 0) == 1)
 	read_reply ();
-      else /* We hosed */
+      else if (errno != EINTR)
+        /* We hosed */
 	error (5, errno, "select");
     }
 }
@@ -924,6 +954,9 @@ ds_device_open (mach_port_t master_port,
   if (master_port != pseudo_master_device_port)
     return D_INVALID_OPERATION;
 
+  if (verbose > 1)
+    fprintf (stderr, "Device '%s' being opened.\r\n", name);
+
   if (!strcmp (name, "console"))
     {
 #if 0
@@ -953,9 +986,21 @@ ds_device_open (mach_port_t master_port,
   map = lookup_dev (name);
   if (map)
     {
+      error_t err;
+      file_t node;
+
+      node = file_name_lookup (map->file_name, 0, 0);
+      if (! MACH_PORT_VALID (node))
+        return D_NO_SUCH_DEVICE;
+
       *devicetype = MACH_MSG_TYPE_MOVE_SEND;
-      return device_open (map->port, mode, "", device);
+      err = device_open (node, mode, "", device);
+      mach_port_deallocate (mach_task_self (), node);
+      return err;
     }
+
+  if (! privileged)
+    return D_NO_SUCH_DEVICE;
 
   *devicetype = MACH_MSG_TYPE_MOVE_SEND;
   return device_open (master_device_port, mode, name, device);
@@ -1153,7 +1198,7 @@ ds_device_read_inband (device_t device,
 	{
 	  if (returned != data)
 	    {
-	      bcopy (returned, (void *)data, *datalen);
+	      memcpy ((void *)data, returned, *datalen);
 	      munmap ((caddr_t) returned, *datalen);
 	    }
 	  return D_SUCCESS;
@@ -1252,6 +1297,22 @@ ds_device_set_filter (device_t device,
   return D_INVALID_OPERATION;
 }
 
+kern_return_t
+ds_device_intr_register (device_t dev,
+			 int id,
+			 int flags,
+			 mach_port_t receive_port)
+{
+  return D_INVALID_OPERATION;
+}
+
+kern_return_t
+ds_device_intr_ack (device_t dev,
+		    mach_port_t receive_port)
+{
+  return D_INVALID_OPERATION;
+}
+
 
 /* Implementation of notify interface */
 kern_return_t
@@ -1323,6 +1384,8 @@ do_mach_notify_send_once (mach_port_t notify)
   return EOPNOTSUPP;
 }
 
+static void task_died (mach_port_t name);
+
 kern_return_t
 do_mach_notify_dead_name (mach_port_t notify,
 			  mach_port_t name)
@@ -1331,7 +1394,11 @@ do_mach_notify_dead_name (mach_port_t notify,
   if (name == child_task && notify == bootport)
     host_exit (0);
 #endif
-  return EOPNOTSUPP;
+  if (notify != dead_task_notification_port)
+    return EOPNOTSUPP;
+  task_died (name);
+  mach_port_deallocate (mach_task_self (), name);
+  return 0;
 }
 
 
@@ -1597,9 +1664,11 @@ S_io_reauthenticate (mach_port_t object,
   size_t gulen = 0, aulen = 0, gglen = 0, aglen = 0;
   error_t err;
 
+  /* XXX: This cannot possibly work, authserver is 0.  */
+
   err = mach_port_insert_right (mach_task_self (), object, object,
 				MACH_MSG_TYPE_MAKE_SEND);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   do
     err = auth_server_authenticate (authserver,
@@ -1889,3 +1958,164 @@ kern_return_t S_term_on_pty
 	io_t *ptymaster
 )
 { return EOPNOTSUPP; }
+
+/* Mach host emulation.  */
+
+kern_return_t
+S_vm_set_default_memory_manager (mach_port_t host_priv,
+                                 mach_port_t *default_manager)
+{
+  if (host_priv != pseudo_privileged_host_port)
+    return KERN_INVALID_HOST;
+
+  if (*default_manager != MACH_PORT_NULL)
+    return KERN_INVALID_ARGUMENT;
+
+  *default_manager = MACH_PORT_NULL;
+  return KERN_SUCCESS;
+}
+
+kern_return_t
+S_host_reboot (mach_port_t host_priv,
+               int flags)
+{
+  fprintf (stderr, "Would %s the system.  Bye.\r\n",
+           flags & RB_HALT? "halt": "reboot");
+  host_exit (0);
+}
+
+
+kern_return_t
+S_host_processor_set_priv (mach_port_t host_priv,
+			   mach_port_t set_name,
+			   mach_port_t *set)
+{
+  if (host_priv != pseudo_privileged_host_port)
+    return KERN_INVALID_HOST;
+
+  *set = pseudo_pset;
+  return KERN_SUCCESS;
+}
+
+kern_return_t
+S_register_new_task_notification (mach_port_t host_priv,
+				  mach_port_t notification)
+{
+  if (host_priv != pseudo_privileged_host_port)
+    return KERN_INVALID_HOST;
+
+  if (! MACH_PORT_VALID (notification))
+    return KERN_INVALID_ARGUMENT;
+
+  if (MACH_PORT_VALID (new_task_notification))
+    return KERN_NO_ACCESS;
+
+  new_task_notification = notification;
+  return KERN_SUCCESS;
+}
+
+
+/* Managing tasks.  */
+
+static void
+task_ihash_cleanup (hurd_ihash_value_t value, void *cookie)
+{
+  (void) cookie;
+  mach_port_deallocate (mach_task_self (), (mach_port_t) value);
+}
+
+static struct hurd_ihash task_ihash =
+  HURD_IHASH_INITIALIZER_GKI (HURD_IHASH_NO_LOCP, task_ihash_cleanup, NULL,
+                              NULL, NULL);
+
+static void
+task_died (mach_port_t name)
+{
+  if (verbose > 1)
+    fprintf (stderr, "Task '%lu' died.\r\n", name);
+
+  hurd_ihash_remove (&task_ihash, (hurd_ihash_key_t) name);
+}
+
+/* Handle new task notifications from proc.  */
+error_t
+S_mach_notify_new_task (mach_port_t notify,
+			mach_port_t task,
+			mach_port_t parent)
+{
+  error_t err;
+  mach_port_t previous;
+
+  if (notify != task_notification_port)
+    return EOPNOTSUPP;
+
+  if (verbose > 1)
+    fprintf (stderr, "Task '%lu' created by task '%lu'.\r\n", task, parent);
+
+  err = mach_port_request_notification (mach_task_self (), task,
+                                        MACH_NOTIFY_DEAD_NAME, 0,
+                                        dead_task_notification_port,
+                                        MACH_MSG_TYPE_MAKE_SEND_ONCE,
+                                        &previous);
+  if (err)
+    goto fail;
+  assert_backtrace (! MACH_PORT_VALID (previous));
+
+  mach_port_mod_refs (mach_task_self (), task, MACH_PORT_RIGHT_SEND, +1);
+  err = hurd_ihash_add (&task_ihash,
+                        (hurd_ihash_key_t) task, (hurd_ihash_value_t) task);
+  if (err)
+    {
+      mach_port_deallocate (mach_task_self (), task);
+      goto fail;
+    }
+
+  if (MACH_PORT_VALID (new_task_notification))
+    /* Relay the notification.  This consumes task and parent.  */
+    return mach_notify_new_task (new_task_notification, task, parent);
+
+  mach_port_deallocate (mach_task_self (), task);
+  mach_port_deallocate (mach_task_self (), parent);
+  return 0;
+
+ fail:
+  task_terminate (task);
+  return err;
+}
+
+kern_return_t
+S_processor_set_tasks(mach_port_t processor_set,
+		      task_array_t *task_list,
+		      mach_msg_type_number_t *task_listCnt)
+{
+  error_t err;
+  size_t i;
+
+  if (!task_ihash.nr_items)
+    {
+      *task_listCnt = 0;
+      return 0;
+    }
+
+  err = vm_allocate (mach_task_self (), (vm_address_t *) task_list,
+		     task_ihash.nr_items * sizeof **task_list, 1);
+  if (err)
+    return err;
+
+  /* The first task has to be the kernel.  */
+  (*task_list)[0] = pseudo_kernel;
+
+  i = 1;
+  HURD_IHASH_ITERATE (&task_ihash, value)
+    {
+      task_t task = (task_t) value;
+      if (task == pseudo_kernel)
+        continue;
+
+      (*task_list)[i] = task;
+      i += 1;
+    }
+
+  *task_listCnt = task_ihash.nr_items;
+  return 0;
+}

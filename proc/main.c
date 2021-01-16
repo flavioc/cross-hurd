@@ -25,7 +25,7 @@
 #include <hurd/paths.h>
 #include <hurd/startup.h>
 #include <device/device.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <argp.h>
 #include <error.h>
 #include <version.h>
@@ -41,6 +41,21 @@ const char *argp_program_version = STANDARD_HURD_VERSION (proc);
 #include "../libports/interrupt_S.h"
 #include "proc_exc_S.h"
 #include "task_notify_S.h"
+
+mach_port_t authserver;
+struct proc *self_proc;
+struct proc *init_proc;
+struct proc *startup_proc;
+
+struct port_bucket *proc_bucket;
+struct port_class *proc_class;
+struct port_class *generic_port_class;
+struct port_class *exc_class;
+
+mach_port_t generic_port;
+struct proc *kernel_proc;
+
+pthread_mutex_t global_lock;
 
 int
 message_demuxer (mach_msg_header_t *inp,
@@ -80,6 +95,11 @@ increase_priority (void)
     goto out;
 
   err = thread_max_priority (mach_thread_self (), psetcntl, 0);
+  /* If we are running in an unprivileged subhurd, we got a faked
+     privileged processor set port.  This is indeed a kind of
+     permission problem, and we treat it as such.  */
+  if (err == KERN_INVALID_ARGUMENT)
+    err = EPERM;
   if (err)
     goto out;
 
@@ -94,6 +114,56 @@ increase_priority (void)
   return err;
 }
 
+/* Get our stderr set up to print on the console, in case we have to
+   panic or something.  */
+error_t
+open_console (mach_port_t device_master)
+{
+  static int got_console = 0;
+  mach_port_t cons;
+  error_t err;
+
+  if (got_console)
+    return 0;
+
+  err = device_open (device_master, D_READ|D_WRITE, "console", &cons);
+  if (err)
+    return err;
+
+  stdin = mach_open_devstream (cons, "r");
+  stdout = stderr = mach_open_devstream (cons, "w");
+
+  got_console = 1;
+  mach_port_deallocate (mach_task_self (), cons);
+  return 0;
+}
+
+
+
+static task_t kernel_task;
+
+#define OPT_KERNEL_TASK	-1
+
+static struct argp_option
+options[] =
+{
+  {"kernel-task", OPT_KERNEL_TASK, "PORT"},
+  {0}
+};
+
+static int
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+    case OPT_KERNEL_TASK:
+      kernel_task = atoi (arg);
+      break;
+    default: return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
+}
+
 int
 main (int argc, char **argv, char **envp)
 {
@@ -102,16 +172,16 @@ main (int argc, char **argv, char **envp)
   void *genport;
   process_t startup_port;
   mach_port_t startup;
-  struct argp argp = { 0, 0, 0, "Hurd process server" };
+  struct argp argp = { options, parse_opt, 0, "Hurd process server" };
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
   initialize_version_info ();
 
   err = task_get_bootstrap_port (mach_task_self (), &boot);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   if (boot == MACH_PORT_NULL)
-    error (2, 0, "proc server can only be run by init during boot");
+    error (2, 0, "proc server can only be run by startup during boot");
 
   proc_bucket = ports_create_bucket ();
   proc_class = ports_create_class (0, 0);
@@ -124,22 +194,26 @@ main (int argc, char **argv, char **envp)
   /* Create the initial proc object for init (PID 1).  */
   init_proc = create_init_proc ();
 
-  /* Create the startup proc object for /hurd/init (PID 2).  */
+  /* Create the startup proc object for /hurd/startup (PID 2).  */
   startup_proc = allocate_proc (MACH_PORT_NULL);
   startup_proc->p_deadmsg = 1;
   complete_proc (startup_proc, HURD_PID_STARTUP);
 
   /* Create our own proc object.  */
   self_proc = allocate_proc (mach_task_self ());
-  assert (self_proc);
+  assert_backtrace (self_proc);
 
   complete_proc (self_proc, HURD_PID_PROC);
 
   startup_port = ports_get_send_right (startup_proc);
   err = startup_procinit (boot, startup_port, &startup_proc->p_task,
 			  &authserver, &_hurd_host_priv, &_hurd_device_master);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   mach_port_deallocate (mach_task_self (), startup_port);
+
+  /* Get our stderr set up to print on the console, in case we have
+     to panic or something.  */
+  open_console (_hurd_device_master);
 
   mach_port_mod_refs (mach_task_self (), authserver, MACH_PORT_RIGHT_SEND, 1);
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
@@ -155,26 +229,28 @@ main (int argc, char **argv, char **envp)
   /* Give ourselves good scheduling performance, because we are so
      important. */
   err = increase_priority ();
-  if (err)
+  if (err && err != EPERM)
     error (0, err, "Increasing priority failed");
 
+  /* Find the kernel.  */
+  if (MACH_PORT_VALID (kernel_task))
+    kernel_proc = task_find (kernel_task);
+  else
+    {
+      /* Get a list of all tasks to find the kernel.  */
+      add_tasks (MACH_PORT_NULL);
+      kernel_proc = pid_find (HURD_PID_KERNEL);
+    }
+
+  /* Register for new task notifications using the kernel's process as
+     the port.  */
   err = register_new_task_notification (_hurd_host_priv,
-					generic_port,
+					kernel_proc
+                                        ? ports_get_right (kernel_proc)
+                                        : generic_port,
 					MACH_MSG_TYPE_MAKE_SEND);
   if (err)
     error (0, err, "Registering task notifications failed");
-
-  {
-    /* Get our stderr set up to print on the console, in case we have
-       to panic or something.  */
-    mach_port_t cons;
-    error_t err;
-    err = device_open (_hurd_device_master, D_READ|D_WRITE, "console", &cons);
-    assert_perror (err);
-    stdin = mach_open_devstream (cons, "r");
-    stdout = stderr = mach_open_devstream (cons, "w");
-    mach_port_deallocate (mach_task_self (), cons);
-  }
 
   startup = file_name_lookup (_SERVERS_STARTUP, 0, 0);
   if (MACH_PORT_VALID (startup))
@@ -190,7 +266,7 @@ main (int argc, char **argv, char **envp)
 	startup_fallback = 1;
 
       err = mach_port_deallocate (mach_task_self (), startup);
-      assert_perror (err);
+      assert_perror_backtrace (err);
     }
   else
     /* Fall back to abusing the message port lookup.	*/

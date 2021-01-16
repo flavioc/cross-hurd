@@ -95,6 +95,19 @@ static int args_filename_length (const char *name)
 /* Actual content generators */
 
 static ssize_t
+process_file_gc_exe (struct proc_stat *ps, char **contents)
+{
+  if (proc_stat_exe_len (ps) == 0)
+    {
+      *contents = "-";
+      return 1;
+    }
+
+  *contents = proc_stat_exe(ps);
+  return proc_stat_exe_len(ps);
+}
+
+static ssize_t
 process_file_gc_cmdline (struct proc_stat *ps, char **contents)
 {
   *contents = proc_stat_args(ps);
@@ -208,6 +221,7 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
   struct procinfo *pi = proc_stat_proc_info (ps);
   task_basic_info_t tbi = proc_stat_task_basic_info (ps);
   thread_basic_info_t thbi = proc_stat_thread_basic_info (ps);
+  thread_sched_info_t thsi = proc_stat_thread_sched_info (ps);
   const char *fn = args_filename (proc_stat_args (ps));
 
   vm_address_t start_code = 1; /* 0 would make killall5.c consider it
@@ -216,6 +230,15 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
   vm_address_t end_code = 1;
   process_t p;
   error_t err = proc_pid2proc (ps->context->server, ps->pid, &p);
+
+  unsigned last_processor;
+
+#ifdef HAVE_STRUCT_THREAD_SCHED_INFO_LAST_PROCESSOR
+  last_processor = thsi->last_processor;
+#else
+  last_processor = 0;
+#endif
+
   if (! err)
     {
       boolean_t essential = 0;
@@ -273,7 +296,7 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
       (long unsigned) proc_stat_thread_rpc (ps), /* close enough */
       0L, 0L,
       0,
-      0,
+      last_processor,
       0, 0,
       0LL);
 }
@@ -410,6 +433,14 @@ process_file_make_node (void *dir_hook, const void *entry_hook)
   return np;
 }
 
+static struct node *
+process_file_symlink_make_node (void *dir_hook, const void *entry_hook)
+{
+  struct node *np = process_file_make_node (dir_hook, entry_hook);
+  if (np) procfs_node_chtype (np, S_IFLNK);
+  return np;
+}
+
 /* Stat needs its own constructor in order to set its mode according to
    the --stat-mode command-line option.  */
 static struct node *
@@ -424,6 +455,17 @@ process_stat_make_node (void *dir_hook, const void *entry_hook)
 /* Implementation of the process directory per se.  */
 
 static struct procfs_dir_entry entries[] = {
+  {
+    .name = "exe",
+    .hook = & (struct process_file_desc) {
+      .get_contents = process_file_gc_exe,
+      .needs = PSTAT_EXE,
+      .no_cleanup = 1,
+    },
+    .ops = {
+      .make_node = process_file_symlink_make_node,
+    },
+  },
   {
     .name = "cmdline",
     .hook = & (struct process_file_desc) {
@@ -455,7 +497,7 @@ static struct procfs_dir_entry entries[] = {
       .get_contents = process_file_gc_stat,
       .needs = PSTAT_PID | PSTAT_ARGS | PSTAT_STATE | PSTAT_PROC_INFO
 	| PSTAT_TASK | PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC
-	| PSTAT_THREAD_WAIT,
+	| PSTAT_THREAD_SCHED | PSTAT_THREAD_WAIT,
     },
     .ops = {
       .make_node = process_stat_make_node,

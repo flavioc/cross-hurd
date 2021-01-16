@@ -28,10 +28,9 @@ SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c \
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o \
 	crashServer.o crash_replyUser.o msgServer.o \
 	default_pagerServer.o default_pagerUser.o \
-	device_replyServer.o elfcore.o
+	device_replyServer.o elfcore.o startup_notifyServer.o
 HURDLIBS = ports netfs trivfs iohelp fshelp pipe ihash shouldbeinlibc
 LDLIBS += -lpthread
-password-LDLIBS = -lcrypt
 password-MIGSFLAGS=\
     "-DIO_INTRAN=trivfs_protid_t trivfs_begin_using_protid (io_t)" \
     "-DIO_INTRAN_PAYLOAD=trivfs_protid_t trivfs_begin_using_protid_payload" \
@@ -52,6 +51,20 @@ device_reply-MIGSFLAGS=\
 # fsysServer is only used by the symlink translator which does not use
 # libports.  Disable the default payload to port conversion.
 fsys-MIGSFLAGS = "-DHURD_DEFAULT_PAYLOAD_TO_PORT=1"
+fsysServer-CFLAGS = "-DMIG_EOPNOTSUPP=EOPNOTSUPP"
+
+# If we have a configured tree, include the configuration so that we
+# can conditionally build translators.
+ifneq (,$(wildcard ../config.make))
+ include ../config.make
+endif
+
+ifeq ($(HAVE_LIBGCRYPT),yes)
+ SRCS += random.c
+ targets += random
+ random-LDLIBS = -lgcrypt
+ random: startup_notifyServer.o mach_debugUser.o ../libtrivfs/libtrivfs.a
+endif
 
 include ../Makeconf
 
@@ -59,7 +72,7 @@ vpath elfcore.c $(top_srcdir)/exec
 
 crash: crashServer.o crash_replyUser.o msgServer.o elfcore.o
 ifsock: ifsockServer.o
-mtab: fsUser.o
+mtab: fsysUser.o
 password: passwordServer.o
 proxy-defpager: default_pagerServer.o default_pagerUser.o
 streamio: device_replyServer.o

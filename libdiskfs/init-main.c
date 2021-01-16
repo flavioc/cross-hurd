@@ -19,7 +19,7 @@
 
 #include "diskfs.h"
 #include <argp.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <error.h>
 #include <hurd/store.h>
 
@@ -37,7 +37,7 @@ diskfs_init_main (struct argp *startup_argp,
   err = argp_parse (startup_argp ?: &diskfs_store_startup_argp,
 		    argc, argv, ARGP_IN_ORDER, NULL,
 		    &store_params);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   *store_parsed = store_params.result;
 
   err = store_parsed_name (*store_parsed, &diskfs_disk_name);
@@ -61,7 +61,7 @@ diskfs_init_main (struct argp *startup_argp,
   /* Initialize the diskfs library.  Must come before any other diskfs call. */
   err = diskfs_init_diskfs ();
   if (err)
-    error (4, err, "init");
+    error (4, err, "diskfs_init_diskfs");
 
   err = store_parsed_open (*store_parsed, diskfs_readonly ? STORE_READONLY : 0,
 			   &store);

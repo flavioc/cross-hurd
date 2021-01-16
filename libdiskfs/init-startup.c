@@ -32,12 +32,35 @@
 
 char *_diskfs_chroot_directory;
 
-mach_port_t
-diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
+static void
+diskfs_call_fsys_startup (mach_port_t bootstrap, int flags,
+                          mach_port_t *realnode)
 {
   error_t err;
-  mach_port_t realnode, right;
   struct port_info *newpi;
+  mach_port_t right;
+
+  err = ports_create_port (diskfs_control_class, diskfs_port_bucket,
+                           sizeof (struct port_info), &newpi);
+  if (! err)
+    {
+      right = ports_get_send_right (newpi);
+      err = fsys_startup (bootstrap, flags, right,
+                          MACH_MSG_TYPE_COPY_SEND, realnode);
+      mach_port_deallocate (mach_task_self (), right);
+      ports_port_deref (newpi);
+    }
+  if (err)
+    error (1, err, "Translator startup failure: fsys_startup");
+
+  _diskfs_ncontrol_ports++;
+}
+
+mach_port_t
+diskfs_startup_diskfs (mach_port_t fs_bootstrap, int flags)
+{
+  error_t err;
+  mach_port_t realnode, bootstrap;
 
   if (_diskfs_chroot_directory != NULL)
     {
@@ -56,9 +79,9 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
       /* Create a protid we can use in diskfs_lookup.  */
       err = diskfs_make_peropen (diskfs_root_node, O_READ|O_EXEC,
 				 0, &rootpo);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       err = diskfs_create_protid (rootpo, 0, &rootpi);
-      assert_perror (err);
+      assert_perror_backtrace (err);
 
       /* Look up the directory name.  */
       err = diskfs_lookup (diskfs_root_node, _diskfs_chroot_directory,
@@ -88,24 +111,11 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
       diskfs_nput (old);
     }
 
-  if (bootstrap != MACH_PORT_NULL)
+  if (fs_bootstrap != MACH_PORT_NULL)
     {
-      err = ports_create_port (diskfs_control_class, diskfs_port_bucket,
-			       sizeof (struct port_info), &newpi);
-      if (! err)
-	{
-	  right = ports_get_send_right (newpi);
-	  err = fsys_startup (bootstrap, flags, right,
-			      MACH_MSG_TYPE_COPY_SEND, &realnode);
-	  mach_port_deallocate (mach_task_self (), right);
-	  ports_port_deref (newpi);
-	}
-      if (err)
-        error (1, err, "Translator startup failure: fsys_startup");
-
-      mach_port_deallocate (mach_task_self (), bootstrap);
-      _diskfs_ncontrol_ports++;
-
+      /* We do the startup from filesystem's bootstrap */
+      diskfs_call_fsys_startup (fs_bootstrap, flags, &realnode);
+      mach_port_deallocate (mach_task_self (), fs_bootstrap);
       _diskfs_init_completed ();
     }
   else
@@ -114,6 +124,14 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 
       /* We are the bootstrap filesystem; do special boot-time setup.  */
       diskfs_start_bootstrap ();
+
+      /* If we have a bootstrap port we must call fsys_startup */
+      task_get_bootstrap_port (mach_task_self (), &bootstrap);
+      if (bootstrap != MACH_PORT_NULL)
+        {
+          diskfs_call_fsys_startup (bootstrap, flags, &realnode);
+          mach_port_deallocate (mach_task_self (), bootstrap);
+        }
     }
 
   if (diskfs_default_sync_interval)
@@ -185,7 +203,7 @@ _diskfs_init_completed ()
      If we get an error, print an informational message. */
 
   proc = getproc ();
-  assert (proc);
+  assert_backtrace (proc);
 
   err = ports_create_port (diskfs_shutdown_notification_class,
 			   diskfs_port_bucket, sizeof (struct port_info),
@@ -223,5 +241,5 @@ _diskfs_init_completed ()
   return;
 
  errout:
-  error (0, err, "Cannot request shutdown notification");
+  error (0, err, "Warning: cannot request shutdown notification");
 }

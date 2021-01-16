@@ -1,6 +1,6 @@
 /* GNU Hurd standard exec server.
-   Copyright (C) 1992,93,94,95,96,98,99,2000,01,02,04
-   	Free Software Foundation, Inc.
+   Copyright (C) 1992 ,1993, 1994, 1995, 1996, 1998, 1999, 2000, 2001,
+   2002, 2004, 2010 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    Can exec ELF format directly.
@@ -25,6 +25,7 @@
 
 #include "priv.h"
 #include <mach/gnumach.h>
+#include <mach/vm_param.h>
 #include <hurd.h>
 #include <hurd/exec.h>
 #include <sys/stat.h>
@@ -47,11 +48,12 @@ pthread_rwlock_t std_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 #include <hurd/sigpreempt.h>
 
-/* Load or allocate a section.  */
-static void
+/* Load or allocate a section.
+   Returns the address of the end of the section.  */
+static vm_address_t
 load_section (void *section, struct execdata *u)
 {
-  vm_address_t addr = 0;
+  vm_address_t addr = 0, end = 0;
   vm_offset_t filepos = 0;
   vm_size_t filesz = 0, memsz = 0;
   vm_prot_t vm_prot;
@@ -60,7 +62,7 @@ load_section (void *section, struct execdata *u)
   const ElfW(Phdr) *const ph = section;
 
   if (u->error)
-    return;
+    return 0;
 
   vm_prot = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
 
@@ -78,47 +80,57 @@ load_section (void *section, struct execdata *u)
   if (! anywhere)
     addr += u->info.elf.loadbase;
   else
+    {
 #if 0
-    switch (elf_machine)
-      {
-      case EM_386:
-      case EM_486:
-	/* On the i386, programs normally load at 0x08000000, and
-	   expect their data segment to be able to grow dynamically
-	   upward from its start near that address.  We need to make
-	   sure that the dynamic linker is not mapped in a conflicting
-	   address.  */
-	/* mask = 0xf8000000UL; */ /* XXX */
-	break;
-      default:
-	break;
-      }
+      /* XXX: gnumach currently does not support high bits set in mask to prevent
+       * loading at high addresses.
+       * Instead, in rtld we prevent mappings there through a huge mapping done by
+       * fmh().
+       */
+      switch (elf_machine)
+	{
+	case EM_386:
+	case EM_486:
+	  /* On the i386, programs normally load at 0x08000000, and
+	     expect their data segment to be able to grow dynamically
+	     upward from its start near that address.  We need to make
+	     sure that the dynamic linker is not mapped in a conflicting
+	     address.  */
+	  /* mask = 0xf8000000UL; */ /* XXX */
+	  break;
+	default:
+	  break;
+	}
 #endif
+    }
   if (anywhere && addr < vm_page_size)
     addr = vm_page_size;
 
+  end = addr + memsz;
+
   if (memsz == 0)
     /* This section is empty; ignore it.  */
-    return;
+    return 0;
 
   if (filesz != 0)
     {
       vm_address_t mapstart = round_page (addr);
 
       /* Allocate space in the task and write CONTENTS into it.  */
-      void write_to_task (vm_address_t mapstart, vm_size_t size,
+      void write_to_task (vm_address_t * mapstart, vm_size_t size,
 			  vm_prot_t vm_prot, vm_address_t contents)
 	{
 	  vm_size_t off = size % vm_page_size;
 	  /* Allocate with vm_map to set max protections.  */
 	  u->error = vm_map (u->task,
-			     &mapstart, size, mask, anywhere,
+			     mapstart, size, mask, anywhere,
 			     MACH_PORT_NULL, 0, 1,
 			     vm_prot|VM_PROT_WRITE,
 			     VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE,
 			     VM_INHERIT_COPY);
+	  /* vm_write only works on integral multiples of vm_page_size */
 	  if (! u->error && size >= vm_page_size)
-	    u->error = vm_write (u->task, mapstart, contents, size - off);
+	    u->error = vm_write (u->task, *mapstart, contents, size - off);
 	  if (! u->error && off != 0)
 	    {
 	      vm_address_t page = 0;
@@ -132,14 +144,14 @@ load_section (void *section, struct execdata *u)
 			  (void *) (contents + (size - off)),
 			  off);
 		  if (! u->error)
-		    u->error = vm_write (u->task, mapstart + (size - off),
+		    u->error = vm_write (u->task, *mapstart + (size - off),
 				         page, vm_page_size);
 		  munmap ((caddr_t) page, vm_page_size);
 		}
 	    }
 	  /* Reset the current protections to the desired state.  */
 	  if (! u->error && (vm_prot & VM_PROT_WRITE) == 0)
-	    u->error = vm_protect (u->task, mapstart, size, 0, vm_prot);
+	    u->error = vm_protect (u->task, *mapstart, size, 0, vm_prot);
 	}
 
       if (mapstart - addr < filesz)
@@ -151,7 +163,7 @@ load_section (void *section, struct execdata *u)
 #define SECTION_CONTENTS	(u->file_data + filepos)
 	  if (SECTION_IN_MEMORY_P)
 	    /* Data is already in memory; write it into the task.  */
-	    write_to_task (mapstart, filesz - (mapstart - addr), vm_prot,
+	    write_to_task (&mapstart, filesz - (mapstart - addr), vm_prot,
 			   (vm_address_t) SECTION_CONTENTS
 			   + (mapstart - addr));
 	  else if (u->filemap != MACH_PORT_NULL)
@@ -170,10 +182,10 @@ load_section (void *section, struct execdata *u)
 	      const vm_size_t size = filesz - (mapstart - addr);
 	      void *buf = map (u, filepos + (mapstart - addr), size);
 	      if (buf)
-		write_to_task (mapstart, size, vm_prot, (vm_address_t) buf);
+		write_to_task (&mapstart, size, vm_prot, (vm_address_t) buf);
 	    }
 	  if (u->error)
-	    return;
+	    return 0;
 
 	  if (anywhere)
 	    {
@@ -230,7 +242,7 @@ load_section (void *section, struct execdata *u)
 		{
 		maplose:
 		  vm_deallocate (u->task, mapstart, filesz);
-		  return;
+		  return 0;
 		}
 	    }
 
@@ -294,7 +306,7 @@ load_section (void *section, struct execdata *u)
 			     mask, anywhere, MACH_PORT_NULL, 0, 1,
 			     vm_prot, VM_PROT_ALL, VM_INHERIT_COPY);
 	  if (u->error)
-	    return;
+	    return 0;
 	}
 
       if (anywhere)
@@ -319,7 +331,7 @@ load_section (void *section, struct execdata *u)
 	  if (u->error)
 	    {
 	      vm_deallocate (u->task, mapstart, memsz);
-	      return;
+	      return 0;
 	    }
 	  u->error = hurd_safe_memset (
 				 (void *) (ourpage + (addr - overlap_page)),
@@ -335,6 +347,7 @@ load_section (void *section, struct execdata *u)
 	  munmap ((caddr_t) ourpage, size);
 	}
     }
+  return end;
 }
 
 /* XXX all accesses of the mapped data need to use fault handling
@@ -363,7 +376,7 @@ map (struct execdata *e, off_t posn, size_t len)
       char *buffer = map_buffer (e);
       mach_msg_type_number_t nread = map_vsize (e);
 
-      assert (e->file_data == NULL); /* Must be first or second case.  */
+      assert_backtrace (e->file_data == NULL); /* Must be first or second case.  */
 
       /* Read as much as we can get into the buffer right now.  */
       e->error = io_read (e->file, &buffer, &nread, posn, round_page (len));
@@ -717,18 +730,37 @@ set_name (task_t task, const char *exec_name, pid_t pid)
   free (name);
 }
 
-/* Load the file.  */
-static void
-load (task_t usertask, struct execdata *e)
+/* Load the file.  Returns the address of the end of the load.  */
+static vm_offset_t
+load (task_t usertask, struct execdata *e, vm_offset_t anywhere_start)
 {
+  int anywhere = e->info.elf.anywhere;
+  vm_offset_t end;
   e->task = usertask;
 
   if (! e->error)
     {
       ElfW(Word) i;
+
+      if (anywhere && anywhere_start)
+	{
+	  /* Make sure this anywhere-load will go at the end of the previous
+	     anywhere-load.  */
+	  /* TODO: Rather compute how much contiguous room is needed, allocate
+	     the area from the kernel, and then map memory sections.  */
+	  /* TODO: Possibly implement Adresse Space Layout Randomization.  */
+	  e->info.elf.loadbase = anywhere_start;
+	  e->info.elf.anywhere = 0;
+	}
+
       for (i = 0; i < e->info.elf.phnum; ++i)
 	if (e->info.elf.phdr[i].p_type == PT_LOAD)
-	  load_section (&e->info.elf.phdr[i], e);
+	  {
+	    end = load_section (&e->info.elf.phdr[i], e);
+	    if (anywhere && end > anywhere_start)
+	      /* This section pushes the next anywhere-load further */
+	      anywhere_start = end;
+	  }
 
       /* The entry point address is relative to wherever we loaded the
 	 program text.  */
@@ -737,6 +769,9 @@ load (task_t usertask, struct execdata *e)
 
   /* Release the conch for the file.  */
   finish_mapping (e);
+
+  /* Return potentially-new start for anywhere-loads.  */
+  return round_page (anywhere_start);
 }
 
 
@@ -746,6 +781,8 @@ servercopy (void *arg, mach_msg_type_number_t argsize, boolean_t argcopy,
 {
   if (! argcopy)
     return arg;
+  if (! argsize)
+    return NULL;
 
   /* ARG came in-line, so we must copy it.  */
   void *copy;
@@ -764,6 +801,8 @@ static error_t
 do_exec (file_t file,
 	 task_t oldtask,
 	 int flags,
+	 char *path,
+	 char *abspath,
 	 char *argv, mach_msg_type_number_t argvlen, boolean_t argv_copy,
 	 char *envp, mach_msg_type_number_t envplen, boolean_t envp_copy,
 	 mach_port_t *dtable, mach_msg_type_number_t dtablesize,
@@ -783,6 +822,7 @@ do_exec (file_t file,
   mach_msg_type_number_t i;
   int intarray_dealloc = 0;	/* Dealloc INTARRAY before returning?  */
   int oldtask_trashed = 0;	/* Have we trashed the old task?  */
+  vm_address_t anywhere_start = 0;
 
   /* Prime E for executing FILE and check its validity.  This must be an
      inline function because it stores pointers into alloca'd storage in E
@@ -822,7 +862,7 @@ do_exec (file_t file,
     {
       /* Check for a #! executable file.  */
       check_hashbang (&e,
-		      file, oldtask, flags,
+		      file, oldtask, flags, path,
 		      argv, argvlen, argv_copy,
 		      envp, envplen, envp_copy,
 		      dtable, dtablesize, dtable_copy,
@@ -919,7 +959,7 @@ do_exec (file_t file,
     secure = (flags & EXEC_SECURE);
     defaults = (flags & EXEC_DEFAULTS);
 
-    /* Now record the big blocks of data we shuffle around unchanged.
+    /* Now record the big blocks of data we shuffle around.
        Whatever arrived inline, we must allocate space for so it can
        survive after this RPC returns.  */
 
@@ -930,11 +970,90 @@ do_exec (file_t file,
       goto stdout;
     boot->argv = argv;
     boot->argvlen = argvlen;
-    envp = servercopy (envp, envplen, envp_copy, &e.error);
-    if (e.error)
-      goto stdout;
+
+    if (abspath && abspath[0] == '/')
+      {
+	/* Explicit absolute filename, put its dirname in the LD_ORIGIN_PATH
+	   environment variable for $ORIGIN rpath expansion. */
+	const char *end = strrchr (abspath, '/');
+	size_t pathlen;
+	const char ld_origin_s[] = "\0LD_ORIGIN_PATH=";
+	const char *existing;
+	size_t existing_len = 0;
+	size_t new_envplen;
+	char *new_envp;
+
+	/* Drop trailing slashes.  */
+	while (end > abspath && end[-1] == '/')
+	  end--;
+
+	if (end == abspath)
+	  /* Root, keep explicit heading/trailing slash.   */
+	  end++;
+
+	pathlen = end - abspath;
+
+	if (memcmp (envp, ld_origin_s + 1, sizeof (ld_origin_s) - 2) == 0)
+	  /* Existing variable at the beginning of envp.  */
+	  existing = envp - 1;
+	else
+	  /* Look for the definition.  */
+	  existing = memmem (envp, envplen, ld_origin_s, sizeof (ld_origin_s) - 1);
+
+	if (existing)
+	  {
+	    /* Definition already exists, just replace the content.  */
+	    existing += sizeof (ld_origin_s) - 1;
+	    existing_len = strnlen (existing, envplen - (existing - envp));
+
+	    /* Allocate room for the new content.  */
+	    new_envplen = envplen - existing_len + pathlen;
+	    new_envp = mmap (0, new_envplen,
+			     PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	    if (new_envp == MAP_FAILED)
+	      {
+		e.error = errno;
+		goto stdout;
+	      }
+
+	    /* And copy.  */
+	    memcpy (new_envp, envp, existing - envp);
+	    memcpy (new_envp + (existing - envp), abspath, pathlen);
+	    memcpy (new_envp + (existing - envp) + pathlen,
+		    existing + existing_len,
+		    envplen - ((existing - envp) + existing_len));
+	  }
+	else
+	  {
+	    /* No existing definition, prepend one.  */
+	    new_envplen = sizeof (ld_origin_s) - 1 + pathlen + envplen;
+	    new_envp = mmap (0, new_envplen,
+			     PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+
+	    memcpy (new_envp, ld_origin_s + 1, sizeof (ld_origin_s) - 2);
+	    memcpy (new_envp + sizeof (ld_origin_s) - 2, abspath, pathlen);
+	    new_envp [sizeof (ld_origin_s) - 2 + pathlen] = 0;
+	    memcpy (new_envp + sizeof (ld_origin_s) - 2 + pathlen + 1, envp, envplen);
+	  }
+
+	if (! envp_copy)
+	  /* Deallocate original environment */
+	  munmap (envp, envplen);
+
+	envp = new_envp;
+	envplen = new_envplen;
+      }
+    else
+      {
+	/* No explicit abspath, just copy the existing environment */
+	envp = servercopy (envp, envplen, envp_copy, &e.error);
+	if (e.error)
+	  goto stdout;
+      }
+
     boot->envp = envp;
     boot->envplen = envplen;
+
     dtable = servercopy (dtable, dtablesize * sizeof (mach_port_t),
 			 dtable_copy, &e.error);
     if (e.error)
@@ -1156,7 +1275,7 @@ do_exec (file_t file,
   if (interp.file != MACH_PORT_NULL)
     {
       /* Load the interpreter file.  */
-      load (newtask, &interp);
+      anywhere_start = load (newtask, &interp, anywhere_start);
       if (interp.error)
 	{
 	  e.error = interp.error;
@@ -1166,8 +1285,11 @@ do_exec (file_t file,
     }
 
 
+  /* Leave room for mmaps etc. before PIE binaries.
+   * Could add address randomization here.  */
+  anywhere_start += 128 << 20;
   /* Load the file into the task.  */
-  load (newtask, &e);
+  anywhere_start = load (newtask, &e, anywhere_start);
   if (e.error)
     goto out;
 
@@ -1203,7 +1325,15 @@ do_exec (file_t file,
       if (e.error)
 	goto out;
 
+      if (abspath)
+	proc_set_exe (boot->portarray[INIT_PORT_PROC], abspath);
+
       set_name (newtask, argv, pid);
+
+      e.error = proc_set_entry (boot->portarray[INIT_PORT_PROC],
+			        e.entry);
+      if (e.error)
+	goto out;
     }
   else
     set_name (newtask, argv, 0);
@@ -1405,6 +1535,7 @@ do_exec (file_t file,
   return e.error;
 }
 
+/* Deprecated.  */
 kern_return_t
 S_exec_exec (struct trivfs_protid *protid,
 	     file_t file,
@@ -1421,13 +1552,53 @@ S_exec_exec (struct trivfs_protid *protid,
 	     mach_port_t *deallocnames, mach_msg_type_number_t ndeallocnames,
 	     mach_port_t *destroynames, mach_msg_type_number_t ndestroynames)
 {
+  return S_exec_exec_paths (protid,
+				file,
+				oldtask,
+				flags,
+				"",
+				"",
+				argv, argvlen, argv_copy,
+				envp, envplen, envp_copy,
+				dtable, dtablesize,
+				dtable_copy,
+				portarray, nports,
+				portarray_copy,
+				intarray, nints,
+				intarray_copy,
+				deallocnames, ndeallocnames,
+				destroynames, ndestroynames);
+}
+
+kern_return_t
+S_exec_exec_paths (struct trivfs_protid *protid,
+		       file_t file,
+		       task_t oldtask,
+		       int flags,
+		       char *path,
+		       char *abspath,
+		       char *argv, mach_msg_type_number_t argvlen,
+		       boolean_t argv_copy,
+		       char *envp, mach_msg_type_number_t envplen,
+		       boolean_t envp_copy,
+		       mach_port_t *dtable, mach_msg_type_number_t dtablesize,
+		       boolean_t dtable_copy,
+		       mach_port_t *portarray, mach_msg_type_number_t nports,
+		       boolean_t portarray_copy,
+		       int *intarray, mach_msg_type_number_t nints,
+		       boolean_t intarray_copy,
+		       mach_port_t *deallocnames,
+		       mach_msg_type_number_t ndeallocnames,
+		       mach_port_t *destroynames,
+		       mach_msg_type_number_t ndestroynames)
+{
   if (! protid)
     return EOPNOTSUPP;
 
   /* There were no user-specified exec servers,
      or none of them could be found.  */
 
-  return do_exec (file, oldtask, flags,
+  return do_exec (file, oldtask, flags, path, abspath,
 		  argv, argvlen, argv_copy,
 		  envp, envplen, envp_copy,
 		  dtable, dtablesize, dtable_copy,

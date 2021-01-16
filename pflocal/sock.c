@@ -18,6 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <string.h>		/* For memset() */
+#include <unistd.h>
 
 #include <pthread.h>
 
@@ -116,12 +117,15 @@ sock_create (struct pipe_class *pipe_class, mode_t mode, struct sock **sock)
   new->refs = 0;
   new->flags = 0;
   new->write_pipe = NULL;
+  new->req_write_limit = 0;
   new->mode = mode;
   new->id = MACH_PORT_NULL;
   new->listen_queue = NULL;
   new->connect_queue = NULL;
   new->pipe_class = pipe_class;
   new->addr = NULL;
+  new->uid = getuid ();
+  new->gid = getgid ();
   memset (&new->change_time, 0, sizeof (new->change_time));
   pthread_mutex_init (&new->lock, NULL);
 
@@ -147,7 +151,7 @@ _sock_norefs (struct sock *sock)
 {
   /* A sock should never have an address when it has 0 refs, as the
      address should hold a reference to the sock!  */
-  assert (sock->addr == NULL);
+  assert_backtrace (sock->addr == NULL);
   pthread_mutex_unlock (&sock->lock);	/* Unlock so sock_free can do stuff.  */
   sock_free (sock);
 }
@@ -249,7 +253,7 @@ addr_clean (void *vaddr)
   /* ADDR should never have a socket bound to it at this point, as it should
      have been removed by addr_unbind dropping the socket's weak reference
      it.  */
-  assert (addr->sock == NULL);
+  assert_backtrace (addr->sock == NULL);
 }
 
 /* Return a new address, not connected to any socket yet, ADDR.  */
@@ -307,7 +311,7 @@ sock_bind (struct sock *sock, struct addr *addr)
 	     zero because whoever's calling us should be holding a ref.  */
 	  sock->refs--;
 	  ports_port_deref_weak (old_addr);
-	  assert (sock->refs > 0);	/* But make sure... */
+	  assert_backtrace (sock->refs > 0);	/* But make sure... */
 	}
     }
 
@@ -394,9 +398,11 @@ sock_connect (struct sock *sock1, struct sock *sock2)
 	    || (rd->flags & PFLOCAL_SOCK_SHUTDOWN_READ)))
 	{
 	  struct pipe *pipe = rd->read_pipe;
-	  assert (pipe);	/* Since PFLOCAL_SOCK_SHUTDOWN_READ isn't set.  */
+	  assert_backtrace (pipe);	/* Since PFLOCAL_SOCK_SHUTDOWN_READ isn't set.  */
 	  pipe_add_writer (pipe);
 	  wr->write_pipe = pipe;
+	  if (pipe->write_limit < wr->req_write_limit)
+	    pipe->write_limit = wr->req_write_limit;
 	}
     }
 
@@ -474,6 +480,8 @@ sock_shutdown (struct sock *sock, unsigned flags)
       /* Shutdown the write half.  */
       write_pipe = sock->write_pipe;
       sock->write_pipe = NULL;
+      if (write_pipe)
+	sock->req_write_limit = write_pipe->write_limit;
     }
 
   /* Unlock SOCK here, as we may subsequently wake up other threads. */

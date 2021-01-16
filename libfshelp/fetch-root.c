@@ -18,12 +18,15 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd/fsys.h>
+#include <hurd/paths.h>
 #include <hurd/ports.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/sysmacros.h>
 
 #include "fshelp.h"
 
@@ -45,7 +48,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
  start_over:
 
   if (box->active != MACH_PORT_NULL)
-    assert ((box->flags & TRANSBOX_STARTING) == 0);
+    assert_backtrace ((box->flags & TRANSBOX_STARTING) == 0);
   else
     {
       uid_t uid, gid;
@@ -196,4 +199,42 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
     goto start_over;
 
   return err;
+}
+
+/* A callback function for short-circuited translators.  S_ISLNK and
+   S_IFSOCK must be handled elsewhere.  */
+error_t
+fshelp_short_circuited_callback1 (void *cookie1, void *cookie2,
+				  uid_t *uid, gid_t *gid,
+				  char **argz, size_t *argz_len)
+{
+  struct fshelp_stat_cookie2 *statc = cookie2;
+
+  switch (*statc->modep & S_IFMT)
+    {
+    case S_IFCHR:
+    case S_IFBLK:
+      if (asprintf (argz, "%s%c%d%c%d",
+		    (S_ISCHR (*statc->modep)
+		     ? _HURD_CHRDEV : _HURD_BLKDEV),
+		    0, gnu_dev_major (statc->statp->st_rdev),
+		    0, gnu_dev_minor (statc->statp->st_rdev)) < 0)
+	return ENOMEM;
+      *argz_len = strlen (*argz) + 1;
+      *argz_len += strlen (*argz + *argz_len) + 1;
+      *argz_len += strlen (*argz + *argz_len) + 1;
+      break;
+    case S_IFIFO:
+      if (asprintf (argz, "%s", _HURD_FIFO) < 0)
+	return ENOMEM;
+      *argz_len = strlen (*argz) + 1;
+      break;
+    default:
+      return ENOENT;
+    }
+
+  *uid = statc->statp->st_uid;
+  *gid = statc->statp->st_gid;
+
+  return 0;
 }

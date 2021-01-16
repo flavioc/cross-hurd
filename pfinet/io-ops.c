@@ -269,7 +269,7 @@ io_select_common (struct sock_user *user,
 
   /* In Linux, this means (supposedly) that I/O will never be possible.
      That's a lose, so prevent it from happening.  */
-  assert (user->sock->ops->poll);
+  assert_backtrace (user->sock->ops->poll);
 
   avail = (*user->sock->ops->poll) ((void *) 0xdeadbeef,
 				    user->sock,
@@ -374,11 +374,16 @@ S_io_reauthenticate (struct sock_user *user,
   aux_gids = agbuf;
 
   pthread_mutex_lock (&global_lock);
-  newuser = make_sock_user (user->sock, 0, 1, 0);
+  do
+    newuser = make_sock_user (user->sock, 0, 1, 0);
+    /* Should check whether errno is indeed EINTR --
+       but this can't be done in a straightforward way,
+       because the glue headers #undef errno. */
+  while (!newuser);
 
   auth = getauth ();
   newright = ports_get_send_right (newuser);
-  assert (newright != MACH_PORT_NULL);
+  assert_backtrace (newright != MACH_PORT_NULL);
   /* Release the global lock while blocking on the auth server and client.  */
   pthread_mutex_unlock (&global_lock);
   do

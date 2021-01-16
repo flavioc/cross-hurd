@@ -1,0 +1,7 @@
+- pci_get_ndevs should be deprecated, applications shouldn't be relying on this
+
+- In pci-ops.c - config_block_op:
+  Update len with remaining allowed size once op() returns EIO
+  so that we get short reads/writes implemented by leaving it to pciaccess
+
+  BTW we could also support libpci.

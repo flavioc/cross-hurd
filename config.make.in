@@ -62,9 +62,6 @@ LDFLAGS += @LDFLAGS@
 
 gnu89-inline-CFLAGS = @libc_cv_gnu89_inline@
 
-# `yes' or `no' to indicate if ld --version-script is available.
-VERSIONING = @VERSIONING@
-
 # How to link against Parted libraries, if at all.
 PARTED_LIBS = @PARTED_LIBS@
 
@@ -80,7 +77,6 @@ XKB_BASE = @XKB_BASE@
 X11_KEYSYMDEF_H = @X11_KEYSYMDEF_H@
 
 # How to compile and link against libdaemon.
-HAVE_DAEMON = @HAVE_DAEMON@
 libdaemon_CFLAGS = @libdaemon_CFLAGS@
 libdaemon_LIBS = @libdaemon_LIBS@
 
@@ -91,12 +87,34 @@ HAVE_LIBBZ2 = @HAVE_LIBBZ2@
 HAVE_LIBZ = @HAVE_LIBZ@
 
 # How to compile and link against libblkid.
-HAVE_BLKID = @HAVE_BLKID@
 libblkid_CFLAGS = @libblkid_CFLAGS@
 libblkid_LIBS = @libblkid_LIBS@
 
 # Whether Sun RPC support is available.
 HAVE_SUN_RPC = @HAVE_SUN_RPC@
+
+# Whether we found libcrypt.
+HAVE_LIBCRYPT = @HAVE_LIBCRYPT@
+
+# Whether we found libgcrypt.
+HAVE_LIBGCRYPT = @HAVE_LIBGCRYPT@
+
+# Whether we found liblwip.
+HAVE_LIBLWIP = @HAVE_LIBLWIP@
+
+# Whether we found librump.
+HAVE_LIBRUMP = @HAVE_LIBRUMP@
+
+# How to compile and link against liblwip.
+liblwip_CFLAGS = @liblwip_CFLAGS@
+liblwip_LIBS = @liblwip_LIBS@
+
+# Whether we found libpciaccess.
+HAVE_LIBPCIACCESS = @HAVE_LIBPCIACCESS@
+
+# How to compile and link against libpciaccess.
+libpciaccess_CFLAGS = @libpciaccess_CFLAGS@
+libpciaccess_LIBS = @libpciaccess_LIBS@
 
 # Installation tools.
 INSTALL = @INSTALL@

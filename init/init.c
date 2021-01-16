@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <version.h>
 
 const char *argp_program_version = STANDARD_HURD_VERSION (init);
@@ -138,7 +139,7 @@ main (int argc, char **argv)
   sa.sa_flags |= SA_RESTART;
   sigaction (SIGCHLD, &sa, NULL);
 
-  char *args[] = { "/etc/hurd/runsystem.hurd", NULL };
+  char *args[] = { "/libexec/runsystem.hurd", NULL };
 
   switch (child_pid = fork ())
     {

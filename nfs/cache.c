@@ -75,7 +75,7 @@ lookup_fhandle (struct fhandle *handle, struct node **npp)
   
   /* Could not find it */
   np = netfs_make_node_alloc (sizeof (struct netnode));
-  assert (np);
+  assert_backtrace (np);
   nn = netfs_node_netnode (np);
 
   nn->handle.size = handle->size;
@@ -127,15 +127,12 @@ netfs_node_norefs (struct node *np)
       error_t err;
 
       args = malloc (sizeof (struct fnd));
-      assert (args);
-
-      netfs_nref (np);
+      assert_backtrace (args);
 
       args->dir = np->nn->dead_dir;
       args->name = np->nn->dead_name;
       np->nn->dead_dir = 0;
       np->nn->dead_name = 0;
-      netfs_nput (np);
 
       /* Do this in a separate thread so that we don't wait for it; it
 	 acquires a lock on the dir, which we are not allowed to

@@ -34,8 +34,24 @@
 
 #include <mach.h>
 #include <pthread.h>		/* for spin locks */
+#include <malloc.h> 		/* for malloc_hook/free_hook */
 
 #include "wiring.h"
+
+static void init_hook (void);
+static void *malloc_hook (size_t size, const void *caller);
+static void *realloc_hook (void *ptr, size_t size, const void *caller);
+static void *memalign_hook (size_t alignment, size_t size, const void *caller);
+static void free_hook (void *ptr, const void *caller);
+
+/* GNU libc 2.14 defines this macro to declare hook variables as volatile.
+   Define it as empty for older libc versions.  */
+#ifndef __MALLOC_HOOK_VOLATILE
+# define __MALLOC_HOOK_VOLATILE
+#endif
+
+void (*__MALLOC_HOOK_VOLATILE __malloc_initialize_hook) (void) = init_hook;
+
 
 /* #define	DEBUG */
 
@@ -134,8 +150,6 @@ vm_offset_t kget_space(vm_offset_t size)
 			   VM_PROT_DEFAULT, VM_PROT_ALL, VM_INHERIT_DEFAULT)
 			!= KERN_SUCCESS)
 		    return 0;
-		wire_memory(new_space, space_to_add,
-			    VM_PROT_READ|VM_PROT_WRITE);
 		pthread_spin_lock(&kget_space_lock);
 		continue;
 	    }
@@ -250,14 +264,37 @@ kfree(	void *data,
 	}
 }
 
-void *
-malloc (size_t size)
+static void
+init_hook (void)
+{
+  __malloc_hook = malloc_hook;
+  __realloc_hook = realloc_hook;
+  __memalign_hook = memalign_hook;
+  __free_hook = free_hook;
+}
+
+static void *
+malloc_hook (size_t size, const void *caller)
 {
   return (void *) kalloc ((vm_size_t) size);
 }
 
-void
-free (void *ptr)
+static void *
+realloc_hook (void *ptr, size_t size, const void *caller)
+{
+  panic("realloc_hook not implemented");
+}
+
+static void *
+memalign_hook (size_t alignment, size_t size, const void *caller)
+{
+  if (alignment > vm_page_size)
+    panic("memalign_hook not implemented");
+  return malloc_hook(size, caller);
+}
+
+static void
+free_hook (void *ptr, const void *caller)
 {
   /* Just ignore harmless attempts at cleanliness.  */
   /*	panic("free not implemented"); */

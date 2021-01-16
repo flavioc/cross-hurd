@@ -18,6 +18,7 @@
 
 #include "priv.h"
 #include "fs_S.h"
+#include <sys/sysmacros.h>
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
 
@@ -141,7 +142,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  char *arg;
 
 		  arg = passive + strlen (passive) + 1;
-		  assert (arg <= passive + passivelen);
+		  assert_backtrace (arg <= passive + passivelen);
 		  if (arg == passive + passivelen)
 		    {
 		      pthread_mutex_unlock (&np->lock);
@@ -150,7 +151,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  major = strtol (arg, 0, 0);
 
 		  arg = arg + strlen (arg) + 1;
-		  assert (arg < passive + passivelen);
+		  assert_backtrace (arg < passive + passivelen);
 		  if (arg == passive + passivelen)
 		    {
 		      pthread_mutex_unlock (&np->lock);
@@ -159,20 +160,33 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  minor = strtol (arg, 0, 0);
 
 		  err = diskfs_validate_rdev_change (np,
-						       makedev (major, minor));
+						       gnu_dev_makedev (major, minor));
 		  if (err)
 		    {
 		      pthread_mutex_unlock (&np->lock);
 		      return err;
 		    }
-		  np->dn_stat.st_rdev = makedev (major, minor);
+		  np->dn_stat.st_rdev = gnu_dev_makedev (major, minor);
 		}
 
-	      diskfs_truncate (np, 0);
+	      err = diskfs_truncate (np, 0);
+	      if (err)
+		{
+		  pthread_mutex_unlock (&np->lock);
+		  return err;
+		}
+
+	      err = diskfs_set_translator (np, NULL, 0, cred);
+	      if (err)
+		{
+		  pthread_mutex_unlock (&np->lock);
+		  return err;
+		}
+
 	      if (newmode == S_IFLNK)
 		{
 		  char *arg = passive + strlen (passive) + 1;
-		  assert (arg <= passive + passivelen);
+		  assert_backtrace (arg <= passive + passivelen);
 		  if (arg == passive + passivelen)
 		    {
 		      pthread_mutex_unlock (&np->lock);
@@ -209,7 +223,7 @@ diskfs_S_file_set_translator (struct protid *cred,
   pthread_mutex_unlock (&np->lock);
 
   if (! err && cred->po->path && active_flags & FS_TRANS_SET)
-    err = fshelp_set_active_translator (&cred->pi, cred->po->path, active);
+    err = fshelp_set_active_translator (&cred->pi, cred->po->path, &np->transbox);
 
   return err;
 }

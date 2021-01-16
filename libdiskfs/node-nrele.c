@@ -40,17 +40,7 @@ diskfs_nrele (struct node *np)
     {
       locked = TRUE;
       pthread_mutex_lock (&np->lock);
-      diskfs_lost_hardrefs (np);
-      if (!np->dn_stat.st_nlink)
-	{
-	  /* There are no links.  If there are soft references that
-	     can be dropped, we can't let them postpone deallocation.
-	     So attempt to drop them.  But that's a user-supplied
-	     routine, which might result in further recursive calls to
-	     the ref-counting system.  This is not a problem, as we
-	     hold a weak reference ourselves. */
-	  diskfs_try_dropping_softrefs (np);
-	}
+      _diskfs_lastref (np);
     }
 
   /* Finally get rid of our reference.  */

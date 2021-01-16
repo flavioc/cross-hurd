@@ -21,6 +21,7 @@
 
 #include "netfs.h"
 #include "fs_S.h"
+#include <sys/sysmacros.h>
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
 
@@ -122,7 +123,7 @@ netfs_S_file_set_translator (struct protid *user,
 	  /* Find the device number from the arguments
 	     of the translator. */
 	  arg = passive + strlen (passive) + 1;
-	  assert (arg <= passive + passivelen);
+	  assert_backtrace (arg <= passive + passivelen);
 	  if (arg == passive + passivelen)
 	    {
 	      pthread_mutex_unlock (&np->lock);
@@ -131,7 +132,7 @@ netfs_S_file_set_translator (struct protid *user,
 	  major = strtol (arg, 0, 0);
 
 	  arg = arg + strlen (arg) + 1;
-	  assert (arg < passive + passivelen);
+	  assert_backtrace (arg < passive + passivelen);
 	  if (arg == passive + passivelen)
 	    {
 	      pthread_mutex_unlock (&np->lock);
@@ -140,14 +141,14 @@ netfs_S_file_set_translator (struct protid *user,
 	  minor = strtol (arg, 0, 0);
 
 	  err = netfs_attempt_mkdev (user->user, np,
-				     newmode, makedev (major, minor));
+				     newmode, gnu_dev_makedev (major, minor));
 	  if (err == EOPNOTSUPP)
 	    goto fallback;
 	  break;
 
 	case S_IFLNK:
 	  arg = passive + strlen (passive) + 1;
-	  assert (arg <= passive + passivelen);
+	  assert_backtrace (arg <= passive + passivelen);
 	  if (arg == passive + passivelen)
 	    {
 	      pthread_mutex_unlock (&np->lock);
@@ -178,7 +179,7 @@ netfs_S_file_set_translator (struct protid *user,
     }
 
   if (! err && user->po->path && active_flags & FS_TRANS_SET)
-    err = fshelp_set_active_translator (&user->pi, user->po->path, active);
+    err = fshelp_set_active_translator (&user->pi, user->po->path, &np->transbox);
 
  out:
   pthread_mutex_unlock (&np->lock);

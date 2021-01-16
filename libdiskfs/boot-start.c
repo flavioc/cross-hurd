@@ -38,8 +38,13 @@
 #include "fsys_S.h"
 #include "fsys_reply_U.h"
 
+/* We use this port to communicate with startup.  It is the only
+   object that fsys_getpriv and fsys_init may be invoked upon.  */
+static struct port_info *bootinfo;
+
 static mach_port_t diskfs_exec_ctl;
 extern task_t diskfs_exec_server_task;
+extern task_t diskfs_kernel_task;
 static task_t parent_task = MACH_PORT_NULL;
 
 static pthread_mutex_t execstartlock;
@@ -72,18 +77,18 @@ get_console ()
 void
 _diskfs_boot_privports (void)
 {
-  assert (diskfs_boot_filesystem ());
+  assert_backtrace (diskfs_boot_filesystem ());
   if (_hurd_host_priv == MACH_PORT_NULL)
     {
       /* We are the boot command run by the real bootstrap filesystem.
 	 We get the privileged ports from it as init would.  */
       mach_port_t bootstrap;
       error_t err = task_get_bootstrap_port (mach_task_self (), &bootstrap);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       err = fsys_getpriv (bootstrap, &_hurd_host_priv, &_hurd_device_master,
 			  &parent_task);
       mach_port_deallocate (mach_task_self (), bootstrap);
-      assert_perror (err);
+      assert_perror_backtrace (err);
     }
 }
 
@@ -103,7 +108,6 @@ diskfs_start_bootstrap ()
   char *exec_argv, *exec_env;
   const char *initname;
   size_t exec_argvlen, exec_envlen;
-  struct port_info *bootinfo;
   struct protid *rootpi;
   struct peropen *rootpo;
   mach_port_t diskfs_exec;
@@ -112,10 +116,10 @@ diskfs_start_bootstrap ()
   /* Create the port for current and root directory.  */
   err = diskfs_make_peropen (diskfs_root_node, O_READ | O_EXEC, 0,
 			     &rootpo);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   err = diskfs_create_protid (rootpo, 0, &rootpi);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* Get us a send right to copy around.  */
   root_pt = ports_get_send_right (rootpi);
@@ -127,8 +131,8 @@ diskfs_start_bootstrap ()
 	 Our parent (the real bootstrap filesystem) provides us a root
 	 directory where we look up /servers/exec like any non-bootstrap
 	 filesystem would.  */
-      assert (_hurd_ports);
-      assert (_hurd_ports[INIT_PORT_CRDIR].port != MACH_PORT_NULL);
+      assert_backtrace (_hurd_ports);
+      assert_backtrace (_hurd_ports[INIT_PORT_CRDIR].port != MACH_PORT_NULL);
       diskfs_exec = file_name_lookup (_SERVERS_EXEC, 0, 0);
       if (diskfs_exec == MACH_PORT_NULL)
 	error (1, errno, "%s", _SERVERS_EXEC);
@@ -138,7 +142,7 @@ diskfs_start_bootstrap ()
 	  /* Make sure this is really a port to another server.  */
 	  struct port_info *pi = ports_lookup_port (diskfs_port_bucket,
 						    diskfs_exec, 0);
-	  assert (!pi);
+	  assert_backtrace (!pi);
 #endif
 	}
 
@@ -164,16 +168,16 @@ diskfs_start_bootstrap ()
       start_execserver ();
       pthread_cond_wait (&execstarted, &execstartlock);
       pthread_mutex_unlock (&execstartlock);
-      assert (diskfs_exec_ctl != MACH_PORT_NULL);
+      assert_backtrace (diskfs_exec_ctl != MACH_PORT_NULL);
 
       /* Contact the exec server.  */
       err = fsys_getroot (diskfs_exec_ctl, root_pt, MACH_MSG_TYPE_COPY_SEND,
 			  idlist, 3, idlist, 3, 0,
 			  &retry, retry_name, &diskfs_exec);
-      assert_perror (err);
-      assert (retry == FS_RETRY_NORMAL);
-      assert (retry_name[0] == '\0');
-      assert (diskfs_exec != MACH_PORT_NULL);
+      assert_perror_backtrace (err);
+      assert_backtrace (retry == FS_RETRY_NORMAL);
+      assert_backtrace (retry_name[0] == '\0');
+      assert_backtrace (diskfs_exec != MACH_PORT_NULL);
 
       /* Attempt to set the active translator for the exec server so that
 	 filesystems other than the bootstrap can find it.  */
@@ -186,29 +190,26 @@ diskfs_start_bootstrap ()
 	}
       else
 	{
-	  assert (retry == FS_RETRY_NORMAL);
-	  assert (retry_name[0] == '\0');
-	  assert (execnode != MACH_PORT_NULL);
+	  assert_backtrace (retry == FS_RETRY_NORMAL);
+	  assert_backtrace (retry_name[0] == '\0');
+	  assert_backtrace (execnode != MACH_PORT_NULL);
 	  err = file_set_translator (execnode, 0, FS_TRANS_SET, 0, 0, 0,
 				     diskfs_exec_ctl, MACH_MSG_TYPE_COPY_SEND);
 	  mach_port_deallocate (mach_task_self (), diskfs_exec_ctl);
 	  mach_port_deallocate (mach_task_self (), execnode);
-	  assert_perror (err);
+	  assert_perror_backtrace (err);
 	}
       diskfs_exec_ctl = MACH_PORT_NULL;	/* Not used after this.  */
     }
 
-  /* Cache the exec server port for file_exec to use.  */
+  /* Cache the exec server port for file_exec_paths to use.  */
   _hurd_port_set (&_diskfs_exec_portcell, diskfs_exec);
 
   if (_diskfs_boot_command)
     {
       /* We have a boot command line to run instead of init.  */
       err = argz_create (_diskfs_boot_command, &exec_argv, &exec_argvlen);
-      assert_perror (err);
-      initname = exec_argv;
-      while (*initname == '/')
-	initname++;
+      assert_perror_backtrace (err);
     }
   else
     {
@@ -218,14 +219,46 @@ diskfs_start_bootstrap ()
 	initname++;
 
       int len = asprintf (&exec_argv, "/%s%c", initname, '\0');
-      assert (len != -1);
+      assert_backtrace (len != -1);
       exec_argvlen = (size_t) len;
       err = argz_add_sep (&exec_argv, &exec_argvlen,
 			  diskfs_boot_command_line, ' ');
-      assert_perror (err);
-
-      initname = exec_argv + 1;
+      assert_perror_backtrace (err);
     }
+
+  err = task_create (mach_task_self (),
+#ifdef KERN_INVALID_LEDGER
+		     NULL, 0,	/* OSF Mach */
+#endif
+		     0, &newt);
+  assert_perror_backtrace (err);
+
+  if (MACH_PORT_VALID (diskfs_kernel_task))
+    {
+      mach_port_t kernel_task_name = MACH_PORT_NULL;
+      char buf[20];
+      int len;
+
+      do
+        {
+          kernel_task_name += 1;
+          err = mach_port_insert_right (newt, kernel_task_name,
+                                        diskfs_kernel_task, MACH_MSG_TYPE_MOVE_SEND);
+        }
+      while (err == KERN_NAME_EXISTS);
+      diskfs_kernel_task = MACH_PORT_NULL;
+
+      len = snprintf (buf, sizeof buf, "--kernel-task=%lu", kernel_task_name);
+      assert_backtrace (len < sizeof buf);
+      /* Insert as second argument.  */
+      err = argz_insert (&exec_argv, &exec_argvlen,
+                         argz_next (exec_argv, exec_argvlen, exec_argv), buf);
+      assert_perror_backtrace (err);
+    }
+
+  initname = exec_argv;
+  while (*initname == '/')
+    initname++;
 
  lookup_init:
   err = dir_lookup (root_pt, (char *) initname, O_READ, 0, &retry, pathbuf,
@@ -237,11 +270,11 @@ diskfs_start_bootstrap ()
 	      initname, strerror (err));
       fflush (stdout);
       free (exec_argv);
-      assert_perror (err);	/* XXX this won't reboot properly */
+      assert_perror_backtrace (err);	/* XXX this won't reboot properly */
     }
   else if (retry == FS_RETRY_MAGICAL && pathbuf[0] == '/')
     {
-      assert (sysconf (_SC_SYMLOOP_MAX) < 0 ||
+      assert_backtrace (sysconf (_SC_SYMLOOP_MAX) < 0 ||
 	      init_lookups < sysconf (_SC_SYMLOOP_MAX));
 
       /* INITNAME is a symlink with an absolute target, so try again.  */
@@ -249,14 +282,13 @@ diskfs_start_bootstrap ()
       goto lookup_init;
     }
 
-  assert (retry == FS_RETRY_NORMAL);
-  assert (pathbuf[0] == '\0');
+  assert_backtrace (retry == FS_RETRY_NORMAL);
+  assert_backtrace (pathbuf[0] == '\0');
 
-  err = ports_create_port (diskfs_initboot_class, diskfs_port_bucket,
+  err = ports_create_port (diskfs_control_class, diskfs_port_bucket,
 			   sizeof (struct port_info), &bootinfo);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   bootpt = ports_get_send_right (bootinfo);
-  ports_port_deref (bootinfo);
 
   portarray[INIT_PORT_CRDIR] = root_pt;
   portarray[INIT_PORT_CWDIR] = root_pt;
@@ -268,14 +300,8 @@ diskfs_start_bootstrap ()
   fdarray[0] = fdarray[1] = fdarray[2] = get_console (); /* XXX */
 
   err = argz_create (environ, &exec_env, &exec_envlen);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
-  err = task_create (mach_task_self (),
-#ifdef KERN_INVALID_LEDGER
-		     NULL, 0,	/* OSF Mach */
-#endif
-		     0, &newt);
-  assert_perror (err);
   if (_diskfs_boot_pause)
     {
       printf ("pausing for %s...\n", exec_argv);
@@ -359,10 +385,10 @@ diskfs_S_exec_startup_get_info (struct bootinfo *upt,
   *intarraylen = 0;
 
   err = diskfs_make_peropen (diskfs_root_node, O_READ | O_EXEC, 0, &rootpo);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   err = diskfs_create_protid (rootpo, 0, &rootpi);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   rootport = ports_get_right (rootpi);
   ports_port_deref (rootpi);
@@ -401,17 +427,17 @@ diskfs_execboot_fsys_startup (mach_port_t port, int flags,
     return EOPNOTSUPP;
 
   err = diskfs_make_peropen (diskfs_root_node, flags, 0, &rootpo);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = diskfs_create_protid (rootpo, 0, &rootpi);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   rootport = ports_get_send_right (rootpi);
   ports_port_deref (rootpi);
 
   err = dir_lookup (rootport, _SERVERS_EXEC, flags|O_NOTRANS, 0,
 		    &retry, pathbuf, real);
-  assert_perror (err);
-  assert (retry == FS_RETRY_NORMAL);
-  assert (pathbuf[0] == '\0');
+  assert_perror_backtrace (err);
+  assert_backtrace (retry == FS_RETRY_NORMAL);
+  assert_backtrace (pathbuf[0] == '\0');
   *realpoly = MACH_MSG_TYPE_MOVE_SEND;
 
   mach_port_deallocate (mach_task_self (), rootport);
@@ -437,7 +463,7 @@ diskfs_S_fsys_getpriv (struct diskfs_control *init_bootstrap_port,
   error_t err;
 
   if (!init_bootstrap_port
-      || init_bootstrap_port->pi.class != diskfs_initboot_class)
+      || init_bootstrap_port != bootinfo)
     return EOPNOTSUPP;
 
   err = get_privileged_ports (host_priv, dev_master);
@@ -466,26 +492,25 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
   struct protid *rootpi;
   struct peropen *rootpo;
 
-  if (!pt
-      || pt->pi.class != diskfs_initboot_class)
+  if (!pt)
     return EOPNOTSUPP;
-  
+
   if (initdone)
     return EOPNOTSUPP;
   initdone = 1;
 
-  /* init is single-threaded, so we must reply to its RPC before doing
-     anything which might attempt to send an RPC to init.  */
+  /* startup is single-threaded, so we must reply to its RPC before doing
+     anything which might attempt to send an RPC to startup.  */
   fsys_init_reply (reply, replytype, 0);
 
   /* Allocate our references here; _hurd_init will consume a reference
      for the library itself. */
   err = mach_port_mod_refs (mach_task_self (),
 			    procserver, MACH_PORT_RIGHT_SEND, +1);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = mach_port_mod_refs (mach_task_self (),
 			    authhandle, MACH_PORT_RIGHT_SEND, +1);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   if (diskfs_auth_server_port != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), diskfs_auth_server_port);
@@ -493,9 +518,11 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
 
   if (diskfs_exec_server_task != MACH_PORT_NULL)
     {
+      mach_port_t bootstrap;
       process_t execprocess;
+
       err = proc_task2proc (procserver, diskfs_exec_server_task, &execprocess);
-      assert_perror (err);
+      assert_perror_backtrace (err);
 
       /* Declare that the exec server is our child. */
       proc_child (procserver, diskfs_exec_server_task);
@@ -508,6 +535,17 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
 				execprocess, MACH_MSG_TYPE_COPY_SEND));
       mach_port_deallocate (mach_task_self (), execprocess);
 
+      /* Give the real bootstrap filesystem an fsys_init RPC of its own */
+      err = task_get_bootstrap_port (mach_task_self (), &bootstrap);
+      assert_perror_backtrace (err);
+      if (bootstrap != MACH_PORT_NULL)
+        {
+          err = fsys_init (bootstrap, procserver, MACH_MSG_TYPE_COPY_SEND,
+                           authhandle);
+          mach_port_deallocate (mach_task_self (), bootstrap);
+          assert_perror_backtrace (err);
+        }
+
       /* We don't need this anymore. */
       mach_port_deallocate (mach_task_self (), diskfs_exec_server_task);
       diskfs_exec_server_task = MACH_PORT_NULL;
@@ -517,7 +555,7 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
       mach_port_t bootstrap;
       process_t parent_proc;
 
-      assert (parent_task != MACH_PORT_NULL);
+      assert_backtrace (parent_task != MACH_PORT_NULL);
 
       /* Tell the proc server that our parent task is our child.  This
 	 makes the process hierarchy fail to represent the real order of
@@ -529,12 +567,12 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
 	 we send it fsys_init (below).  */
 
       err = proc_child (procserver, parent_task);
-      assert_perror (err);
+      assert_perror_backtrace (err);
 
       /* Get the parent's proc server port so we can send it in the fsys_init
 	 RPC just as init would.  */
       err = proc_task2proc (procserver, parent_task, &parent_proc);
-      assert_perror (err);
+      assert_perror_backtrace (err);
 
       /* We don't need this anymore. */
       mach_port_deallocate (mach_task_self (), parent_task);
@@ -545,20 +583,20 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
       /* Give our parent (the real bootstrap filesystem) an fsys_init
 	 RPC of its own, as init would have sent it.  */
       err = task_get_bootstrap_port (mach_task_self (), &bootstrap);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       err = fsys_init (bootstrap, parent_proc, MACH_MSG_TYPE_COPY_SEND,
 		       authhandle);
       mach_port_deallocate (mach_task_self (), parent_proc);
       mach_port_deallocate (mach_task_self (), bootstrap);
-      assert_perror (err);
+      assert_perror_backtrace (err);
     }
 
   /* Get a port to the root directory to put in the library's
      data structures.  */
   err = diskfs_make_peropen (diskfs_root_node, O_READ|O_EXEC, 0, &rootpo);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = diskfs_create_protid (rootpo, 0, &rootpi);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   root_pt = ports_get_send_right (rootpi);
   ports_port_deref (rootpi);
 
@@ -632,17 +670,17 @@ start_execserver (void)
   extern task_t diskfs_exec_server_task; /* Set in opts-std-startup.c.  */
   struct port_info *execboot_info;
 
-  assert (diskfs_exec_server_task != MACH_PORT_NULL);
+  assert_backtrace (diskfs_exec_server_task != MACH_PORT_NULL);
 
   err = ports_create_port (diskfs_execboot_class, diskfs_port_bucket,
 			   sizeof (struct port_info), &execboot_info);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   right = ports_get_send_right (execboot_info);
   ports_port_deref (execboot_info);
   err = task_set_special_port (diskfs_exec_server_task, TASK_BOOTSTRAP_PORT, right);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = mach_port_deallocate (mach_task_self (), right);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   if (_diskfs_boot_pause)
     {
@@ -651,7 +689,7 @@ start_execserver (void)
       getc (stdin);
     }
   err = task_resume (diskfs_exec_server_task);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   printf (" exec");
   fflush (stdout);

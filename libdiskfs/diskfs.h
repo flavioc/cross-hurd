@@ -1,7 +1,7 @@
 /* Definitions for fileserver helper functions
 
-   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2007, 2008,
-   2009, 2013 Free Software Foundation, Inc.
+   Copyright (C) 1994-1999, 2001, 2002, 2007-2009, 2013-2019
+   Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -14,13 +14,12 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #ifndef _HURD_DISKFS
 #define _HURD_DISKFS
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <hurd/ports.h>
@@ -57,8 +56,8 @@ struct protid
 /* One of these is created for each node opened by dir_lookup. */
 struct peropen
 {
-  off_t filepointer;
-  int lock_status;
+  loff_t filepointer;
+  struct rlock_peropen lock_status;
   refcount_t refcnt;
   int openstat;
 
@@ -113,7 +112,7 @@ struct node
 
   struct transbox transbox;
 
-  struct lock_box userlock;
+  struct rlock_box userlock;
 
   struct conch conch;
 
@@ -216,7 +215,6 @@ struct pager;
 extern struct port_class *diskfs_protid_class;
 extern struct port_class *diskfs_control_class;
 extern struct port_class *diskfs_execboot_class;
-extern struct port_class *diskfs_initboot_class;
 extern struct port_class *diskfs_shutdown_notification_class;
 
 extern struct port_bucket *diskfs_port_bucket;
@@ -278,23 +276,23 @@ extern char *diskfs_extra_version;
    if the symlink hook functions return EINVAL or are not defined.
    The library knows that the dn_stat.st_size field is the length of
    the symlink, even if the hook functions are used. */
-int diskfs_shortcut_symlink;
+extern int diskfs_shortcut_symlink;
 
 /* The user may define this variable.  This should be nonzero iff the
    filesystem format supports shortcutting chrdev translation.  */
-int diskfs_shortcut_chrdev;
+extern int diskfs_shortcut_chrdev;
 
 /* The user may define this variable.  This should be nonzero iff the
    filesystem format supports shortcutting blkdev translation.  */
-int diskfs_shortcut_blkdev;
+extern int diskfs_shortcut_blkdev;
 
 /* The user may define this variable.  This should be nonzero iff the
    filesystem format supports shortcutting fifo translation.  */
-int diskfs_shortcut_fifo;
+extern int diskfs_shortcut_fifo;
 
 /* The user may define this variable.  This should be nonzero iff the
    filesystem format supports shortcutting ifsock translation. */
-int diskfs_shortcut_ifsock;
+extern int diskfs_shortcut_ifsock;
 
 /* The user may define this variable, otherwise it has a default value of 30.
    diskfs_set_sync_interval is called with this value when the first diskfs
@@ -578,20 +576,20 @@ error_t diskfs_node_reload (struct node *node);
    is called to set a symlink.  If it returns EINVAL or isn't set,
    then the normal method (writing the contents into the file data) is
    used.  If it returns any other error, it is returned to the user.  */
-error_t (*diskfs_create_symlink_hook)(struct node *np, const char *target);
+extern error_t (*diskfs_create_symlink_hook)(struct node *np, const char *target);
 
 /* If this function is nonzero (and diskfs_shortcut_symlink is set) it
    is called to read the contents of a symlink.  If it returns EINVAL or
    isn't set, then the normal method (reading from the file data) is
    used.  If it returns any other error, it is returned to the user. */
-error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
+extern error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
 
 /* The user may define this function.  The function must set source to
-   the source of CRED. The function may return an EOPNOTSUPP to
-   indicate that the concept of a source device is not applicable. The
-   default function always returns EOPNOTSUPP. */
-error_t diskfs_get_source (struct protid *cred,
-                           char *source, size_t source_len);
+   the source of the translator. The function may return an EOPNOTSUPP
+   to indicate that the concept of a source device is not
+   applicable. The default function always returns diskfs_disk_name,
+   or EOPNOTSUPP if it is NULL. */
+error_t diskfs_get_source (char *source, size_t source_len);
 
 /* Libdiskfs contains a node cache.
 
@@ -621,7 +619,7 @@ void diskfs_user_try_dropping_softrefs (struct node *np);
 
 /* Lookup node INUM (which must have a reference already) and return it
    without allocating any new references. */
-struct node *diskfs_cached_ifind (ino_t inum);
+struct node *diskfs_cached_ifind (ino64_t inum);
 
 /* The library exports the following functions for general use */
 
@@ -860,7 +858,7 @@ error_t diskfs_cached_lookup (ino64_t cache_id, struct node **npp);
 /* Return the node corresponding to CACHE_ID in *NPP.  In case of a
    cache miss, use CTX to create it and load it from the disk.  See
    the section `Node cache' above.  */
-error_t diskfs_cached_lookup_context (ino_t inum, struct node **npp,
+error_t diskfs_cached_lookup_context (ino64_t inum, struct node **npp,
 				      struct lookup_context *ctx);
 
 
@@ -926,7 +924,7 @@ diskfs_begin_using_protid_payload (unsigned long payload)
 DISKFS_EXTERN_INLINE struct diskfs_control *
 diskfs_begin_using_control_port (fsys_t port)
 {
-  return ports_lookup_port (diskfs_port_bucket, port, NULL);
+  return ports_lookup_port (diskfs_port_bucket, port, diskfs_control_class);
 }
 
 DISKFS_EXTERN_INLINE struct diskfs_control *
@@ -934,7 +932,7 @@ diskfs_begin_using_control_port_payload (unsigned long payload)
 {
   return ports_lookup_payload (diskfs_port_bucket,
 			       payload,
-			       NULL);
+			       diskfs_control_class);
 }
 
 /* And for the exec_startup interface. */
@@ -1018,14 +1016,15 @@ struct node *diskfs_check_lookup_cache (struct node *dir, const char *name);
    upon return.  This routine is serialized, so it doesn't have to be
    reentrant.  Directories will never be renamed except by this
    routine.  FROMCRED and TOCRED are the users responsible for
-   FDP/FNP and TDP respectively.  This routine assumes the usual
+   FDP/FNP and TDP respectively. If EXCL is set, then fail if TONAME
+   already exists inside directory TDP. This routine assumes the usual
    convention where `.' and `..' are represented by ordinary links;
    if that is not true for your format, you have to redefine this
    function.*/
 error_t
 diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
 		   struct node *tdp, const char *toname,
-		   struct protid *fromcred, struct protid *tocred);
+		   struct protid *fromcred, struct protid *tocred, int excl);
 
 /* Clear the `.' and `..' entries from directory DP.  Its parent is
    PDP, and the user responsible for this is identified by CRED.  Both
@@ -1047,7 +1046,9 @@ error_t
 diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred);
 
 /* If disk is not readonly and the noatime option is not enabled, set
-   NP->dn_set_atime.  */
+   NP->dn_set_atime.  If relatime is enabled, only set NP->dn_set_atime
+   if the atime has not been updated today, or if ctime or mtime are
+   more recent than atime */
 void diskfs_set_node_atime (struct node *np);
 
 /* If NP->dn_set_ctime is set, then modify NP->dn_stat.st_ctim
@@ -1158,5 +1159,49 @@ struct store *diskfs_init_main (struct argp *startup_argp,
 
 /* Make errors go somewhere reasonable.  */
 void diskfs_console_stdio ();
+
+
+/* The following extracts from io_S.h and fs_S.h catch loff_t erroneously
+   written off_t and stat64 erroneously written stat,
+   or missing -D_FILE_OFFSET_BITS=64 build flag. */
+
+typedef struct protid *protid_t;
+
+kern_return_t diskfs_S_io_write (protid_t io_object,
+				 data_t data,
+				 mach_msg_type_number_t dataCnt,
+				 loff_t offset,
+				 vm_size_t *amount);
+
+kern_return_t diskfs_S_io_read (protid_t io_object,
+				data_t *data,
+				mach_msg_type_number_t *dataCnt,
+				loff_t offset,
+				vm_size_t amount);
+
+kern_return_t diskfs_S_io_seek (protid_t io_object,
+				loff_t offset,
+				int whence,
+				loff_t *newp);
+
+kern_return_t diskfs_S_io_stat (protid_t stat_object,
+				io_statbuf_t *stat_info);
+
+kern_return_t diskfs_S_file_set_size (protid_t trunc_file,
+				      loff_t new_size);
+
+kern_return_t diskfs_S_file_get_storage_info (protid_t file,
+					      portarray_t *ports,
+					      mach_msg_type_name_t *portsPoly,
+					      mach_msg_type_number_t *portsCnt,
+					      intarray_t *ints,
+					      mach_msg_type_number_t *intsCnt,
+					      off_array_t *offsets,
+					      mach_msg_type_number_t *offsetsCnt,
+					      data_t *data,
+					      mach_msg_type_number_t *dataCnt);
+
+kern_return_t diskfs_S_file_statfs (protid_t file,
+				    fsys_statfsbuf_t *info);
 
 #endif	/* hurd/diskfs.h */

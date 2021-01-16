@@ -1,5 +1,6 @@
 /* GNU Hurd standard exec server, #! script execution support.
-   Copyright (C) 1995,96,97,98,99,2000,02 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2002, 2010
+   Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This file is part of the GNU Hurd.
@@ -35,6 +36,7 @@ check_hashbang (struct execdata *e,
 		file_t file,
 		task_t oldtask,
 		int flags,
+		char *file_name_exec,
 		char *argv, u_int argvlen, boolean_t argv_copy,
 		char *envp, u_int envplen, boolean_t envp_copy,
 		mach_port_t *dtable, u_int dtablesize, boolean_t dtable_copy,
@@ -97,22 +99,24 @@ check_hashbang (struct execdata *e,
       mach_port_t port = ((which < nports &&
 			   portarray[which] != MACH_PORT_NULL)
 			  ? portarray[which] :
-			  (flags & EXEC_DEFAULTS) ? std_ports[which]
-			  : MACH_PORT_NULL);
+			  (flags & EXEC_DEFAULTS && which < std_nports)
+				? std_ports[which]
+				: MACH_PORT_NULL);
 
       /* Reauthenticate dir ports if they are the defaults.  */
       switch (which)
 	{
 	case INIT_PORT_CRDIR:
 	  /* If secure, always use the default root.  */
-	  if ((flags & EXEC_SECURE) ||
-	      port == std_ports[which])
+	  if ((which < std_nports && flags & EXEC_SECURE) ||
+	      (which < std_nports && port == std_ports[which]))
 	    return (reauthenticate (std_ports[which], &user_crdir) ?:
 		    (*operate) (user_crdir));
 	  break;
 	case INIT_PORT_CWDIR:
 	  /* If secure, reauthenticate cwd whether default or given.  */
-	  if ((flags & EXEC_SECURE) || port == std_ports[which])
+	  if ((flags & EXEC_SECURE) ||
+	      (which < std_nports && port == std_ports[which]))
 	    return (reauthenticate (port, &user_cwdir) ?:
 		    (*operate) (user_cwdir));
 	  break;
@@ -225,10 +229,13 @@ check_hashbang (struct execdata *e,
 	    file_name = NULL;
 	  else if (! (flags & EXEC_SECURE))
 	    {
-	      /* Try to figure out the file's name.  We guess that if ARGV[0]
-		 contains a slash, it might be the name of the file; and that
-		 if it contains no slash, looking for files named by ARGV[0] in
-		 the `PATH' environment variable might find it.  */
+	      /* Try to figure out the file's name.  If FILE_NAME_EXEC
+		 is not NULL and not the empty string, then it's the
+		 file's name.  Otherwise we guess that if ARGV[0]
+		 contains a slash, it might be the name of the file;
+		 and that if it contains no slash, looking for files
+		 named by ARGV[0] in the `PATH' environment variable
+		 might find it.  */
 
 	      error_t error;
 	      char *name;
@@ -264,49 +271,59 @@ check_hashbang (struct execdata *e,
 		  return err;
 		}
 
-	      error = io_identity (file, &fileid, &filefsid, &fileno);
-	      if (error)
-		goto out;
-	      mach_port_deallocate (mach_task_self (), filefsid);
-
-	      if (memchr (argv, '\0', argvlen) == NULL)
-		{
-		  name = alloca (argvlen + 1);
-		  bcopy (argv, name, argvlen);
-		  name[argvlen] = '\0';
-		}
+	      if (file_name_exec && file_name_exec[0] != '\0')
+		name = file_name_exec;
 	      else
-		name = argv;
-
-	      if (strchr (name, '/') != NULL)
-		error = lookup (name, 0, &name_file);
-	      else if ((error = hurd_catch_signal
-			(sigmask (SIGBUS) | sigmask (SIGSEGV),
-			 (vm_address_t) envp, (vm_address_t) envp + envplen,
-			 &search_path, SIG_ERR)))
-		name_file = MACH_PORT_NULL;
-
-	      if (!error && name_file != MACH_PORT_NULL)
 		{
-		  mach_port_t id, fsid;
-		  ino_t ino;
-		  error = io_identity (name_file, &id, &fsid, &ino);
-		  mach_port_deallocate (mach_task_self (), name_file);
-		  if (!error)
+		  /* Try to locate the file.  */
+		  error = io_identity (file, &fileid, &filefsid, &fileno);
+		  if (error)
+		    goto out;
+		  mach_port_deallocate (mach_task_self (), filefsid);
+
+		  if (memchr (argv, '\0', argvlen) == NULL)
 		    {
-		      mach_port_deallocate (mach_task_self (), fsid);
-		      mach_port_deallocate (mach_task_self (), id);
+		      name = alloca (argvlen + 1);
+		      memcpy (name, argv, argvlen);
+		      name[argvlen] = '\0';
 		    }
-		  if (!error && id == fileid)
+		  else
+		    name = argv;
+
+		  if (strchr (name, '/') != NULL)
+		    error = lookup (name, 0, &name_file);
+		  else if ((error = hurd_catch_signal
+			    (sigmask (SIGBUS) | sigmask (SIGSEGV),
+			     (vm_address_t) envp, (vm_address_t) envp + envplen,
+			     &search_path, SIG_ERR)))
+		    name_file = MACH_PORT_NULL;
+
+		  /* See whether we found the right file.  */
+		  if (!error && name_file != MACH_PORT_NULL)
 		    {
-		      file_name = name;
-		      free_file_name = free_name;
+		      mach_port_t id, fsid;
+		      ino_t ino;
+		      error = io_identity (name_file, &id, &fsid, &ino);
+		      mach_port_deallocate (mach_task_self (), name_file);
+		      if (!error)
+			{
+			  mach_port_deallocate (mach_task_self (), fsid);
+			  mach_port_deallocate (mach_task_self (), id);
+			  if (id != fileid)
+			    error = 1;
+			}
 		    }
-		  else if (free_name)
-		    free (name);
+
+		  mach_port_deallocate (mach_task_self (), fileid);
 		}
 
-	      mach_port_deallocate (mach_task_self (), fileid);
+	      if (!error)
+		{
+		  file_name = name;
+		  free_file_name = free_name;
+		}
+	      else if (free_name)
+		free (name);
 	    }
 
 	  if (file_name == NULL)
@@ -415,16 +432,32 @@ check_hashbang (struct execdata *e,
     /* We cannot open the interpreter file to execute it.  Lose!  */
     return;
 
+#ifdef HAVE_FILE_EXEC_PATHS
   /* Execute the interpreter program.  */
-  e->error = file_exec (interp_file,
-			oldtask, flags,
-			new_argv, new_argvlen, envp, envplen,
-			new_dtable ?: dtable, MACH_MSG_TYPE_COPY_SEND,
-			new_dtable ? new_dtablesize : dtablesize,
-			portarray, MACH_MSG_TYPE_COPY_SEND, nports,
-			intarray, nints,
-			deallocnames, ndeallocnames,
-			destroynames, ndestroynames);
+  e->error = file_exec_paths (interp_file,
+			      oldtask, flags, interp, interp,
+			      new_argv, new_argvlen, envp, envplen,
+			      new_dtable ?: dtable,
+			      MACH_MSG_TYPE_COPY_SEND,
+			      new_dtable ? new_dtablesize : dtablesize,
+			      portarray, MACH_MSG_TYPE_COPY_SEND, nports,
+			      intarray, nints,
+			      deallocnames, ndeallocnames,
+			      destroynames, ndestroynames);
+  /* For backwards compatibility.  Just drop it when we kill file_exec.  */
+  if (e->error == MIG_BAD_ID)
+#endif
+    e->error = file_exec (interp_file,
+			  oldtask, flags,
+			  new_argv, new_argvlen, envp, envplen,
+			  new_dtable ?: dtable, MACH_MSG_TYPE_COPY_SEND,
+			  new_dtable ? new_dtablesize : dtablesize,
+			  portarray, MACH_MSG_TYPE_COPY_SEND, nports,
+			  intarray, nints,
+			  deallocnames, ndeallocnames,
+			  destroynames, ndestroynames);
+
+
   mach_port_deallocate (mach_task_self (), interp_file);
   munmap (new_argv, new_argvlen);
 

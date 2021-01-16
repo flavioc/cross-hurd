@@ -1,31 +1,22 @@
 /* MiG type declarations for Hurd interfaces		-*- C -*-
-   Copyright (C) 1993,94,95,96,98,2001,02 Free Software Foundation, Inc.
 
-This file is part of the GNU Hurd.
+   Copyright (C) 1993-1996, 1998, 2001, 2002, 2014-2019
+   Free Software Foundation, Inc.
 
-The GNU Hurd is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
+   This file is part of the GNU Hurd.
 
-The GNU Hurd is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   The GNU Hurd is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
 
-You should have received a copy of the GNU General Public License
-along with the GNU Hurd; see the file COPYING.  If not, write to
-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   The GNU Hurd is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-
-#define __MIG__
-/* mig still does not understand the following files. */
-#define _MACH_MIG_ERRORS_H_
-#define _MACH_MACH_TRAPS_H_ 1
-#define _MACH_H 1
-#define _SYS_WAIT_H 1
-#define _STDLIB_H
-#define _I386_TLS_H
+   You should have received a copy of the GNU General Public License
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #ifdef HURD_SERVER
 /* The Hurd uses protected payloads to quickly look up the object
@@ -67,7 +58,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <mach/std_types.defs>
 #include <mach/mach_types.defs>
 #include <device/device_types.defs>
-#include <hurd/hurd_types.h>
 
 /* The Hurd types.  You can inject translation functions for type X
    using the X_INTRAN, X_INTRAN_PAYLOAD, X_OUTTRAN, and X_DESTRUCTOR.
@@ -306,6 +296,41 @@ destructor: INTERRUPT_DESTRUCTOR
 #endif
 ;
 
+/* PCI arbiter */
+type pci_t = mach_port_copy_send_t
+#ifdef PCI_INTRAN
+intran: PCI_INTRAN
+intranpayload: PCI_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: pci_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
+#endif
+#ifdef PCI_OUTTRAN
+outtran: PCI_OUTTRAN
+#endif
+#ifdef PCI_DESTRUCTOR
+destructor: PCI_DESTRUCTOR
+#endif
+;
+
+/* Shutdown */
+type shutdown_t = mach_port_copy_send_t
+#ifdef SHUTDOWN_INTRAN
+intran: SHUTDOWN_INTRAN
+intranpayload: SHUTDOWN_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: shutdown_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
+#endif
+#ifdef SHUTDOWN_OUTTRAN
+outtran: SHUTDOWN_OUTTRAN
+#endif
+#ifdef SHUTDOWN_DESTRUCTOR
+destructor: SHUTDOWN_DESTRUCTOR
+#endif
+;
 
 type proccoll_t = mach_port_copy_send_t;
 
@@ -356,6 +381,45 @@ serverprefix SERVERPREFIX;
 #define INTR_INTERFACE		/* Nothing special.  */
 #endif
 
-import <hurd/hurd_types.h>;
+type data_t = array[] of char;
+type string_t = c_string[1024]; /* XXX */
+type io_statbuf_t = struct[32] of int;
+type uid_t = uint32_t;
+type gid_t = uint32_t;
+type mode_t = uint32_t;
+type retry_type = uint32_t;
+type pid_t = int32_t;
+type wait_status_t = int32_t;
+type loff_t = int64_t;
+type ino64_t = int64_t;
+type file_changed_type_t = uint32_t;
+type dir_changed_type_t = uint32_t;
 
-typedef uint64_t ino64_t;
+type portarray_t = array[] of mach_port_send_t;
+type intarray_t = array[] of int;
+type off_array_t = array[] of loff_t;
+
+type pidarray_t = array[] of pid_t;
+type procinfo_t = array[] of int;
+type fsys_statfsbuf_t=struct[22] of int;
+
+type idarray_t = array[] of uid_t;
+
+type rusage_t = struct[18] of int; /* XXX */
+
+type flock_t = struct[7] of int; /* l_start and l_len are 64 bit */
+
+type timespec_t = struct[2] of int;
+
+#define _SYS_UTSNAME_H		/* Inhibit warning from <bits/utsname.h>.  */
+#include <bits/utsname.h>
+type utsname_t = struct[5 * _UTSNAME_LENGTH] of char;
+
+import <sys/types.h>;
+import <sys/stat.h>;
+import <sys/statfs.h>;
+import <sys/resource.h>;
+import <sys/utsname.h>;
+import <hurd/hurd_types.h>;
+import <fcntl.h>;
+
