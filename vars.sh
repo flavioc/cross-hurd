@@ -39,6 +39,8 @@ VIM_VERSION=7.4
 GPG_ERROR_VERSION=1.36
 GCRYPT_VERSION=1.8.6
 MAKE_VERSION=4.3
+GREP_VERSION=3.6
+GAWK_VERSION=5.1.0
 # Mach, Hurd and Glibc are all taken from the Git repository.
 
 BINUTILS_SRC=binutils-"$BINUTILS_VERSION"
@@ -87,6 +89,10 @@ GCRYPT_SRC=libgcrypt-"$GCRYPT_VERSION"
 GCRYPT_PKG=${GCRYPT_SRC}.tar.bz2
 MAKE_SRC=make-"$MAKE_VERSION"
 MAKE_PKG=${MAKE_SRC}.tar.gz
+GREP_SRC=grep-"$GREP_VERSION"
+GREP_PKG=${GREP_SRC}.tar.xz
+GAWK_SRC=gawk-"$GAWK_VERSION"
+GAWK_PKG=${GAWK_SRC}.tar.xz
 
 print_info ()
 {
