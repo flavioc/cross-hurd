@@ -87,8 +87,8 @@ download_glibc () {
 unpack_gcc () {
    unpack zxf $GCC_PKG $GCC_SRC &&
    cd $GCC_SRC &&
-   (if [ "$CPU" = "i586" ]; then
-    apply_patch $SCRIPT_DIR/patches/gcc/i586/specs.patch 1
+   (if [ "$CPU" = "i686" ]; then
+    apply_patch $SCRIPT_DIR/patches/gcc/i686/specs.patch 1
    fi) &&
    (if [ "$CPU" = "x86_64" ]; then
     apply_patch $SCRIPT_DIR/patches/gcc/x86_64/config.patch 1 &&
