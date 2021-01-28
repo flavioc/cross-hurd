@@ -49,7 +49,7 @@ copy_files () {
       cp tmp/tools/libexec/{getty,runttys,console-run} mount/libexec/ &&
       cp files/{rc,runsystem} mount/libexec/ &&
       ln -svf /bin/bash mount/bin/sh &&
-      ln -svf /tools/lib/ld-*.so mount/tools/lib/ld.so &&
+      ln -svf $SYS_ROOT/lib/ld-*.so mount/tools/lib/ld.so &&
       mv mount/tools/lib mount/lib &&
       ln -sf /lib mount/tools/lib &&
       cp files/SETUP mount/ &&
@@ -61,7 +61,7 @@ copy_files () {
 
 install_grub () {
    print_info "Installing the GRUB on $IMG..."
-   grub-install --target=i386-pc --directory=/tools/lib/grub/i386-pc --boot-directory=$PWD/mount/tools/boot $LOOP
+   grub-install --target=i386-pc --directory=$SYS_ROOT/lib/grub/i386-pc --boot-directory=$PWD/mount/tools/boot $LOOP
 }
 
 umount_image () {

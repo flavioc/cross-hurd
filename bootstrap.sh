@@ -228,11 +228,11 @@ print_info "Root is $ROOT"
 print_info "Cross-compiling on $HOST to $TARGET"
 
 create_tools_symlink() {
-    if [ ! -e /tools ]; then
-        sudo ln -sf "$PWD"/tools /tools
+    if [ ! -e $SYS_ROOT ]; then
+        sudo ln -sf "$PWD"/tools $SYS_ROOT
     fi
     if [ ! -e /cross-tools ]; then
-        sudo ln -sf "$PWD"/cross-tools /cross-tools
+        sudo ln -sf "$PWD"/cross-tools $ROOT
     fi
 }
 

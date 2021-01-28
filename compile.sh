@@ -237,7 +237,7 @@ install_shadow () {
        -e 's/\(\t$(am__append_3) $(am__append_4)\)/#\1/' \
    src/Makefile.in.orig > src/Makefile.in &&
    cat > config.cache << "EOF"
-shadow_cv_passwd_dir=/tools/bin
+shadow_cv_passwd_dir=$SYS_ROOT/bin
 EOF
    ./configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
@@ -319,7 +319,7 @@ install_gcc() {
       --disable-libssp \
       --with-arch=$CPU &&
    cp -v Makefile{,.orig} &&
-   sed "/^HOST_\(GMP\|ISL\|CLOOG\)\(LIBS\|INC\)/s:/tools:/cross-tools:g" \
+   sed "/^HOST_\(GMP\|ISL\|CLOOG\)\(LIBS\|INC\)/s:$SYS_ROOT:$ROOT:g" \
          Makefile.orig > Makefile
    make -j$PROCS AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD" all &&
    make -j$PROCS install &&

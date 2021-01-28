@@ -10,10 +10,10 @@ echo "Removing from $SYSTEM..."
 
 cd "$SYSTEM" &&
 rm -rf bin boot tools cross-tools &&
-echo "Removing /tools"
-sudo rm -f /tools &&
-echo "Removing /cross-tools"
-sudo rm -f /cross-tools
+echo "Removing $SYS_ROOT"
+sudo rm -f $SYS_ROOT &&
+echo "Removing $ROOT"
+sudo rm -f $ROOT
 rm -f hd.img
 for dir in `ls src`; do
   if [ -d src/$dir ]; then
