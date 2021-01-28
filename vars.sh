@@ -8,6 +8,9 @@ export SYS_ROOT=/tools
 export TARGET=$CPU-pc-gnu
 export HOST="$(echo $MACHTYPE | sed "s/$(echo $MACHTYPE | cut -d- -f2)/cross/g")"
 export PATH=$ROOT/bin:$PATH
+# You can change the GCC version here.
+export CC="$HOST_MACHINE"-gcc
+export CXX="$HOST_MACHINE"-g++
 
 if [ ! -z "$CCACHE_DIRECTORY" ]; then
    export PATH=$CCACHE_DIRECTORY:$PATH

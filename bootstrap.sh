@@ -3,9 +3,6 @@
 . ./vars.sh
 . ./download-funcs.sh
 . ./common.sh
-# You can change the GCC version here.
-export CC="$HOST_MACHINE"-gcc
-export CXX="$HOST_MACHINE"-g++
 
 compile_binutils ()
 {
