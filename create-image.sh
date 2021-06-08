@@ -47,7 +47,7 @@ copy_files () {
       cp tmp/tools/sbin/* mount/sbin/ &&
       cp tmp/tools/bin/* mount/bin/ &&
       cp tmp/tools/libexec/{getty,runttys,console-run} mount/libexec/ &&
-      cp files/{rc,runsystem} mount/libexec/ &&
+      cp files/{rc,runsystem} mount/tools/libexec/ &&
       ln -svf /bin/bash mount/bin/sh &&
       ln -svf $SYS_ROOT/lib/ld-*.so mount/tools/lib/ld.so &&
       mv mount/tools/lib mount/lib &&
