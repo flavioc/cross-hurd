@@ -3,7 +3,7 @@
 . ./vars.sh
 
 LOOP=/dev/loop0
-MAPPER=/dev/mapper/loop0p1
+LOOPPART=/dev/loop0p1
 IMG=hd.img
 IMG_SIZE=2048MB
 
@@ -14,14 +14,15 @@ create_image () {
       parted -a optimal -s $LOOP mklabel msdos &&
       parted -a optimal -s $LOOP -- mkpart primary ext2 32k -1 &&
       parted -s $LOOP -- set 1 boot on &&
-      kpartx -a -v $LOOP && 
+      losetup -d $LOOP &&
+      losetup -P $LOOP $IMG &&
    sleep 2 &&
-      mkfs.ext2 -o hurd -m 1 -v $MAPPER
+      mkfs.ext2 -o hurd -m 1 -v $LOOPPART
 }
 
 mount_image () {
    mkdir -p mount &&
-      mount -t ext2 $MAPPER mount
+      mount -t ext2 $LOOPPART mount
 }
 
 copy_files () {
@@ -66,13 +67,11 @@ install_grub () {
 
 umount_image () {
    umount mount &&
-      kpartx -d $LOOP &&
       losetup -d $LOOP &&
       rmdir mount
 }
 
 umount mount >/dev/null 2>&1
-kpartx -d $LOOP >/dev/null 2>&1
 losetup -d $LOOP >/dev/null 2>&1
 rm -f $IMG
 create_image &&
