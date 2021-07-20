@@ -50,7 +50,7 @@ copy_files () {
       cp tmp/tools/libexec/{getty,runttys,console-run} mount/libexec/ &&
       cp files/{rc,runsystem} mount/tools/libexec/ &&
       ln -svf /bin/bash mount/bin/sh &&
-      ln -svf $SYS_ROOT/lib/ld-*.so mount/tools/lib/ld.so &&
+      ln -svf $SYS_ROOT/lib/ld.so.1 mount/tools/lib/ld.so &&
       mv mount/tools/lib mount/lib &&
       ln -sf /lib mount/tools/lib &&
       cp files/SETUP mount/ &&
