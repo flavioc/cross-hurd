@@ -12,7 +12,7 @@ create_image () {
    fallocate -l $IMG_SIZE $IMG &&
       losetup $LOOP $IMG &&
       parted -a optimal -s $LOOP mklabel msdos &&
-      parted -a optimal -s $LOOP -- mkpart primary ext2 32k -1 &&
+      parted -a optimal -s $LOOP -- mkpart primary ext2 2048s -1 &&
       parted -s $LOOP -- set 1 boot on &&
       losetup -d $LOOP &&
       losetup -P $LOOP $IMG &&
