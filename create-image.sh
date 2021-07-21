@@ -2,13 +2,13 @@
 
 . ./vars.sh
 
-LOOP=/dev/loop0
-LOOPPART=/dev/loop0p1
+LOOP=$(losetup -f)
+LOOPPART="${LOOP}p1"
 IMG=hd.img
 IMG_SIZE=2048MB
 
 create_image () {
-   print_info "Creating disk image $IMG..."
+   print_info "Creating disk image $IMG using $LOOP..."
    fallocate -l $IMG_SIZE $IMG &&
       losetup $LOOP $IMG &&
       parted -a optimal -s $LOOP mklabel msdos &&
