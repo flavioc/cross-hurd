@@ -3,7 +3,7 @@
 . ./config.sh
 
 BINUTILS_URL=https://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
-GCC_URL=http://www.netgull.com/gcc/releases/gcc-"$GCC_VERSION"/"$GCC_PKG"
+GCC_URL=https://ftp.gnu.org/gnu/gcc/gcc-"$GCC_VERSION"/"$GCC_PKG"
 FLEX_URL=https://github.com/westes/flex/releases/download/v$FLEX_VERSION/$FLEX_PKG
 ZLIB_URL=http://zlib.net/"$ZLIB_PKG"
 BASH_URL=https://ftp.gnu.org/gnu/bash/"$BASH_PKG"
@@ -71,12 +71,13 @@ apply_patch() {
 }
 
 download_glibc () {
-   if [ -d glibc ]; then
-      cd glibc && git pull && cd ..
-      return 0
+   if [ ! -d glibc ]; then
+      git clone git://sourceware.org/git/glibc.git
    fi
-   git clone git://sourceware.org/git/glibc.git &&
+
    cd glibc &&
+   git reset --hard &&
+   git checkout $GLIBC_TAG &&
    apply_patch $SCRIPT_DIR/patches/glibc/tg-mach-hurd-link.diff 1 &&
    apply_patch $SCRIPT_DIR/patches/glibc/unsubmitted-clock_t_centiseconds.diff 1 &&
    apply_patch $SCRIPT_DIR/patches/glibc/unsubmitted-prof-eintr.diff 1 &&
@@ -156,12 +157,7 @@ download_gpg_error () {
   if [ -d "$GPG_ERROR_SRC" ]; then
     return 0
   fi
-  unpack jxf $GPG_ERROR_PKG $GPG_ERROR_SRC &&
-  cd $GPG_ERROR_SRC &&
-  (for p in $SCRIPT_DIR/patches/libgpg-error/*; do
-    apply_patch $p 1
-  done) &&
-  cd ..
+  unpack jxf $GPG_ERROR_PKG $GPG_ERROR_SRC
 }
 
 download_gcrypt () {

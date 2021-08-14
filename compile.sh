@@ -139,6 +139,7 @@ install_binutils ()
 
 install_bash() {
    cd "$BASH_SRC" &&
+      export CFLAGS="$CFLAGS -fcommon"
       cat > config.cache << "EOF"
 ac_cv_func_mmap_fixed_mapped=yes
 ac_cv_func_strcoll_works=yes
@@ -198,7 +199,7 @@ install_e2fsprogs() {
       --disable-libblkid \
       --disable-libuuid  \
       --disable-uuidd &&
-   LDFLAGS="-luuid" make -j$PROCS && make -j$PROCS install && make -j$PROCS install-libs &&
+   make -j$PROCS && make -j$PROCS install && make -j$PROCS install-libs &&
    cd ../..
 }
 
