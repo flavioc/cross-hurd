@@ -17,11 +17,11 @@ if [ ! -z "$CCACHE_DIRECTORY" ]; then
 fi
 
 # Package versions.
-BINUTILS_VERSION=2.35.2
-GCC_VERSION=10.2.0
+BINUTILS_VERSION=2.37
+GCC_VERSION=11.2.0
 FLEX_VERSION=2.6.4
 ZLIB_VERSION=1.2.11
-BASH_VERSION=5.1
+BASH_VERSION=5.1.16
 COREUTILS_VERSION=8.32
 # e2fsprogs 1.45.4 is failing due to something with sys/mount.h in configure
 E2FSPROGS_VERSION=1.44.1
