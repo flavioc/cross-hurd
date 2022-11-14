@@ -43,8 +43,11 @@ download () {
 
 download_gnumach () {
    if [ -d gnumach ]; then
-      cd gnumach && git pull && cd .. &&
-      return 0
+      cd gnumach || return 1
+      git pull
+      local git_result=$?
+      cd ..
+      return $git_result
    fi
    git clone https://git.savannah.gnu.org/git/hurd/gnumach.git
 }
