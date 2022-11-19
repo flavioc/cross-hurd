@@ -303,6 +303,7 @@ install_gcc() {
    rm -rf "$GCC_SRC".obj &&
    mkdir -p "$GCC_SRC".obj &&
    cd "$GCC_SRC".obj &&
+   LDFLAGS="-lpthread" \
    ../$GCC_SRC/configure \
       --prefix="$SYS_ROOT" \
       --build=${HOST} \
@@ -330,7 +331,7 @@ install_gcc() {
 
 install_ncurses () {
    cd "$NCURSES_SRC" &&
-   CPPFLAGS="-P" ./configure --prefix="${SYS_ROOT}" \
+   LDFLAGS="-lpthread" CPPFLAGS="-P" ./configure --prefix="${SYS_ROOT}" \
      --with-shared \
      --build=${HOST} \
      --host=${TARGET} \
