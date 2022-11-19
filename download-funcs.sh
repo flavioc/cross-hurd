@@ -184,10 +184,7 @@ download_grub () {
   if [ -d "$GRUB_SRC" ]; then
     return 0
   fi
-  unpack zxf $GRUB_PKG $GRUB_SRC &&
-  pushd $GRUB_SRC &&
-  apply_patch $SCRIPT_DIR/patches/grub/fix-build.patch 1 &&
-  popd
+  unpack zxf $GRUB_PKG $GRUB_SRC
 }
 
 download_grep () {
