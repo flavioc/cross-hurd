@@ -220,9 +220,10 @@ install_grub() {
    ./configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} \
+      --disable-efiemu \
       --disable-werror \
       --enable-grub-mkfont=no \
-      --with-bootdir=tools/boot &&
+      --with-bootdir=/tools/boot &&
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..
