@@ -98,9 +98,9 @@ install_gnumig() {
    cd "$GNUMIG_SRC" &&
    autoreconf -i &&
    cd .. &&
-   rm -rf "$GNUMIG_SRC".obj &&
-   mkdir -p "$GNUMIG_SRC".obj &&
-   cd "$GNUMIG_SRC".obj &&
+   rm -rf "$GNUMIG_SRC".host_obj &&
+   mkdir -p "$GNUMIG_SRC".host_obj &&
+   cd "$GNUMIG_SRC".host_obj &&
    ../$GNUMIG_SRC/configure --target="$TARGET" \
       --prefix="$ROOT" &&
    make -j$PROCS &&
