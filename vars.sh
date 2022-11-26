@@ -20,7 +20,7 @@ fi
 BINUTILS_VERSION=2.39
 GCC_VERSION=12.2.0
 FLEX_VERSION=2.6.4
-ZLIB_VERSION=1.2.11
+ZLIB_VERSION=1.2.13
 BASH_VERSION=5.1.16
 COREUTILS_VERSION=8.32
 # e2fsprogs 1.45.4 is failing due to something with sys/mount.h in configure
@@ -33,7 +33,7 @@ GRUB_VERSION=2.06
 SHADOW_VERSION=4.6
 SED_VERSION=4.7
 GMP_VERSION=6.2.1
-MPFR_VERSION=4.1.0
+MPFR_VERSION=4.1.1
 MPC_VERSION=1.2.0
 NCURSES_VERSION=6.2
 # 8.1: checking what tgetent() returns for an unknown terminal... configure: error: failed to compile test program.
