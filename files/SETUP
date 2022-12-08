@@ -23,9 +23,6 @@ set -v
 # Make sure the filesystem is writable
 fsysopts / --writable 
 
-# Set root password.
-passwd
-
 # Set up standard passive translators
 /bin/settrans -c /servers/socket/local /hurd/pflocal
 /bin/settrans -c /servers/crash /hurd/crash
@@ -36,6 +33,9 @@ cd /dev
 rm -f console
 /bin/bash /sbin/MAKEDEV console std hd0s1 tty1 tty2 tty3 tty4 tty5 tty6
 set +v
+
+# Set root password.
+passwd
 
 # if test "$BOOT_DEV" && /bin/sh ./MAKEDEV "$BOOT_DEV"; then
 #   echo -n "Install grub as main boot record on $BOOT_DEV? [y] "
