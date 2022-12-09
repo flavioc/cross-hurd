@@ -28,9 +28,8 @@ install_mig() {
    cd "$GNUMIG_SRC" &&
    autoreconf -i &&
    cd .. &&
-   rm -rf "$GNUMIG_SRC".obj &&
-   mkdir -p "$GNUMIG_SRC".obj &&
-   cd "$GNUMIG_SRC".obj &&
+   mkdir -p "$GNUMIG_SRC".second_obj &&
+   cd "$GNUMIG_SRC".second_obj &&
    rm -f config.cache &&
    ../$GNUMIG_SRC/configure \
       --build="$HOST" \
@@ -44,8 +43,9 @@ install_mig() {
 }
 
 install_zlib() {
-   cd "$ZLIB_SRC" &&
-   ./configure --prefix=$SYS_ROOT &&
+   mkdir -p $ZLIB_SRC.obj
+   cd $ZLIB_SRC.obj &&
+   ../$ZLIB_SRC/configure --prefix=$SYS_ROOT &&
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..
@@ -53,9 +53,11 @@ install_zlib() {
 
 install_gpg_error() {
    cd "$GPG_ERROR_SRC" &&
-   # We patch src/Makefile.am so we have to regenerate the files
-   autoreconf -fi &&
-   ./configure --prefix=$SYS_ROOT \
+   ./autogen.sh &&
+   cd .. &&
+   mkdir -p $GPG_ERROR_SRC.obj &&
+   cd $GPG_ERROR_SRC.obj &&
+   ../$GPG_ERROR_SRC/configure --prefix=$SYS_ROOT \
       --build="$HOST" \
       --host="$TARGET" &&
    make -j$PROCS &&
@@ -64,8 +66,9 @@ install_gpg_error() {
 }
 
 install_gcrypt() {
-   cd "$GCRYPT_SRC" &&
-   ./configure --prefix=$SYS_ROOT \
+   mkdir -p $GCRYPT_SRC.obj &&
+   cd $GCRYPT_SRC.obj &&
+   ../$GCRYPT_SRC/configure --prefix=$SYS_ROOT \
       --build="$HOST" \
       --host="$TARGET" \
       --disable-padlock-support \
@@ -80,9 +83,8 @@ install_gnumach() {
    cd "$GNUMACH_SRC" &&
    autoreconf -i &&
    cd .. &&
-   rm -rf "$GNUMACH_SRC".obj &&
-   mkdir -p "$GNUMACH_SRC".obj &&
-   cd "$GNUMACH_SRC".obj &&
+   mkdir -p "$GNUMACH_SRC".second_obj &&
+   cd "$GNUMACH_SRC".second_obj &&
    ../$GNUMACH_SRC/configure \
       --host="$TARGET" \
       --build="$HOST" \
@@ -102,9 +104,8 @@ install_hurd() {
    cd "$HURD_SRC" &&
    autoreconf -i &&
    cd .. &&
-   rm -rf "$HURD_SRC".obj &&
-   mkdir -p "$HURD_SRC".obj &&
-   cd "$HURD_SRC".obj &&
+   mkdir -p "$HURD_SRC".second_obj &&
+   cd "$HURD_SRC".second_obj &&
    rm -f config.cache cnfig.status &&
    ../$HURD_SRC/configure \
       --build="$HOST" \
@@ -120,9 +121,8 @@ install_hurd() {
 install_binutils ()
 {
    print_info "Installing binutils"
-   rm -rf "$BINUTILS_SRC".obj &&
-   mkdir -p "$BINUTILS_SRC".obj &&
-   cd "$BINUTILS_SRC".obj &&
+   mkdir -p $BINUTILS_SRC.second_obj &&
+   cd $BINUTILS_SRC.second_obj &&
       ../$BINUTILS_SRC/configure \
       --prefix="$SYS_ROOT" \
       --build="$HOST" \
@@ -138,7 +138,9 @@ install_binutils ()
 }
 
 install_bash() {
-   cd "$BASH_SRC" &&
+   rm -rf $BASH.obj &&
+   mkdir -p $BASH_SRC.obj &&
+   cd $BASH_SRC.obj &&
       export CFLAGS="$CFLAGS -fcommon"
       cat > config.cache << "EOF"
 ac_cv_func_mmap_fixed_mapped=yes
@@ -154,7 +156,7 @@ bash_cv_under_sys_siglist=yes
 bash_cv_unusable_rtsigs=no
 gt_cv_int_divbyzero_sigfpe=yes
 EOF
-   ./configure --prefix="$SYS_ROOT" \
+   ../$BASH_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" --host="$TARGET" \
       --without-bash-malloc --cache-file=config.cache &&
    make -j$PROCS &&
@@ -163,12 +165,13 @@ EOF
 }
 
 install_coreutils() {
-   cd "$COREUTILS_SRC" &&
+   mkdir -p $COREUTILS_SRC.obj &&
+   cd $COREUTILS_SRC.obj &&
       cat > config.cache << EOF
 fu_cv_sys_stat_statfs2_bsize=yes
 gl_cv_func_working_mkstemp=yes
 EOF
-   ./configure --prefix="$SYS_ROOT" \
+   ../$COREUTILS_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
       --host="$TARGET" \
       --enable-install-program=hostname \
@@ -204,8 +207,9 @@ install_e2fsprogs() {
 }
 
 install_util_linux() {
-   cd "$UTIL_LINUX_SRC" &&
-   ./configure --prefix="$SYS_ROOT" \
+   mkdir -p $UTIL_LINUX_SRC.obj &&
+   cd $UTIL_LINUX_SRC.obj &&
+   ../$UTIL_LINUX_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
       --host="$TARGET" \
       --disable-makeinstall-chown \
@@ -216,8 +220,9 @@ install_util_linux() {
 }
 
 install_grub() {
-   cd "$GRUB_SRC" &&
-   ./configure --prefix="$SYS_ROOT" \
+   mkdir -p $GRUB_SRC.obj &&
+   cd $GRUB_SRC.obj &&
+   ../$GRUB_SRC/configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} \
       --disable-efiemu \
@@ -251,8 +256,9 @@ EOF
 }
 
 install_sed() {
-   cd "$SED_SRC" &&
-   ./configure --prefix="$SYS_ROOT" \
+   mkdir -p $SED_SRC.obj &&
+   cd $SED_SRC.obj &&
+   ../$SED_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
       --host="$TARGET" &&
    make -j$PROCS &&
