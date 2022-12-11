@@ -2,7 +2,7 @@
 
 . ./vars.sh
 
-LOOP=$(losetup -f)
+LOOP=$(sudo losetup -f)
 LOOPPART="${LOOP}p1"
 IMG=hd.img
 IMG_SIZE=2048MB
@@ -10,19 +10,20 @@ IMG_SIZE=2048MB
 create_image () {
    print_info "Creating disk image $IMG using $LOOP..."
    fallocate -l $IMG_SIZE $IMG &&
-      losetup $LOOP $IMG &&
-      parted -a optimal -s $LOOP mklabel msdos &&
-      parted -a optimal -s $LOOP -- mkpart primary ext2 2048s -1 &&
-      parted -s $LOOP -- set 1 boot on &&
-      losetup -d $LOOP &&
-      losetup -P $LOOP $IMG &&
+      sudo losetup $LOOP $IMG &&
+      sudo parted -a optimal -s $LOOP mklabel msdos &&
+      sudo parted -a optimal -s $LOOP -- mkpart primary ext2 2048s -1 &&
+      sudo parted -s $LOOP -- set 1 boot on &&
+      sudo losetup -d $LOOP &&
+      sudo losetup -P $LOOP $IMG &&
    sleep 2 &&
-      mkfs.ext2 -o hurd -m 1 -v $LOOPPART
+      sudo mkfs.ext2 -o hurd -m 1 -v $LOOPPART
 }
 
 mount_image () {
    mkdir -p mount &&
-      mount -t ext2 $LOOPPART mount
+      sudo mount -o rw -t ext2 $LOOPPART mount &&
+      sudo chmod ogu+w -R mount/
 }
 
 copy_files () {
@@ -62,23 +63,26 @@ copy_files () {
 
 install_grub () {
    print_info "Installing the GRUB on $IMG..."
-   grub-install --target=i386-pc --directory=$SYS_ROOT/lib/grub/i386-pc --boot-directory=$PWD/mount/tools/boot $LOOP
+   sudo grub-install --target=i386-pc --directory=$SYS_ROOT/lib/grub/i386-pc --boot-directory=$PWD/mount/tools/boot $LOOP
 }
 
 umount_image () {
-   umount mount &&
-      losetup -d $LOOP &&
+   print_info "Umounting $LOOP"
+   sudo umount mount >/dev/null 2>&1 &&
+      sudo losetup -d $LOOP &&
       rmdir mount
 }
 
+trap umount_image EXIT
+trap umount_image INT
+
 umount mount >/dev/null 2>&1
-losetup -d $LOOP >/dev/null 2>&1
+sudo losetup -d $LOOP >/dev/null 2>&1
 rm -f $IMG
 create_image &&
    mount_image &&
    copy_files &&
    install_grub &&
-   umount_image &&
 print_info "Disk image available on $IMG" &&
 print_info "Run 'qemu-system-i386 $IMG' to enjoy the Hurd!" &&
 exit 0
