@@ -117,10 +117,7 @@ download_binutils () {
    fi
    unpack jxf $BINUTILS_PKG $BINUTILS_SRC &&
    cd $BINUTILS_SRC &&
-   (if [ $CPU = "x86_64" ]; then
-     apply_patch $SCRIPT_DIR/patches/binutils/x86_64/binutils-bfd-x86_64-gnu.patch 1 &&
-     apply_patch $SCRIPT_DIR/patches/binutils/x86_64/binutils-ld-x86_64-gnu.patch 1
-   fi) &&
+   apply_patch $SCRIPT_DIR/patches/binutils/x86_64/binutils-2.39-x86_64-hurd.patch 1 &&
    cd ..
  }
 

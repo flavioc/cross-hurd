@@ -1,0 +1,30 @@
+diff -Naur binutils-2.39/bfd/config.bfd cross-hurd/tmp/src/binutils-2.39/bfd/config.bfd
+--- binutils-2.39/bfd/config.bfd	2022-07-08 05:46:47.000000000 -0400
++++ cross-hurd/tmp/src/binutils-2.39/bfd/config.bfd	2022-12-10 00:21:43.447898490 -0500
+@@ -690,6 +690,11 @@
+     targ_selvecs="i386_elf32_fbsd_vec iamcu_elf32_vec i386_coff_vec i386_pei_vec x86_64_pe_vec x86_64_pei_vec i386_elf32_vec x86_64_elf64_vec"
+     want64=true
+     ;;
++  x86_64-*-gnu*)
++    targ_defvec=x86_64_elf64_vec
++    targ_selvecs="i386_elf32_vec"
++    want64=true
++    ;;
+   x86_64-*-haiku*)
+     targ_defvec=x86_64_elf64_vec
+     targ_selvecs="i386_elf32_vec"
+diff -Naur binutils-2.39/ld/configure.tgt cross-hurd/tmp/src/binutils-2.39/ld/configure.tgt
+--- binutils-2.39/ld/configure.tgt	2022-07-29 03:37:48.000000000 -0400
++++ cross-hurd/tmp/src/binutils-2.39/ld/configure.tgt	2022-12-10 00:18:24.889343191 -0500
+@@ -990,6 +990,11 @@
+ 			;;
+ x86_64-*-cloudabi*)	targ_emul=elf_x86_64_cloudabi
+ 			;;
++x86_64-*-gnu*)	targ_emul=elf_x86_64
++			targ_extra_emuls="elf32_x86_64 elf_iamcu elf_i386"
++			targ_extra_libpath="elf_i386 elf32_x86_64"
++			tdir_elf_i386=`echo ${targ_alias} | sed -e 's/x86_64/i386/'`
++			;;
+ x86_64-*-haiku*)	targ_emul=elf_x86_64_haiku
+ 			targ_extra_emuls="elf_x86_64 elf_i386_haiku"
+ 			;;
