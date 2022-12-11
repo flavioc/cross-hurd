@@ -1,0 +1,93 @@
+commit 60452abf0c4b5292864e6d17c2132f28385d0d6b
+Author: Flavio Cruz <flaviocruz@gmail.com>
+Date:   Sat Dec 10 23:13:10 2022 -0500
+
+    Add support for x86_64-*-gnu-* targets
+
+diff --git a/gcc/config.gcc b/gcc/config.gcc
+index 95190233820..1d76fe98f96 100644
+--- a/gcc/config.gcc
++++ b/gcc/config.gcc
+@@ -1955,6 +1955,10 @@ i[34567]86-*-linux* | i[34567]86-*-kfreebsd*-gnu | i[34567]86-*-gnu* | i[34567]8
+ 		;;
+ 	esac
+ 	;;
++x86_64-*-gnu*)
++  tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h gnu-user.h glibc-stdint.h \
++     i386/x86-64.h i386/gnu-user-common.h i386/gnu-user64.h gnu.h i386/gnu64.h"
++  ;;
+ x86_64-*-linux* | x86_64-*-kfreebsd*-gnu)
+ 	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h gnu-user.h glibc-stdint.h \
+ 		 i386/x86-64.h i386/gnu-user-common.h i386/gnu-user64.h"
+diff --git a/gcc/config/i386/gnu64.h b/gcc/config/i386/gnu64.h
+new file mode 100644
+index 00000000000..c764437cb67
+--- /dev/null
++++ b/gcc/config/i386/gnu64.h
+@@ -0,0 +1,40 @@
++/* Configuration for an i386 running GNU with ELF as the target machine.  */
++
++/*
++Copyright (C) 2022 Free Software Foundation, Inc.
++
++This file is part of GCC.
++
++GCC is free software: you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation, either version 3 of the License, or
++(at your option) any later version.
++
++GCC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GCC.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#define GNU_USER_LINK_EMULATION32 "elf_i386"
++#define GNU_USER_LINK_EMULATION64 "elf_x86_64"
++#define GNU_USER_LINK_EMULATIONX32 "elf32_x86_64"
++
++#undef GNU_USER_DYNAMIC_LINKER
++#define GNU_USER_DYNAMIC_LINKER32 "/lib/ld.so"
++#define GNU_USER_DYNAMIC_LINKER64 "/lib/ld-x86-64.so"
++#define GNU_USER_DYNAMIC_LINKERX32 "/lib/ld-x32.so"
++
++#undef	STARTFILE_SPEC
++#if defined HAVE_LD_PIE
++#define STARTFILE_SPEC \
++  "%{!shared: %{pg|p|profile:%{static:gcrt0.o%s;:gcrt1.o%s};pie:Scrt1.o%s;static:crt0.o%s;:crt1.o%s}} \
++   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
++#else
++#define STARTFILE_SPEC \
++  "%{!shared: %{pg|p|profile:%{static:gcrt0.o%s;:gcrt1.o%s};static:crt0.o%s;:crt1.o%s}} \
++   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
++#endif
+diff --git a/libgcc/config.host b/libgcc/config.host
+index eb23abe89f5..9de2086218b 100644
+--- a/libgcc/config.host
++++ b/libgcc/config.host
+@@ -740,6 +740,12 @@ i[34567]86-*-gnu*)
+ 	tm_file="${tm_file} i386/elf-lib.h"
+ 	md_unwind_header=i386/gnu-unwind.h
+ 	;;
++x86_64-*-gnu*)
++	extra_parts="$extra_parts crtprec32.o crtprec64.o crtprec80.o crtfastmath.o"
++	tmake_file="${tmake_file} i386/t-crtpc t-crtfm i386/t-crtstuff t-dfprules"
++	tm_file="${tm_file} i386/elf-lib.h"
++	# TODO: need to define md_unwind_header.
++	;;
+ x86_64-*-linux*)
+ 	extra_parts="$extra_parts crtprec32.o crtprec64.o crtprec80.o crtfastmath.o"
+ 	tmake_file="${tmake_file} i386/t-crtpc t-crtfm i386/t-crtstuff t-dfprules"
+@@ -1523,7 +1529,7 @@ esac
+ case ${host} in
+ i[34567]86-*-linux* | x86_64-*-linux* | \
+   i[34567]86-*-kfreebsd*-gnu | x86_64-*-kfreebsd*-gnu | \
+-  i[34567]86-*-gnu*)
++  i[34567]86-*-gnu* | x86_64-*-gnu*)
+ 	tmake_file="${tmake_file} t-tls i386/t-linux i386/t-msabi t-slibgcc-libgcc"
+ 	if test "$libgcc_cv_cfi" = "yes"; then
+ 		tmake_file="${tmake_file} t-stack i386/t-stack-i386"

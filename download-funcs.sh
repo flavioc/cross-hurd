@@ -91,14 +91,9 @@ download_glibc () {
 unpack_gcc () {
    unpack zxf $GCC_PKG $GCC_SRC &&
    cd $GCC_SRC &&
-   (if [ "$CPU" = "i686" ]; then
-    apply_patch $SCRIPT_DIR/patches/gcc/i686/specs.patch 1
-   fi) &&
-   (if [ "$CPU" = "x86_64" ]; then
-    apply_patch $SCRIPT_DIR/patches/gcc/x86_64/config.patch 1 &&
-    apply_patch $SCRIPT_DIR/patches/gcc/x86_64/gnu64.patch 1 &&
-    apply_patch $SCRIPT_DIR/patches/gcc/x86_64/libgcc.patch 1
-   fi) &&
+   apply_patch $SCRIPT_DIR/patches/gcc/i686/specs.patch 1 &&
+   apply_patch $SCRIPT_DIR/patches/gcc/x86_64/gcc-12.2.0-x86_64.hurd.patch 1 &&
+   apply_patch $SCRIPT_DIR/patches/gcc/x86_64/specs.patch 1 &&
    cd ..
 }
 
