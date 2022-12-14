@@ -1,4 +1,4 @@
-commit 60452abf0c4b5292864e6d17c2132f28385d0d6b
+commit e3f1e59817bd453e68e9cdf2ad714a3bda87fe9f
 Author: Flavio Cruz <flaviocruz@gmail.com>
 Date:   Sat Dec 10 23:13:10 2022 -0500
 
@@ -66,7 +66,7 @@ index 00000000000..c764437cb67
 +   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
 +#endif
 diff --git a/libgcc/config.host b/libgcc/config.host
-index eb23abe89f5..9de2086218b 100644
+index eb23abe89f5..38da43edfa6 100644
 --- a/libgcc/config.host
 +++ b/libgcc/config.host
 @@ -740,6 +740,12 @@ i[34567]86-*-gnu*)
@@ -77,7 +77,7 @@ index eb23abe89f5..9de2086218b 100644
 +	extra_parts="$extra_parts crtprec32.o crtprec64.o crtprec80.o crtfastmath.o"
 +	tmake_file="${tmake_file} i386/t-crtpc t-crtfm i386/t-crtstuff t-dfprules"
 +	tm_file="${tm_file} i386/elf-lib.h"
-+	# TODO: need to define md_unwind_header.
++	md_unwind_header=i386/gnu-unwind.h
 +	;;
  x86_64-*-linux*)
  	extra_parts="$extra_parts crtprec32.o crtprec64.o crtprec80.o crtfastmath.o"
@@ -91,3 +91,29 @@ index eb23abe89f5..9de2086218b 100644
  	tmake_file="${tmake_file} t-tls i386/t-linux i386/t-msabi t-slibgcc-libgcc"
  	if test "$libgcc_cv_cfi" = "yes"; then
  		tmake_file="${tmake_file} t-stack i386/t-stack-i386"
+diff --git a/libgcc/config/i386/gnu-unwind.h b/libgcc/config/i386/gnu-unwind.h
+index 25eb690e370..b7574f9ac37 100644
+--- a/libgcc/config/i386/gnu-unwind.h
++++ b/libgcc/config/i386/gnu-unwind.h
+@@ -30,6 +30,14 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+ 
+ #include <signal.h>
+ 
++#ifdef __x86_64__
++
++/*
++ * TODO: support for 64 bits need to be implemented.
++ */
++
++#else /* ifdef __x86_64__  */
++
+ #define MD_FALLBACK_FRAME_STATE_FOR x86_gnu_fallback_frame_state
+ 
+ static _Unwind_Reason_Code
+@@ -138,4 +146,6 @@ x86_gnu_fallback_frame_state
+   return _URC_NO_REASON;
+ }
+ 
++#endif /* ifdef __x86_64__  */
++
+ #endif /* ifndef inhibit_libc */
