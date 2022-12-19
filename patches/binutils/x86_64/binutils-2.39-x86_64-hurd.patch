@@ -1,22 +1,34 @@
-diff -Naur binutils-2.39/bfd/config.bfd cross-hurd/tmp/src/binutils-2.39/bfd/config.bfd
---- binutils-2.39/bfd/config.bfd	2022-07-08 05:46:47.000000000 -0400
-+++ cross-hurd/tmp/src/binutils-2.39/bfd/config.bfd	2022-12-10 00:21:43.447898490 -0500
-@@ -690,6 +690,11 @@
+From 78a7fac21c2c1237d738e71432b36cf69209db0e Mon Sep 17 00:00:00 2001
+From: Flavio Cruz <flaviocruz@gmail.com>
+Date: Sat, 10 Dec 2022 22:55:35 -0500
+Subject: [PATCH] Add support for x86_64-*-gnu-* targets
+
+---
+ bfd/config.bfd   | 5 +++++
+ ld/configure.tgt | 5 +++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/bfd/config.bfd b/bfd/config.bfd
+index 0bc27fdce9..3a1c9f716e 100644
+--- a/bfd/config.bfd
++++ b/bfd/config.bfd
+@@ -701,6 +701,11 @@ case "${targ}" in
      targ_selvecs="i386_elf32_fbsd_vec iamcu_elf32_vec i386_coff_vec i386_pei_vec x86_64_pe_vec x86_64_pei_vec i386_elf32_vec x86_64_elf64_vec"
      want64=true
      ;;
 +  x86_64-*-gnu*)
 +    targ_defvec=x86_64_elf64_vec
-+    targ_selvecs="i386_elf32_vec"
++    targ_selvecs="i386_elf32_vec iamcu_elf32_vec x86_64_elf32_vec"
 +    want64=true
 +    ;;
    x86_64-*-haiku*)
      targ_defvec=x86_64_elf64_vec
      targ_selvecs="i386_elf32_vec"
-diff -Naur binutils-2.39/ld/configure.tgt cross-hurd/tmp/src/binutils-2.39/ld/configure.tgt
---- binutils-2.39/ld/configure.tgt	2022-07-29 03:37:48.000000000 -0400
-+++ cross-hurd/tmp/src/binutils-2.39/ld/configure.tgt	2022-12-10 00:18:24.889343191 -0500
-@@ -990,6 +990,11 @@
+diff --git a/ld/configure.tgt b/ld/configure.tgt
+index 741b246f67..d5f1278800 100644
+--- a/ld/configure.tgt
++++ b/ld/configure.tgt
+@@ -995,6 +995,11 @@ x86_64-*-rdos*)		targ_emul=elf64rdos
  			;;
  x86_64-*-cloudabi*)	targ_emul=elf_x86_64_cloudabi
  			;;
@@ -28,3 +40,6 @@ diff -Naur binutils-2.39/ld/configure.tgt cross-hurd/tmp/src/binutils-2.39/ld/co
  x86_64-*-haiku*)	targ_emul=elf_x86_64_haiku
  			targ_extra_emuls="elf_x86_64 elf_i386_haiku"
  			;;
+-- 
+2.37.2
+
