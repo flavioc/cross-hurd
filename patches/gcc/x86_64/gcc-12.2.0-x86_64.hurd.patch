@@ -1,8 +1,15 @@
-commit e3f1e59817bd453e68e9cdf2ad714a3bda87fe9f
-Author: Flavio Cruz <flaviocruz@gmail.com>
-Date:   Sat Dec 10 23:13:10 2022 -0500
+From e3f1e59817bd453e68e9cdf2ad714a3bda87fe9f Mon Sep 17 00:00:00 2001
+From: Flavio Cruz <flaviocruz@gmail.com>
+Date: Sat, 10 Dec 2022 23:13:10 -0500
+Subject: [PATCH] Add support for x86_64-*-gnu-* targets
 
-    Add support for x86_64-*-gnu-* targets
+---
+ gcc/config.gcc                  |  4 ++++
+ gcc/config/i386/gnu64.h         | 40 +++++++++++++++++++++++++++++++++
+ libgcc/config.host              |  8 ++++++-
+ libgcc/config/i386/gnu-unwind.h | 10 +++++++++
+ 4 files changed, 61 insertions(+), 1 deletion(-)
+ create mode 100644 gcc/config/i386/gnu64.h
 
 diff --git a/gcc/config.gcc b/gcc/config.gcc
 index 95190233820..1d76fe98f96 100644
@@ -117,3 +124,6 @@ index 25eb690e370..b7574f9ac37 100644
 +#endif /* ifdef __x86_64__  */
 +
  #endif /* ifndef inhibit_libc */
+-- 
+2.37.2
+
