@@ -8,10 +8,6 @@ cd $SYSTEM/src &&
 
 download_gcc &&
 download_binutils &&
-download_gnumach &&
-download_mig &&
-download_hurd &&
-download_glibc &&
 download $FLEX_PKG $FLEX_URL &&
 unpack zxf $FLEX_PKG $FLEX_SRC &&
 download $ZLIB_PKG $ZLIB_URL &&
@@ -54,4 +50,8 @@ download_grep &&
 download_gawk &&
 
 download_sed &&
+download_gnumach &&
+download_mig &&
+download_hurd &&
+download_glibc &&
 echo "Download complete."
