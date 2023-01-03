@@ -34,11 +34,21 @@ unpack () {
    tar $1 $2
 }
 
+DOWNLOAD_CACHE_DIRECTORY=/tmp/cross-hurd-cache
+CACHE_DOWNLOADS=1
 download () {
    if [ -f $1 ]; then
       return 0
    fi
-   wget $2
+   if [ -n "$CACHE_DOWNLOADS" ]; then
+       mkdir -p $DOWNLOAD_CACHE_DIRECTORY
+       cd $DOWNLOAD_CACHE_DIRECTORY &&
+       (test -f $1 || wget $2) &&
+       cd - &&
+       cp $DOWNLOAD_CACHE_DIRECTORY/$1 .
+   else
+       wget $2
+   fi
 }
 
 download_gnumach () {
