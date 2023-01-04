@@ -34,7 +34,7 @@ unpack () {
    tar $1 $2
 }
 
-DOWNLOAD_CACHE_DIRECTORY=~/cross-hurd-cache
+DOWNLOAD_CACHE_DIRECTORY=~/.cache/cross-hurd
 CACHE_DOWNLOADS=1
 download () {
    if [ -f $1 ]; then
