@@ -59,7 +59,7 @@ download_gnumach () {
       cd ..
       return $git_result
    fi
-   git clone git://git.savannah.gnu.org/hurd/gnumach.git
+   git clone --depth=1 git://git.savannah.gnu.org/hurd/gnumach.git
 }
 
 download_mig () {
@@ -67,7 +67,7 @@ download_mig () {
       cd mig && git pull && cd .. &&
       return 0
    fi
-   git clone git://git.savannah.gnu.org/hurd/mig.git
+   git clone --depth=1 git://git.savannah.gnu.org/hurd/mig.git
 }
 
 download_hurd () {
@@ -75,7 +75,7 @@ download_hurd () {
       cd hurd && git pull && cd .. &&
       return 0
    fi
-   git clone git://git.savannah.gnu.org/hurd/hurd.git
+   git clone --depth=1 git://git.savannah.gnu.org/hurd/hurd.git
 }
 
 apply_patch() {
@@ -85,7 +85,7 @@ apply_patch() {
 
 download_glibc () {
    if [ ! -d glibc ]; then
-      git clone git://sourceware.org/git/glibc.git
+      git clone --depth=1 git://sourceware.org/git/glibc.git
    fi
 
    cd glibc &&
