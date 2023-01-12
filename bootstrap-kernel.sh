@@ -17,7 +17,7 @@ install_gnumach() {
    rm -rf $GNUMACH_SRC.second_obj &&
    mkdir -p "$GNUMACH_SRC".second_obj &&
    cd "$GNUMACH_SRC".second_obj &&
-   CFLAGS="-ffreestanding -nostdlib" ../$GNUMACH_SRC/configure \
+   ../$GNUMACH_SRC/configure \
       --host="$TARGET" \
       --build="$HOST" \
       --exec-prefix=/tmp/throwitaway \
@@ -48,7 +48,6 @@ set_vars() {
    compile_pkgconfiglite &&
    install_gnumach_headers &&
    install_gnumig &&
-   install_hurd_headers &&
    set_vars &&
    install_gnumach &&
    print_info "bootstrap.sh finished successfully" &&
