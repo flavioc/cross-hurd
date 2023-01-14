@@ -120,10 +120,7 @@ download_binutils () {
    if [ -d "$BINUTILS_SRC" ]; then
       return 0
    fi
-   unpack jxf $BINUTILS_PKG $BINUTILS_SRC &&
-   cd $BINUTILS_SRC &&
-   apply_patch $SCRIPT_DIR/patches/binutils/x86_64/binutils-2.39-x86_64-hurd.patch 1 &&
-   cd ..
+   unpack jxf $BINUTILS_PKG $BINUTILS_SRC
  }
 
 download_coreutils () {
