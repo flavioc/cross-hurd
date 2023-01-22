@@ -222,16 +222,16 @@ compile_pkgconfiglite() {
 
 create_tools_symlink() {
     if [ ! -e $SYS_ROOT ]; then
-        sudo ln -sf "$PWD"/tools $SYS_ROOT
+       sudo ln -sf "$PWD"/$(basename $SYS_ROOT) $SYS_ROOT
     fi
-    if [ ! -e /cross-tools ]; then
-        sudo ln -sf "$PWD"/cross-tools $ROOT
+    if [ ! -e $ROOT ]; then
+       sudo ln -sf "$PWD"/$(basename $ROOT) $ROOT
     fi
 }
 
 setup_directories() {
    mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
-	mkdir -p bin src boot "tools/include" "tools/lib" "cross-tools/$TARGET" &&
+   mkdir -p bin src boot "$(basename $SYS_ROOT)/include" "$(basename $SYS_ROOT)/lib" "$(basename $ROOT)/$TARGET" &&
 	create_tools_symlink &&
-	ln -sfn "$SYS_ROOT"/include "$SYS_ROOT"/lib "$ROOT"/"$TARGET"/
+	ln -sfn $SYS_ROOT/include $SYS_ROOT/lib $ROOT/$TARGET/
 }

@@ -228,7 +228,7 @@ install_grub() {
       --disable-efiemu \
       --disable-werror \
       --enable-grub-mkfont=no \
-      --with-bootdir=/tools/boot &&
+      --with-bootdir=$SYS_ROOT/boot &&
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..

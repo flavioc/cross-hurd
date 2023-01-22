@@ -3,8 +3,8 @@
 export AR=gar
 export SCRIPT_DIR=$PWD
 export SYSTEM=$PWD/tmp
-export ROOT=/cross-tools
-export SYS_ROOT=/tools
+export ROOT=/cross-tools-$CPU
+export SYS_ROOT=/tools-$CPU
 export TARGET=$CPU-pc-gnu
 export HOST="$(echo $MACHTYPE | sed "s/$(echo $MACHTYPE | cut -d- -f2)/cross/g")"
 export PATH=$ROOT/bin:$PATH

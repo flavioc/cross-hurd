@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm -rfv tmp/bin/ tmp/boot/ tmp/cross-tools/ tmp/tools/ tmp/src/*.obj
+rm -rfv tmp/bin/ tmp/boot/ tmp/cross-tools* tmp/tools* tmp/src/*.obj
 
 # Delete extracted source folders
 for dir in tmp/src/*; do

@@ -9,7 +9,7 @@ fi
 echo "Removing from $SYSTEM..."
 
 cd "$SYSTEM" &&
-rm -rf bin boot tools cross-tools &&
+rm -rf bin boot tools* cross-tools* &&
 echo "Removing $SYS_ROOT"
 sudo rm -f $SYS_ROOT &&
 echo "Removing $ROOT"

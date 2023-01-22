@@ -6,6 +6,7 @@ LOOP=$(sudo losetup -f)
 LOOPPART="${LOOP}p1"
 IMG=hd.img
 IMG_SIZE=2048MB
+BASE_SYS_ROOT=$(basename $SYS_ROOT)
 
 create_image () {
    print_info "Creating disk image $IMG using $LOOP..."
@@ -28,32 +29,32 @@ mount_image () {
 
 copy_files () {
    print_info "Copying system into mount..."
-   cp -R tmp/tools mount/ &&
+   cp -R tmp/$BASE_SYS_ROOT mount/ &&
       mkdir -p mount/{etc,boot,dev,usr,hurd,servers,libexec,proc,sbin,bin,var,root} &&
       mkdir -p mount/var/run &&
-      cp -R mount/tools/etc/* mount/etc/ &&
+      cp -R mount/$BASE_SYS_ROOT/etc/* mount/etc/ &&
       mkdir -p mount/servers/socket &&
       cp -R files/etc/* mount/etc/ &&
       mkdir -p mount/etc/hurd &&
       cp files/runsystem.hurd mount/libexec/ &&
       chmod ogu+x mount/libexec/runsystem.hurd &&
-      mkdir -p mount/tools/boot/grub &&
-      cp files/boot/grub.cfg mount/tools/boot/grub &&
-      cp files/boot/servers.boot mount/tools/boot &&
-      cp tmp/boot/gnumach.gz mount/tools/boot &&
-      mkdir -p mount/tools/servers &&
+      mkdir -p mount/$BASE_SYS_ROOT/boot/grub &&
+      sed -e "s@/tools@$SYS_ROOT@g" files/boot/grub.cfg > mount/$BASE_SYS_ROOT/boot/grub/grub.cfg &&
+      cp files/boot/servers.boot mount/$BASE_SYS_ROOT/boot &&
+      cp tmp/boot/gnumach.gz mount/$BASE_SYS_ROOT/boot &&
+      mkdir -p mount/$BASE_SYS_ROOT/servers &&
       touch mount/servers/{exec,crash-kill,default-pager,password,socket,startup,proc,auth,symlink} &&
-      touch mount/tools/servers/{exec,crash-kill,default-pager,password,socket,startup,proc,auth,symlink} &&
+      touch mount/$BASE_SYS_ROOT/servers/{exec,crash-kill,default-pager,password,socket,startup,proc,auth,symlink} &&
       mkdir mount/tmp && chmod 01777 mount/tmp &&
-      cp tmp/tools/hurd/* mount/hurd/ &&
-      cp tmp/tools/sbin/* mount/sbin/ &&
-      cp tmp/tools/bin/* mount/bin/ &&
-      cp tmp/tools/libexec/{getty,runttys,console-run} mount/libexec/ &&
-      cp files/{rc,runsystem} mount/tools/libexec/ &&
+      cp tmp/$BASE_SYS_ROOT/hurd/* mount/hurd/ &&
+      cp tmp/$BASE_SYS_ROOT/sbin/* mount/sbin/ &&
+      cp tmp/$BASE_SYS_ROOT/bin/* mount/bin/ &&
+      cp tmp/$BASE_SYS_ROOT/libexec/{getty,runttys,console-run} mount/libexec/ &&
+      cp files/{rc,runsystem} mount/$BASE_SYS_ROOT/libexec/ &&
       ln -svf /bin/bash mount/bin/sh &&
-      ln -svf $SYS_ROOT/lib/ld.so.1 mount/tools/lib/ld.so &&
-      mv mount/tools/lib mount/lib &&
-      ln -sf /lib mount/tools/lib &&
+      ln -svf $SYS_ROOT/lib/ld.so.1 mount/$BASE_SYS_ROOT/lib/ld.so &&
+      mv mount/$BASE_SYS_ROOT/lib mount/lib &&
+      ln -sf /lib mount/$BASE_SYS_ROOT/lib &&
       cp files/SETUP mount/ &&
       chmod +x mount/SETUP &&
       # Create a motd message.
@@ -63,7 +64,7 @@ copy_files () {
 
 install_grub () {
    print_info "Installing the GRUB on $IMG..."
-   sudo grub-install --target=i386-pc --directory=$SYS_ROOT/lib/grub/i386-pc --boot-directory=$PWD/mount/tools/boot $LOOP
+   sudo grub-install --target=i386-pc --directory=$SYS_ROOT/lib/grub/i386-pc --boot-directory=$PWD/mount/$BASE_SYS_ROOT/boot $LOOP
 }
 
 umount_image () {
