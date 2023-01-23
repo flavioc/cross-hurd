@@ -7,7 +7,7 @@ compile_binutils ()
    mkdir -p "$BINUTILS_SRC".obj &&
    cd "$BINUTILS_SRC".obj &&
    AR="$HOST_MACHINE-ar" AS="$HOST_MACHINE-as" \
-   ../$BINUTILS_SRC/configure \
+   $SOURCE/$BINUTILS_SRC/configure \
       --host="$HOST" \
       --target="$TARGET" \
       --prefix="$ROOT" \
@@ -22,23 +22,20 @@ compile_binutils ()
    cd ..
 }
 
-unpack_gcc_and_fix() {
-   if [ -d "$GCC_SRC" ]; then
-      rm -rf "$GCC_SRC"
-   fi
-   unpack_gcc &&
-   cd "$GCC_SRC" && fix_gcc_path && cd ..
+setup_cross_compiler_source() {
+   cp -R $SOURCE/$GCC_SRC $GCC_SRC.cross-compiler
+   cd $GCC_SRC.cross-compiler && fix_gcc_path && cd ..
 }
 
 compile_gcc ()
 {
    print_info "Cross compiling first phase of GCC"
-   unpack_gcc_and_fix &&
+   setup_cross_compiler_source &&
    rm -rf "$GCC_SRC".obj &&
    mkdir -p "$GCC_SRC".obj &&
    cd "$GCC_SRC".obj &&
    AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
-   ../$GCC_SRC/configure \
+   ../$GCC_SRC.cross-compiler/configure \
       --prefix="$ROOT" \
       --build="$HOST" \
       --host="$HOST" \
@@ -77,27 +74,27 @@ compile_gcc ()
 
 install_gnumach_headers() {
    print_info "Installing GNU Mach Headers" &&
-   cd "$GNUMACH_SRC" &&
+   cd $SOURCE/$GNUMACH_SRC &&
    autoreconf -i &&
-   cd .. &&
+   cd - &&
    mkdir -p "$GNUMACH_SRC".obj &&
    cd "$GNUMACH_SRC".obj &&
-      ../$GNUMACH_SRC/configure \
+      $SOURCE/$GNUMACH_SRC/configure \
       --host="$TARGET" \
       --prefix="$SYS_ROOT" &&
    make -j$PROCS install-data &&
-   cd -
+   cd ..
 }
 
 install_gnumig() {
    print_info "Installing cross GNU Mig" &&
-   cd "$GNUMIG_SRC" &&
+   cd $SOURCE/$GNUMIG_SRC &&
    autoreconf -i &&
-   cd .. &&
-   rm -rf "$GNUMIG_SRC".host_obj &&
-   mkdir -p "$GNUMIG_SRC".host_obj &&
-   cd "$GNUMIG_SRC".host_obj &&
-   ../$GNUMIG_SRC/configure --target="$TARGET" \
+   cd - &&
+   rm -rf $GNUMIG_SRC.host_obj &&
+   mkdir -p $GNUMIG_SRC.host_obj &&
+   cd $GNUMIG_SRC.host_obj &&
+   $SOURCE/$GNUMIG_SRC/configure --target="$TARGET" \
       --prefix="$ROOT" &&
    make -j$PROCS &&
    make -j$PROCS install &&
@@ -106,34 +103,29 @@ install_gnumig() {
 
 install_hurd_headers() {
    print_info "Installing Hurd headers" &&
-   cd "$HURD_SRC" &&
+   cd $SOURCE/$HURD_SRC &&
    autoreconf -i &&
-   cd .. &&
-   mkdir -p "$HURD_SRC".obj &&
-   cd "$HURD_SRC".obj &&
-   ../$HURD_SRC/configure \
+   cd - &&
+   rm -rf $HURD_SRC.obj &&
+   mkdir -p $HURD_SRC.obj &&
+   cd $HURD_SRC.obj &&
+   $SOURCE/$HURD_SRC/configure \
       --host="$TARGET" \
       --prefix= \
       --disable-profile \
       --without-parted &&
    make -j$PROCS prefix="$SYS_ROOT" no_deps=t install-headers &&
-   if grep -q '^CC = gcc$' config.make
-   then
-      print_info "Removing config.status for later configure..."
-      rm config.status
-   else :
-   fi &&
    cd ..
 }
 
 compile_first_glibc() {
    print_info "Installing glibc (first pass)" &&
-   rm -rf "$GLIBC_SRC".first_obj &&
-   mkdir -p "$GLIBC_SRC".first_obj &&
-   cd "$GLIBC_SRC".first_obj &&
-   BUILD_CC="$HOST_MACHINE-gcc" CC="$TARGET"-gcc \
+   rm -rf $GLIBC_SRC.first_obj &&
+   mkdir -p $GLIBC_SRC.first_obj &&
+   cd $GLIBC_SRC.first_obj &&
+   BUILD_CC="$HOST_MACHINE-gcc" CC="$TARGET-gcc" \
    AR="$TARGET"-ar CXX="cxx-not-found" RANLIB="$TARGET"-ranlib \
-   ../$GLIBC_SRC/configure \
+   $SOURCE/$GLIBC_SRC/configure \
       --with-binutils=${ROOT}/bin \
       --build="$HOST" \
       --host="$TARGET" \
@@ -155,13 +147,12 @@ compile_first_glibc() {
 
 compile_full_gcc () {
    print_info "Cross compiling GCC"
-   unpack_gcc_and_fix
-   rm -rf "$GCC_SRC".obj &&
-   mkdir -p "$GCC_SRC".obj &&
-   cd "$GCC_SRC".obj &&
+   rm -rf $GCC_SRC.obj &&
+   mkdir -p $GCC_SRC.obj &&
+   cd $GCC_SRC.obj &&
    AR="$HOST_MACHINE-ar" \
    LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
-   ../$GCC_SRC/configure \
+   ../$GCC_SRC.cross-compiler/configure \
       --prefix="$ROOT" \
       --target="$TARGET" \
       --with-sysroot="$SYSTEM" \
@@ -186,13 +177,13 @@ compile_full_gcc () {
 
 compile_second_glibc() {
    print_info "Installing GLibC (second pass)" &&
-   rm -rf "$GLIBC_SRC".second_obj &&
-   mkdir -p "$GLIBC_SRC".second_obj &&
-   cd "$GLIBC_SRC".second_obj &&
+   rm -rf $GLIBC_SRC.second_obj &&
+   mkdir -p $GLIBC_SRC.second_obj &&
+   cd $GLIBC_SRC.second_obj &&
    rm -f config.cache &&
-   BUILD_CC="$HOST_MACHINE-gcc" CC="$TARGET"-gcc CXX="" \
-   AR="$TARGET"-ar RANLIB="$TARGET"-ranlib \
-   ../$GLIBC_SRC/configure \
+   BUILD_CC="$HOST_MACHINE-gcc" CC="$TARGET-gcc" CXX="" \
+   AR="$TARGET"-ar RANLIB="$TARGET-ranlib" \
+   $SOURCE/$GLIBC_SRC/configure \
       --with-binutils=${ROOT}/bin \
       --build="$HOST" \
       --host="$TARGET" \
@@ -210,10 +201,11 @@ compile_second_glibc() {
 }
 
 compile_pkgconfiglite() {
-   cd "$PKGCONFIGLITE_SRC" &&
    # otherwise "ln pkg-config i586-pc-gnu-pkg-config" in the install step fails
    rm -fv "$ROOT"/bin/*-pkg-config &&
-   ./configure --prefix="$ROOT" --host=${TARGET}\
+   mkdir -p $PKGCONFIGLITE_SRC.obj &&
+   cd $PKGCONFIGLITE_SRC.obj &&
+   $SOURCE/$PKGCONFIGLITE_SRC/configure --prefix="$ROOT" --host=${TARGET}\
       --with-pc-path="/sys/lib/pkgconfig:/sys/share/pkgconfig" &&
    make -j$PROCS &&
    make -j$PROCS install &&
@@ -231,7 +223,8 @@ create_tools_symlink() {
 
 setup_directories() {
    mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
-   mkdir -p bin src boot "$(basename $SYS_ROOT)/include" "$(basename $SYS_ROOT)/lib" "$(basename $ROOT)/$TARGET" &&
+   mkdir -p bin boot "$(basename $SYS_ROOT)/include" "$(basename $SYS_ROOT)/lib" "$(basename $ROOT)/$TARGET" &&
 	create_tools_symlink &&
-	ln -sfn $SYS_ROOT/include $SYS_ROOT/lib $ROOT/$TARGET/
+	ln -sfn $SYS_ROOT/include $SYS_ROOT/lib $ROOT/$TARGET/ &&
+   cd -
 }

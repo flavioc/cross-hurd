@@ -10,7 +10,8 @@ print_info "Cross-compiling on $HOST to $TARGET"
 
 setup_directories
 
- cd src &&
+mkdir -p $BUILD_ROOT/bootstrap &&
+   cd $BUILD_ROOT/bootstrap &&
    compile_binutils &&
    compile_gcc &&
    compile_pkgconfiglite &&

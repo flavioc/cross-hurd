@@ -29,7 +29,7 @@ mount_image () {
 
 copy_files () {
    print_info "Copying system into mount..."
-   cp -R tmp/$BASE_SYS_ROOT mount/ &&
+   cp -R $SYSTEM/$BASE_SYS_ROOT mount/ &&
       mkdir -p mount/{etc,boot,dev,usr,hurd,servers,libexec,proc,sbin,bin,var,root} &&
       mkdir -p mount/var/run &&
       cp -R mount/$BASE_SYS_ROOT/etc/* mount/etc/ &&
@@ -41,15 +41,15 @@ copy_files () {
       mkdir -p mount/$BASE_SYS_ROOT/boot/grub &&
       sed -e "s@/tools@$SYS_ROOT@g" files/boot/grub.cfg > mount/$BASE_SYS_ROOT/boot/grub/grub.cfg &&
       cp files/boot/servers.boot mount/$BASE_SYS_ROOT/boot &&
-      cp tmp/boot/gnumach.gz mount/$BASE_SYS_ROOT/boot &&
+      cp $SYSTEM/boot/gnumach.gz mount/$BASE_SYS_ROOT/boot &&
       mkdir -p mount/$BASE_SYS_ROOT/servers &&
       touch mount/servers/{exec,crash-kill,default-pager,password,socket,startup,proc,auth,symlink} &&
       touch mount/$BASE_SYS_ROOT/servers/{exec,crash-kill,default-pager,password,socket,startup,proc,auth,symlink} &&
       mkdir mount/tmp && chmod 01777 mount/tmp &&
-      cp tmp/$BASE_SYS_ROOT/hurd/* mount/hurd/ &&
-      cp tmp/$BASE_SYS_ROOT/sbin/* mount/sbin/ &&
-      cp tmp/$BASE_SYS_ROOT/bin/* mount/bin/ &&
-      cp tmp/$BASE_SYS_ROOT/libexec/{getty,runttys,console-run} mount/libexec/ &&
+      cp $SYSTEM/$BASE_SYS_ROOT/hurd/* mount/hurd/ &&
+      cp $SYSTEM/$BASE_SYS_ROOT/sbin/* mount/sbin/ &&
+      cp $SYSTEM/$BASE_SYS_ROOT/bin/* mount/bin/ &&
+      cp $SYSTEM/$BASE_SYS_ROOT/libexec/{getty,runttys,console-run} mount/libexec/ &&
       cp files/{rc,runsystem} mount/$BASE_SYS_ROOT/libexec/ &&
       ln -svf /bin/bash mount/bin/sh &&
       ln -svf $SYS_ROOT/lib/ld.so.1 mount/$BASE_SYS_ROOT/lib/ld.so &&

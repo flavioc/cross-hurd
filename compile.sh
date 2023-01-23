@@ -13,9 +13,10 @@ export STRIP="${ROOT}/bin/${TARGET}-strip"
 export MIG="${ROOT}/bin/${TARGET}-mig"
 
 install_flex() {
-   cd "$FLEX_SRC" &&
+   mkdir -p $FLEX_SRC.obj &&
+   cd $FLEX_SRC.obj &&
    ac_cv_func_realloc_0_nonnull=yes ac_cv_func_malloc_0_nonnull=yes \
-   ./configure --prefix="$SYS_ROOT" \
+   $SOURCE/$FLEX_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
       --host="$TARGET" &&
    sed -i -e 's/tests//' Makefile &&
@@ -25,13 +26,13 @@ install_flex() {
 }
 
 install_mig() {
-   cd "$GNUMIG_SRC" &&
+   cd $SOURCE/$GNUMIG_SRC &&
    autoreconf -i &&
-   cd .. &&
-   mkdir -p "$GNUMIG_SRC".second_obj &&
-   cd "$GNUMIG_SRC".second_obj &&
-   rm -f config.cache &&
-   ../$GNUMIG_SRC/configure \
+   cd - &&
+   rm -rf $GNUMIG_SRC.obj &&
+   mkdir -p "$GNUMIG_SRC".obj &&
+   cd "$GNUMIG_SRC".obj &&
+   $SOURCE/$GNUMIG_SRC/configure \
       --build="$HOST" \
       --host="$TARGET" \
       --prefix="$SYS_ROOT" \
@@ -45,19 +46,19 @@ install_mig() {
 install_zlib() {
    mkdir -p $ZLIB_SRC.obj
    cd $ZLIB_SRC.obj &&
-   ../$ZLIB_SRC/configure --prefix=$SYS_ROOT &&
+   $SOURCE/$ZLIB_SRC/configure --prefix=$SYS_ROOT &&
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..
 }
 
 install_gpg_error() {
-   cd "$GPG_ERROR_SRC" &&
+   cd $SOURCE/$GPG_ERROR_SRC &&
    ./autogen.sh &&
-   cd .. &&
+   cd - &&
    mkdir -p $GPG_ERROR_SRC.obj &&
    cd $GPG_ERROR_SRC.obj &&
-   ../$GPG_ERROR_SRC/configure --prefix=$SYS_ROOT \
+   $SOURCE/$GPG_ERROR_SRC/configure --prefix=$SYS_ROOT \
       --build="$HOST" \
       --host="$TARGET" &&
    make -j$PROCS &&
@@ -68,7 +69,7 @@ install_gpg_error() {
 install_gcrypt() {
    mkdir -p $GCRYPT_SRC.obj &&
    cd $GCRYPT_SRC.obj &&
-   ../$GCRYPT_SRC/configure --prefix=$SYS_ROOT \
+   $SOURCE/$GCRYPT_SRC/configure --prefix=$SYS_ROOT \
       --build="$HOST" \
       --host="$TARGET" \
       --disable-padlock-support \
@@ -80,12 +81,14 @@ install_gcrypt() {
 }
 
 install_gnumach() {
-   cd "$GNUMACH_SRC" &&
+   print_info "Compiling GNUMach kernel"
+   cd $SOURCE/$GNUMACH_SRC &&
    autoreconf -i &&
-   cd .. &&
-   mkdir -p "$GNUMACH_SRC".second_obj &&
-   cd "$GNUMACH_SRC".second_obj &&
-   ../$GNUMACH_SRC/configure \
+   cd - &&
+   mkdir -p $GNUMACH_SRC.obj &&
+   cd $GNUMACH_SRC.obj &&
+   $SOURCE/$GNUMACH_SRC/configure \
+      CFLAGS="-O2 -g" \
       --host="$TARGET" \
       --build="$HOST" \
       --exec-prefix=/tmp/throwitaway \
@@ -101,13 +104,13 @@ install_gnumach() {
 }
 
 install_hurd() {
-   cd "$HURD_SRC" &&
+   print_info "Compiling Hurd servers..."
+   cd $SOURCE/$HURD_SRC &&
    autoreconf -i &&
-   cd .. &&
-   mkdir -p "$HURD_SRC".second_obj &&
-   cd "$HURD_SRC".second_obj &&
-   rm -f config.cache cnfig.status &&
-   ../$HURD_SRC/configure \
+   cd - &&
+   mkdir -p $HURD_SRC.obj &&
+   cd $HURD_SRC.obj &&
+   $SOURCE/$HURD_SRC/configure \
       --build="$HOST" \
       --host="$TARGET" \
       --prefix="$SYS_ROOT" \
@@ -120,10 +123,10 @@ install_hurd() {
 
 install_binutils ()
 {
-   print_info "Installing binutils"
-   mkdir -p $BINUTILS_SRC.second_obj &&
-   cd $BINUTILS_SRC.second_obj &&
-      ../$BINUTILS_SRC/configure \
+   print_info "Compiling binutils"
+   mkdir -p $BINUTILS_SRC.obj &&
+   cd $BINUTILS_SRC.obj &&
+      $SOURCE/$BINUTILS_SRC/configure \
       --prefix="$SYS_ROOT" \
       --build="$HOST" \
       --host="$TARGET" \
@@ -156,7 +159,7 @@ bash_cv_under_sys_siglist=yes
 bash_cv_unusable_rtsigs=no
 gt_cv_int_divbyzero_sigfpe=yes
 EOF
-   ../$BASH_SRC/configure --prefix="$SYS_ROOT" \
+   $SOURCE/$BASH_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" --host="$TARGET" \
       --without-bash-malloc --cache-file=config.cache &&
    make -j$PROCS &&
@@ -171,7 +174,7 @@ install_coreutils() {
 fu_cv_sys_stat_statfs2_bsize=yes
 gl_cv_func_working_mkstemp=yes
 EOF
-   ../$COREUTILS_SRC/configure --prefix="$SYS_ROOT" \
+   $SOURCE/$COREUTILS_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
       --host="$TARGET" \
       --enable-install-program=hostname \
@@ -191,10 +194,10 @@ install_libuuid() {
 }
 
 install_e2fsprogs() {
-   cd "$E2FSPROGS_SRC" &&
-   rm -rf build &&
-   mkdir -vp build && cd build &&
-   LDFLAGS="-luuid" ../configure \
+   rm -rf $E2FSPROGS_SRC.obj &&
+   mkdir -p $E2FSPROGS_SRC.obj &&
+   cd $E2FSPROGS_SRC.obj &&
+   LDFLAGS="-luuid" $SOURCE/$E2FSPROGS_SRC/configure \
       --prefix="$SYS_ROOT" \
       --enable-elf-shlibs \
       --build=${HOST} \
@@ -203,13 +206,13 @@ install_e2fsprogs() {
       --disable-libuuid  \
       --disable-uuidd &&
    make -j$PROCS && make -j$PROCS install && make -j$PROCS install-libs &&
-   cd ../..
+   cd ..
 }
 
 install_util_linux() {
    mkdir -p $UTIL_LINUX_SRC.obj &&
    cd $UTIL_LINUX_SRC.obj &&
-   ../$UTIL_LINUX_SRC/configure --prefix="$SYS_ROOT" \
+   $SOURCE/$UTIL_LINUX_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
       --host="$TARGET" \
       --disable-makeinstall-chown \
@@ -222,7 +225,7 @@ install_util_linux() {
 install_grub() {
    mkdir -p $GRUB_SRC.obj &&
    cd $GRUB_SRC.obj &&
-   ../$GRUB_SRC/configure --prefix="$SYS_ROOT" \
+   $SOURCE/$GRUB_SRC/configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} \
       --disable-efiemu \
@@ -235,7 +238,8 @@ install_grub() {
 }
 
 install_shadow () {
-   cd "$SHADOW_SRC" &&
+   cd $SOURCE/$SHADOW_SRC &&
+   # TODO: Figure out how to this without changing the source directory.
    cp -v src/Makefile.in src/Makefile.in.orig &&
    sed -e 's/groups$(EXEEXT) //' \
        -e 's/= nologin$(EXEEXT)/= /' \
@@ -246,7 +250,11 @@ install_shadow () {
    cat > config.cache << "EOF"
 shadow_cv_passwd_dir=$SYS_ROOT/bin
 EOF
-   ./configure --prefix="$SYS_ROOT" \
+   cd - &&
+   rm -rf $SHADOW_SRC.obj &&
+   mkdir -p $SHADOW_SRC.obj &&
+   cd $SHADOW_SRC.obj &&
+   $SOURCE/$SHADOW_SRC/configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} \
       --cache-file=config.cache \
@@ -258,7 +266,7 @@ EOF
 install_sed() {
    mkdir -p $SED_SRC.obj &&
    cd $SED_SRC.obj &&
-   ../$SED_SRC/configure --prefix="$SYS_ROOT" \
+   $SOURCE/$SED_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
       --host="$TARGET" &&
    make -j$PROCS &&
@@ -267,8 +275,10 @@ install_sed() {
 }
 
 install_gmp() {
-  cd "$GMP_SRC" &&
-  CC_FOR_BUILD="$HOST_MACHINE-gcc" ./configure \
+  rm -rf $GMP_SRC.obj &&
+  mkdir -p $GMP_SRC.obj &&
+  cd $GMP_SRC.obj &&
+  CC_FOR_BUILD="$HOST_MACHINE-gcc" $SOURCE/$GMP_SRC/configure \
       --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} &&
@@ -278,8 +288,10 @@ install_gmp() {
 }
 
 install_mpfr() {
-   cd "$MPFR_SRC" &&
-   ./configure --prefix="$SYS_ROOT" \
+   rm -rf $MPFR_SRC.obj &&
+   mkdir -p $MPFR_SRC.obj &&
+   cd $MPFR_SRC.obj &&
+   $SOURCE/$MPFR_SRC/configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} &&
    make -j$PROCS &&
@@ -288,8 +300,10 @@ install_mpfr() {
 }
 
 install_mpc() {
-   cd "$MPC_SRC" &&
-   ./configure --prefix="$SYS_ROOT" \
+   rm -rf $MPC_SRC.obj &&
+   mkdir -p $MPC_SRC.obj &&
+   cd $MPC_SRC.obj &&
+   $SOURCE/$MPC_SRC/configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} &&
    make -j$PROCS &&
@@ -298,19 +312,17 @@ install_mpc() {
 }
 
 install_gcc() {
-   if [ -d "$GCC_SRC" ]; then
-      rm -rf "$GCC_SRC"
-   fi
-   unpack_gcc &&
-   cd "$GCC_SRC" && fix_gcc_path &&
+   print_info "Compiling GCC"
+   cp -R $SOURCE/$GCC_SRC $GCC_SRC.compiler
+   cd $GCC_SRC.compiler && fix_gcc_path &&
    cp -v gcc/Makefile.in{,.orig} &&
    sed 's@\./fixinc\.sh@-c true@' gcc/Makefile.in.orig > gcc/Makefile.in &&
    cd .. &&
-   rm -rf "$GCC_SRC".obj &&
-   mkdir -p "$GCC_SRC".obj &&
-   cd "$GCC_SRC".obj &&
+   rm -rf $GCC_SRC.obj &&
+   mkdir -p $GCC_SRC.obj &&
+   cd $GCC_SRC.obj &&
    LDFLAGS="-lpthread" \
-   ../$GCC_SRC/configure \
+   ../$GCC_SRC.compiler/configure \
       --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --target=${TARGET} \
@@ -336,8 +348,11 @@ install_gcc() {
 }
 
 install_ncurses () {
-   cd "$NCURSES_SRC" &&
-   LDFLAGS="-lpthread" CPPFLAGS="-P" ./configure --prefix="${SYS_ROOT}" \
+   rm -rf $NCURSES_SRC.obj &&
+   mkdir -p $NCURSES_SRC.obj &&
+   cd $NCURSES_SRC.obj &&
+   LDFLAGS="-lpthread" CPPFLAGS="-P" $SOURCE/$NCURSES_SRC/configure \
+     --prefix="${SYS_ROOT}" \
      --with-shared \
      --build=${HOST} \
      --host=${TARGET} \
@@ -351,7 +366,8 @@ install_ncurses () {
 }
 
 install_vim () {
-  cd vim"$VIM_BASE_VERSION" &&
+  # TODO: we should do this without messing up with the original code.
+  cd $SOURCE/vim$VIM_BASE_VERSION &&
   cat > src/auto/config.cache << "EOF"
   vim_cv_getcwd_broken=no
   vim_cv_memmove_handles_overlap=yes
@@ -362,7 +378,7 @@ install_vim () {
 EOF
   echo "#define SYS_VIMRC_FILE \"${SYS_ROOT}/etc/vimrc\"" >> src/feature.h
   ./configure --build=${HOST} \
-     --host=${TARGET} \
+    --host=${TARGET} \
     --prefix=${SYS_ROOT} \
     --enable-gui=no \
     --disable-gtktest \
@@ -374,7 +390,7 @@ EOF
   make -j$PROCS &&
   make -j$PROCS install &&
   ln -sfv vim $SYS_ROOT/bin/vi &&
-  cd .. &&
+  cd - &&
   cat > $SYS_ROOT/etc/vimrc << "EOF"
 set nocompatible
 set backspace=2
@@ -386,8 +402,10 @@ EOF
 }
 
 install_make() {
-   cd "$MAKE_SRC" &&
-   ./configure --prefix="$SYS_ROOT" \
+   rm -rf $MAKE_SRC.obj &&
+   mkdir -p $MAKE_SRC.obj &&
+   cd $MAKE_SRC.obj &&
+   $SOURCE/$MAKE_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
       --host="$TARGET" &&
    make -j$PROCS &&
@@ -396,8 +414,10 @@ install_make() {
 }
 
 install_grep() {
-   cd "$GREP_SRC" &&
-   ./configure --prefix="$SYS_ROOT" \
+   rm -rf $GREP_SRC.obj &&
+   mkdir -p $GREP_SRC.obj &&
+   cd $GREP_SRC.obj &&
+   $SOURCE/$GREP_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
       --host="$TARGET" &&
    make -j$PROCS &&
@@ -406,8 +426,10 @@ install_grep() {
 }
 
 install_gawk() {
-   cd "$GAWK_SRC" &&
-   ./configure --prefix="$SYS_ROOT" \
+   rm -rf $GAWK_SRC.obj &&
+   mkdir -p $GAWK_SRC.obj &&
+   cd $GAWK_SRC.obj &&
+   $SOURCE/$GAWK_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
       --host="$TARGET" &&
    make -j$PROCS &&
@@ -415,7 +437,8 @@ install_gawk() {
    cd ..
 }
 
-cd "$SYSTEM"/src &&
+mkdir -p $BUILD_ROOT/native &&
+   cd $BUILD_ROOT/native &&
    install_zlib &&
    install_gpg_error &&
    install_gcrypt &&

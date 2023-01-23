@@ -1,2 +1,6 @@
-tmp/
+output-i686/
+output-x86_64/
+build-i386/
+build-x86_64/
+src/
 hd.img

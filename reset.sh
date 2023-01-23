@@ -8,18 +8,18 @@ fi
 
 echo "Removing from $SYSTEM..."
 
-cd "$SYSTEM" &&
-rm -rf bin boot tools* cross-tools* &&
+rm -rf build* &&
+rm -rf output* &&
 echo "Removing $SYS_ROOT"
 sudo rm -f $SYS_ROOT &&
 echo "Removing $ROOT"
 sudo rm -f $ROOT
 rm -f hd.img
-for dir in `ls src`; do
-  if [ -d src/$dir ]; then
-    if [ ! -d src/$dir/.git ]; then
-      echo "Removing src/$dir"
-      rm -rf src/$dir
+for dir in `ls $SOURCE`; do
+  if [ -d $SOURCE/$dir ]; then
+    if [ ! -d $SOURCE/$dir/.git ]; then
+      echo "Removing $SOURCE/$dir"
+      rm -rf $SOURCE/$dir
     fi
   fi
 done

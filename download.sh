@@ -3,8 +3,8 @@
 . ./vars.sh
 . ./download-funcs.sh
 
-mkdir -p $SYSTEM/src &&
-cd $SYSTEM/src &&
+mkdir -p $SOURCE &&
+cd $SOURCE &&
 
 download_gcc &&
 download_binutils &&
