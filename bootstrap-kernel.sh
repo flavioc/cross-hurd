@@ -11,16 +11,16 @@ print_info "Cross-compiling on $HOST to $TARGET"
 setup_directories
 
 install_gnumach() {
-   cd "$GNUMACH_SRC" &&
+   cd $SOURCE/$GNUMACH_SRC &&
    autoreconf -i &&
-   cd .. &&
-   rm -rf $GNUMACH_SRC.second_obj &&
-   mkdir -p "$GNUMACH_SRC".second_obj &&
-   cd "$GNUMACH_SRC".second_obj &&
-   ../$GNUMACH_SRC/configure \
+   cd - &&
+   rm -rf $GNUMACH_SRC.obj &&
+   mkdir -p $GNUMACH_SRC.obj &&
+   cd $GNUMACH_SRC.obj &&
+   $SOURCE/$GNUMACH_SRC/configure \
       --host="$TARGET" \
       --build="$HOST" \
-      --exec-prefix=/tmp/throwitaway \
+      --exec-prefix=$SYSTEM \
       --enable-kdb \
       --enable-kmsg \
       --prefix="$SYS_ROOT" &&
@@ -42,7 +42,8 @@ set_vars() {
    export MIG="${ROOT}/bin/${TARGET}-mig"
 }
 
- cd src &&
+mkdir -p $BUILD_ROOT/bootstrap-kernel &&
+   cd $BUILD_ROOT/bootstrap-kernel &&
    compile_binutils &&
    compile_gcc &&
    compile_pkgconfiglite &&
