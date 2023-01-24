@@ -1,7 +1,6 @@
 #!/bin/sh
 
 . ./vars.sh
-. ./common.sh
 . ./download-funcs.sh
 export CC="${TARGET}-gcc"
 export CXX="${TARGET}-g++"
@@ -314,7 +313,7 @@ install_mpc() {
 install_gcc() {
    print_info "Compiling GCC"
    cp -R $SOURCE/$GCC_SRC $GCC_SRC.compiler
-   cd $GCC_SRC.compiler && fix_gcc_path &&
+   cd $GCC_SRC.compiler &&
    cp -v gcc/Makefile.in{,.orig} &&
    sed 's@\./fixinc\.sh@-c true@' gcc/Makefile.in.orig > gcc/Makefile.in &&
    cd .. &&
@@ -323,7 +322,7 @@ install_gcc() {
    cd $GCC_SRC.obj &&
    LDFLAGS="-lpthread" \
    ../$GCC_SRC.compiler/configure \
-      --prefix="$SYS_ROOT" \
+      --prefix=$SYS_ROOT \
       --build=${HOST} \
       --target=${TARGET} \
       --host=${TARGET} \

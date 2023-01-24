@@ -2,7 +2,6 @@
 
 . ./vars.sh
 . ./download-funcs.sh
-. ./common.sh
 . ./bootstrap-funcs.sh
 
 print_info "Root is $ROOT"

@@ -22,20 +22,14 @@ compile_binutils ()
    cd ..
 }
 
-setup_cross_compiler_source() {
-   cp -R $SOURCE/$GCC_SRC $GCC_SRC.cross-compiler
-   cd $GCC_SRC.cross-compiler && fix_gcc_path && cd ..
-}
-
 compile_gcc ()
 {
    print_info "Cross compiling first phase of GCC"
-   setup_cross_compiler_source &&
-   rm -rf "$GCC_SRC".obj &&
-   mkdir -p "$GCC_SRC".obj &&
-   cd "$GCC_SRC".obj &&
+   rm -rf $GCC_SRC.obj &&
+   mkdir -p $GCC_SRC.obj &&
+   cd $GCC_SRC.obj &&
    AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
-   ../$GCC_SRC.cross-compiler/configure \
+   $SOURCE/$GCC_SRC/configure \
       --prefix="$ROOT" \
       --build="$HOST" \
       --host="$HOST" \
@@ -152,7 +146,7 @@ compile_full_gcc () {
    cd $GCC_SRC.obj &&
    AR="$HOST_MACHINE-ar" \
    LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
-   ../$GCC_SRC.cross-compiler/configure \
+   $SOURCE/$GCC_SRC/configure \
       --prefix="$ROOT" \
       --target="$TARGET" \
       --with-sysroot="$SYSTEM" \
