@@ -237,8 +237,8 @@ install_grub() {
 }
 
 install_shadow () {
-   cd $SOURCE/$SHADOW_SRC &&
-   # TODO: Figure out how to this without changing the source directory.
+   cp -R $SOURCE/$SHADOW_SRC $SHADOW_SRC.copy &&
+   cd $SHADOW_SRC.copy &&
    cp -v src/Makefile.in src/Makefile.in.orig &&
    sed -e 's/groups$(EXEEXT) //' \
        -e 's/= nologin$(EXEEXT)/= /' \
@@ -253,7 +253,7 @@ EOF
    rm -rf $SHADOW_SRC.obj &&
    mkdir -p $SHADOW_SRC.obj &&
    cd $SHADOW_SRC.obj &&
-   $SOURCE/$SHADOW_SRC/configure --prefix="$SYS_ROOT" \
+   ../$SHADOW_SRC.copy/configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} \
       --cache-file=config.cache \
