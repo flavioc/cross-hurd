@@ -7,5 +7,10 @@ export PROCS=$(nproc)
 # Set this to your ccache path if using ccache.
 export CCACHE_DIRECTORY="/usr/lib/ccache"
 
+# The kind of hurd system to build. The options are:
+# minimal: enough to run a shell.
+# full: everything.
+export BUILD_TYPE=minimal
+
 # GNU Hurd target.
 export CPU=i686

@@ -436,31 +436,51 @@ install_gawk() {
    cd ..
 }
 
-mkdir -p $BUILD_ROOT/native &&
-   cd $BUILD_ROOT/native &&
+install_minimal_system() {
    install_zlib &&
    install_gpg_error &&
    install_gcrypt &&
-   install_flex &&
-   install_mig &&
    install_gnumach &&
    install_hurd &&
-   install_binutils &&
    install_bash &&
    install_coreutils &&
    install_util_linux &&
    install_e2fsprogs &&
    install_grub &&
-   install_sed &&
    install_shadow &&
+   install_sed
+}
+
+install_more_shell_tools() {
+   install_grep &&
+   install_gawk
+}
+
+install_development_tools() {
+   install_flex &&
+   install_mig &&
+   install_binutils &&
    install_gmp &&
    install_mpfr &&
    install_mpc &&
    install_gcc &&
-   install_ncurses &&
-   install_vim &&
    install_make &&
-   install_grep &&
-   install_gawk &&
+   install_flex &&
+   install_mig
+}
+
+install_editors() {
+   install_ncurses &&
+   install_vim
+}
+
+mkdir -p $BUILD_ROOT/native &&
+   cd $BUILD_ROOT/native &&
+   install_minimal_system &&
+   if [ $BUILD_TYPE = "full" ]; then
+      install_more_shell_tools &&
+      install_editors &&
+      install_development_tools
+   fi &&
    print_info "compile.sh finished successfully" &&
    exit 0
