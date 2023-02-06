@@ -197,6 +197,7 @@ compile_second_glibc() {
 compile_pkgconfiglite() {
    # otherwise "ln pkg-config i586-pc-gnu-pkg-config" in the install step fails
    rm -fv "$ROOT"/bin/*-pkg-config &&
+   rm -rf $PKGCONFIGLITE_SRC.obj &&
    mkdir -p $PKGCONFIGLITE_SRC.obj &&
    cd $PKGCONFIGLITE_SRC.obj &&
    $SOURCE/$PKGCONFIGLITE_SRC/configure --prefix="$ROOT" --host=${TARGET}\
