@@ -7,7 +7,7 @@ export ROOT=/cross-tools-$CPU
 export SYS_ROOT=/tools-$CPU
 export SOURCE=$PWD/src
 export BUILD_ROOT=$PWD/build-$CPU
-export TARGET=$CPU-pc-gnu
+export TARGET=$CPU-gnu
 export HOST="$(echo $MACHTYPE | sed "s/$(echo $MACHTYPE | cut -d- -f2)/cross/g")"
 export PATH=$ROOT/bin:$PATH
 # You can change the GCC version here.
