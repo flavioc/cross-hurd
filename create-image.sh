@@ -58,8 +58,9 @@ copy_files () {
       cp files/SETUP mount/ &&
       chmod +x mount/SETUP &&
       # Create a motd message.
-   echo "Welcome to the HURD!" > mount/etc/motd &&
-      echo "Cross-compiled from a $HOST on `date`" >> mount/etc/motd
+      echo "Welcome to the HURD!" > mount/etc/motd &&
+      echo "Cross-compiled from a $HOST on `date`" >> mount/etc/motd &&
+      sudo chown root:root -R mount/*
 }
 
 install_grub () {
