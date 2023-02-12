@@ -60,6 +60,7 @@ copy_files () {
       # Create a motd message.
       echo "Welcome to the HURD!" > mount/etc/motd &&
       echo "Cross-compiled from a $HOST on `date`" >> mount/etc/motd &&
+      # Ensure all files are owned by root inside the system image.
       sudo chown root:root -R mount/*
 }
 
