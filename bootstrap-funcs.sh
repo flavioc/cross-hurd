@@ -105,8 +105,13 @@ install_hurd_headers() {
    cd $HURD_SRC.obj &&
    $SOURCE/$HURD_SRC/configure \
       --host="$TARGET" \
+      --target="$TARGET" \
       --prefix= \
       --disable-profile \
+      --without-libbz2 \
+      --without-libz \
+      --without-rump \
+      --disable-ncursesw \
       --without-parted &&
    make -j$PROCS prefix="$SYS_ROOT" no_deps=t install-headers &&
    cd ..
