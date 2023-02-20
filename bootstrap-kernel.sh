@@ -43,12 +43,14 @@ set_vars() {
 
 mkdir -p $BUILD_ROOT/bootstrap-kernel &&
    cd $BUILD_ROOT/bootstrap-kernel &&
+   if [ ! "$1" = "--kernel-only" ]; then
    compile_binutils &&
    compile_gcc &&
    compile_pkgconfiglite &&
    install_gnumach_headers &&
-   install_gnumig &&
+   install_gnumig
+   fi &&
    set_vars &&
    install_gnumach &&
-   print_info "bootstrap.sh finished successfully" &&
+   print_info "bootstrap-kernel.sh finished successfully" &&
    exit 0
