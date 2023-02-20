@@ -13,4 +13,6 @@ export CCACHE_DIRECTORY="/usr/lib/ccache"
 export BUILD_TYPE=minimal
 
 # GNU Hurd target.
-export CPU=i686
+if [ -z "$CPU" ]; then
+	export CPU=i686
+fi
