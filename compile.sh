@@ -397,6 +397,7 @@ EOF
     --disable-netbeans \
     --with-tlib=ncurses &&
   make -j$PROCS &&
+  make -j$PROCS uninstall &&
   make -j$PROCS install &&
   ln -sfv vim $SYS_ROOT/bin/vi &&
   cd - &&
