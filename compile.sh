@@ -257,7 +257,8 @@ EOF
       --build=${HOST} \
       --host=${TARGET} \
       --cache-file=config.cache \
-      --enable-subordinate-ids=no &&
+      --enable-subordinate-ids=no \
+      --disable-dependency-tracking &&
    echo "#define ENABLE_SUBIDS 1" >> config.h &&
    make -j$PROCS && make -j$PROCS install && cd ..
 }
@@ -374,6 +375,7 @@ install_vim () {
   vim_cv_terminfo=yes
   vim_cv_toupper_broken=no
   vim_cv_tty_group=world
+  vim_cv_tgetent=zero
 EOF
   echo "#define SYS_VIMRC_FILE \"${SYS_ROOT}/etc/vimrc\"" >> src/feature.h
   ./configure --build=${HOST} \

@@ -10,7 +10,9 @@ export CCACHE_DIRECTORY="/usr/lib/ccache"
 # The kind of hurd system to build. The options are:
 # minimal: enough to run a shell.
 # full: everything.
-export BUILD_TYPE=minimal
+if [ -z "$BUILD_TYPE" ]; then
+	export BUILD_TYPE=minimal
+fi
 
 # GNU Hurd target.
 if [ -z "$CPU" ]; then
