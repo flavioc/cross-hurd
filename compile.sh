@@ -350,7 +350,15 @@ install_gcc() {
 install_ncurses () {
    rm -rf $NCURSES_SRC.obj &&
    mkdir -p $NCURSES_SRC.obj &&
-   cd $NCURSES_SRC.obj &&
+   pushd $NCURSES_SRC.obj &&
+   # Build required host tools.
+   mkdir host &&
+   pushd host &&
+   CC=gcc RANLIB=ranlib AR=ar LD=ld PATH=/usr/bin \
+      $SOURCE/$NCURSES_SRC/configure &&
+   make -j$PROCS -C include &&
+   make -j$PROCS -C progs tic &&
+   popd &&
    LDFLAGS="-lpthread" CPPFLAGS="-P" $SOURCE/$NCURSES_SRC/configure \
      --prefix="${SYS_ROOT}" \
      --with-shared \
@@ -361,8 +369,8 @@ install_ncurses () {
      --enable-overwrite \
      --with-build-cc=gcc &&
   make -j$PROCS &&
-  make -j$PROCS install &&
-  cd ..
+  make -j$PROCS TIC_PATH=$PWD/host/progs/tic install &&
+  popd
 }
 
 install_vim () {
