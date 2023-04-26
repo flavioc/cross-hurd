@@ -4,19 +4,18 @@ open, and we have to retry here.
 TODO: is open really supposed to expose such EINTR?  Should the generic gmon
 loop around EINTR (since there might be signals happening indeed)
 
-Index: glibc-2.22/gmon/gmon.c
-===================================================================
---- glibc-2.22.orig/gmon/gmon.c
-+++ glibc-2.22/gmon/gmon.c
-@@ -357,8 +357,11 @@ write_gmon (void)
+diff --git a/gmon/gmon.c b/gmon/gmon.c
+index 6439ed1caa..507ad0c9fc 100644
+--- a/gmon/gmon.c
++++ b/gmon/gmon.c
+@@ -390,8 +390,10 @@ write_gmon (void)
  
      if (fd == -1)
        {
-+       do
- 	fd = __open_nocancel ("gmon.out", O_CREAT|O_TRUNC|O_WRONLY|O_NOFOLLOW,
- 			      0666);
-+       while (fd < 0 && errno == EINTR);
-+
++        do
+ 	fd = __open_nocancel ("gmon.out", O_CREAT | O_TRUNC | O_WRONLY
+ 			      | O_NOFOLLOW | O_CLOEXEC, 0666);
++        while (fd < 0 && errno == EINTR);
  	if (fd < 0)
  	  {
  	    char buf[300];
