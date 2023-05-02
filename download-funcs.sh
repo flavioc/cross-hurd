@@ -78,6 +78,14 @@ download_hurd () {
    git clone --depth=1 git://git.savannah.gnu.org/hurd/hurd.git
 }
 
+download_rumpkernel () {
+   if [ -d rumpkernel ]; then
+      cd rumpkernel && git pull && cd .. &&
+      return 0
+   fi
+   git clone --depth=1 https://salsa.debian.org/hurd-team/rumpkernel.git
+}
+
 apply_patch() {
    print_info "Using patch $1 (level: $2)"
    patch -Np$2 < $1 || exit 1

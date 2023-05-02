@@ -54,4 +54,5 @@ download_gnumach &&
 download_mig &&
 download_hurd &&
 download_glibc &&
+download_rumpkernel &&
 echo "Download complete."
