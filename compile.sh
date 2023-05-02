@@ -86,6 +86,10 @@ install_gnumach() {
    cd - &&
    mkdir -p $GNUMACH_SRC.obj &&
    cd $GNUMACH_SRC.obj &&
+   local disable_user32=""
+   if [ -z "$USER32" ]; then
+      disable_user32="--disable-user32"
+   fi
    $SOURCE/$GNUMACH_SRC/configure \
       CFLAGS="-O2 -g" \
       --host="$TARGET" \
@@ -94,7 +98,8 @@ install_gnumach() {
       --enable-kdb \
       --enable-kmsg \
       --enable-pae \
-      --prefix="$SYS_ROOT" &&
+      --prefix="$SYS_ROOT" \
+      $disable_user32 &&
    make -j$PROCS gnumach.gz gnumach gnumach.msgids &&
    make -j$PROCS install &&
    mkdir -p $SYSTEM/boot &&

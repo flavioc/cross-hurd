@@ -72,10 +72,15 @@ install_gnumach_headers() {
    autoreconf -i &&
    cd - &&
    mkdir -p "$GNUMACH_SRC".obj &&
+   local disable_user32=""
+   if [ -z "$USER32" ]; then
+      disable_user32="--disable-user32"
+   fi
    cd "$GNUMACH_SRC".obj &&
       $SOURCE/$GNUMACH_SRC/configure \
       --host="$TARGET" \
-      --prefix="$SYS_ROOT" &&
+      --prefix="$SYS_ROOT" \
+      $disable_user32 &&
    make -j$PROCS install-data &&
    cd ..
 }
@@ -167,8 +172,7 @@ compile_full_gcc () {
       --disable-libstdcxx-pch \
       --disable-bootstrap \
       --disable-libcilkrts \
-      --disable-libgomp \
-      --with-arch=$CPU &&
+      --disable-libgomp &&
    make -j$PROCS AS_FOR_TARGET="$TARGET-as" LD_FOR_TARGET="$TARGET-ld" all &&
    make -j$PROCS install &&
    cd ..
