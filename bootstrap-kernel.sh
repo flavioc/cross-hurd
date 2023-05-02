@@ -17,10 +17,14 @@ install_gnumach() {
    mkdir -p $GNUMACH_SRC.obj &&
    cd $GNUMACH_SRC.obj &&
    local disable_user32=""
+   local mig_location=""
    if [ -z "$USER32" ]; then
       disable_user32="--disable-user32"
+      mig_location=$ROOT/bin/x86_64-gnu-mig
+   else
+      mig_location=/cross-tools-i686/bin/i686-gnu-mig
    fi &&
-   $SOURCE/$GNUMACH_SRC/configure \
+   MIGUSER=$mig_location $SOURCE/$GNUMACH_SRC/configure \
       --host="$TARGET" \
       --build="$HOST" \
       --exec-prefix=$SYSTEM \
