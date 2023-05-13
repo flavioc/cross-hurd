@@ -454,8 +454,6 @@ install_gawk() {
 
 install_minimal_system() {
    install_zlib &&
-   install_gpg_error &&
-   install_gcrypt &&
    install_gnumach &&
    install_hurd &&
    install_bash &&
@@ -473,6 +471,8 @@ install_more_shell_tools() {
 }
 
 install_development_tools() {
+   install_gpg_error &&
+   install_gcrypt &&
    install_flex &&
    install_mig &&
    install_binutils &&
