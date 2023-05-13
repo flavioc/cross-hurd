@@ -36,54 +36,58 @@ unpack () {
 
 DOWNLOAD_CACHE_DIRECTORY=~/.cache/cross-hurd
 CACHE_DOWNLOADS=1
+CACHE_GIT=1
+
 download () {
    if [ -f $1 ]; then
       return 0
    fi
    if [ -n "$CACHE_DOWNLOADS" ]; then
        mkdir -p $DOWNLOAD_CACHE_DIRECTORY
-       cd $DOWNLOAD_CACHE_DIRECTORY &&
+       pushd $DOWNLOAD_CACHE_DIRECTORY &&
        (test -f $1 || wget $2) &&
-       cd - &&
+       popd &&
        cp $DOWNLOAD_CACHE_DIRECTORY/$1 .
    else
        wget $2
    fi
 }
 
-download_gnumach () {
-   if [ -d gnumach ]; then
-      cd gnumach || return 1
-      git pull
+download_from_git () {
+   dir=$1
+   repo=$2
+   if [ -d $dir ]; then
+      pushd $dir || return 1
+      git pull &&
       local git_result=$?
-      cd ..
+      popd &&
       return $git_result
    fi
-   git clone --depth=1 git://git.savannah.gnu.org/hurd/gnumach.git
+   if [ -n "$CACHE_GIT" ]; then
+       mkdir -p $DOWNLOAD_CACHE_DIRECTORY &&
+       pushd $DOWNLOAD_CACHE_DIRECTORY &&
+       (test -d $dir || git clone --depth=1 $repo) &&
+       popd &&
+       ln -sf $DOWNLOAD_CACHE_DIRECTORY/$dir .
+   else
+       git clone --depth=1 $repo
+   fi
+}
+
+download_gnumach () {
+   download_from_git gnumach git://git.savannah.gnu.org/hurd/gnumach.git
 }
 
 download_mig () {
-   if [ -d mig ]; then
-      cd mig && git pull && cd .. &&
-      return 0
-   fi
-   git clone --depth=1 git://git.savannah.gnu.org/hurd/mig.git
+   download_from_git mig git://git.savannah.gnu.org/hurd/mig.git
 }
 
 download_hurd () {
-   if [ -d hurd ]; then
-      cd hurd && git pull && cd .. &&
-      return 0
-   fi
-   git clone --depth=1 git://git.savannah.gnu.org/hurd/hurd.git
+   download_from_git hurd git://git.savannah.gnu.org/hurd/hurd.git
 }
 
 download_rumpkernel () {
-   if [ -d rumpkernel ]; then
-      cd rumpkernel && git pull && cd .. &&
-      return 0
-   fi
-   git clone --depth=1 https://salsa.debian.org/hurd-team/rumpkernel.git
+   download_from_git rumpkernel https://salsa.debian.org/hurd-team/rumpkernel.git
 }
 
 apply_patch() {
