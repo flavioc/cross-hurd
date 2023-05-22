@@ -1,0 +1,326 @@
+Jérémie Koenig <jk@jk.fr.eu.org>
+Add ramdisk support for d-i.
+
+Index: gnumach/Makefrag.am
+===================================================================
+--- gnumach.orig/Makefrag.am
++++ gnumach/Makefrag.am
+@@ -324,6 +324,8 @@ libkernel_a_SOURCES += \
+ 	device/net_io.c \
+ 	device/net_io.h \
+ 	device/param.h \
++	device/ramdisk.c \
++	device/ramdisk.h \
+ 	device/subrs.c \
+ 	device/subrs.h \
+ 	device/tty.h
+Index: gnumach/i386/i386at/conf.c
+===================================================================
+--- gnumach.orig/i386/i386at/conf.c
++++ gnumach/i386/i386at/conf.c
+@@ -31,6 +31,7 @@
+ #include <device/conf.h>
+ #include <kern/mach_clock.h>
+ #include <i386at/model_dep.h>
++#include <device/ramdisk.h>
+ 
+ #define	timename		"time"
+ 
+@@ -138,6 +139,8 @@ struct dev_ops	dev_name_list[] =
+ 	  nodev_info },
+ #endif	/* MACH_HYP */
+ 
++	RAMDISK_DEV_OPS,
++
+ #ifdef	MACH_KMSG
+         { kmsgname,     kmsgopen,       kmsgclose,       kmsgread,
+           nulldev_write,        kmsggetstat,    nulldev_setstat,           nomap,
+Index: gnumach/kern/boot_script.c
+===================================================================
+--- gnumach.orig/kern/boot_script.c
++++ gnumach/kern/boot_script.c
+@@ -90,12 +90,20 @@ prompt_resume_task (struct cmd *cmd, con
+   return boot_script_prompt_task_resume (cmd);
+ }
+ 
++/* Create an initial ramdisk */
++static int
++ramdisk_create (struct cmd *cmd, long *val)
++{
++  return boot_script_ramdisk_create (cmd, (char **) val);
++}
++
+ /* List of builtin symbols.  */
+ static struct sym builtin_symbols[] =
+ {
+   { "task-create", VAL_FUNC, (long) create_task, VAL_TASK, 0 },
+   { "task-resume", VAL_FUNC, (long) resume_task, VAL_NONE, 1 },
+   { "prompt-task-resume", VAL_FUNC, (long) prompt_resume_task, VAL_NONE, 1 },
++  { "ramdisk-create", VAL_FUNC, (long) ramdisk_create, VAL_STR, 0 },
+ };
+ #define NUM_BUILTIN (sizeof (builtin_symbols) / sizeof (builtin_symbols[0]))
+ 
+Index: gnumach/kern/bootstrap.c
+===================================================================
+--- gnumach.orig/kern/bootstrap.c
++++ gnumach/kern/bootstrap.c
+@@ -51,6 +51,7 @@
+ #include <vm/vm_user.h>
+ #include <vm/pmap.h>
+ #include <device/device_port.h>
++#include <device/ramdisk.h>
+ 
+ #if	MACH_KDB
+ #include <machine/db_machdep.h>
+@@ -849,6 +850,23 @@ boot_script_free (void *ptr, unsigned in
+ }
+ 
+ int
++boot_script_ramdisk_create (struct cmd *cmd, char **name)
++{
++  struct multiboot_module *mod = cmd->hook;
++  vm_size_t size = mod->mod_end - mod->mod_start;
++  kern_return_t rc;
++  int no;
++
++  rc = ramdisk_create (size, (void *) phystokv (mod->mod_start), &no);
++  if (rc != KERN_SUCCESS)
++    return BOOT_SCRIPT_MACH_ERROR;
++
++  *name = boot_script_malloc (RAMDISK_NAMESZ);
++  sprintf(*name, RAMDISK_NAME "%d", no);
++  return 0;
++}
++
++int
+ boot_script_task_create (struct cmd *cmd)
+ {
+   kern_return_t rc = task_create_kernel(TASK_NULL, FALSE, &cmd->task);
+Index: gnumach/device/ramdisk.c
+===================================================================
+--- /dev/null
++++ gnumach/device/ramdisk.c
+@@ -0,0 +1,160 @@
++#include <mach/vm_param.h>
++#include <machine/vm_param.h>
++#include <vm/vm_kern.h>
++#include <vm/vm_user.h>
++#include <device/device_types.h>
++#include <device/ds_routines.h>
++#include <device/conf.h>
++#include <device/ramdisk.h>
++#include <kern/printf.h>
++#include <string.h>
++
++static struct ramdisk {
++	void *data;
++	vm_size_t size;
++} ramdisk[RAMDISK_MAX];
++
++static int ramdisk_num = 0;
++
++/* Initial ramdisks are created from the boot scripts */
++int ramdisk_create(vm_size_t size, const void *initdata, int *out_no)
++{
++	struct ramdisk *rd = &ramdisk[ramdisk_num];
++	int err;
++
++	if(ramdisk_num >= RAMDISK_MAX)
++		return -1;
++
++	/* allocate the memory */
++	rd->size = round_page(size);
++	err = kmem_alloc(kernel_map, (vm_offset_t *) &rd->data, rd->size);
++	if(err != KERN_SUCCESS)
++		return err;
++
++	/* initialize */
++	if(initdata)
++		memcpy(rd->data, initdata, rd->size);
++	else
++		memset(rd->data, 0, rd->size);
++
++	/* report */
++	if(out_no) *out_no = ramdisk_num;
++	printf("%s%d: %lu bytes @%p\n", RAMDISK_NAME, ramdisk_num,
++			(unsigned long) rd->size, rd->data);
++
++	ramdisk_num++;
++	return KERN_SUCCESS;
++}
++
++/* On d_open() we just check whether the ramdisk exists */
++int ramdisk_open(dev_t dev, int mode, io_req_t ior)
++{
++	return (dev < ramdisk_num) ? D_SUCCESS : D_NO_SUCH_DEVICE;
++}
++
++/* d_getstat() is used to query the device characteristics */
++int ramdisk_getstat(dev_t dev, dev_flavor_t flavor, dev_status_t status,
++		mach_msg_type_number_t *status_count)
++{
++	switch(flavor) {
++		case DEV_GET_SIZE:
++			status[DEV_GET_SIZE_DEVICE_SIZE] = ramdisk[dev].size;
++			status[DEV_GET_SIZE_RECORD_SIZE] = RAMDISK_BLOCKSZ;
++			*status_count = DEV_GET_SIZE_COUNT;
++			return D_SUCCESS;
++
++		case DEV_GET_RECORDS:
++			status[DEV_GET_RECORDS_DEVICE_RECORDS]
++					= ramdisk[dev].size / RAMDISK_BLOCKSZ;
++			status[DEV_GET_RECORDS_RECORD_SIZE] = RAMDISK_BLOCKSZ;
++			*status_count = DEV_GET_RECORDS_COUNT;
++			return D_SUCCESS;
++	}
++	return D_INVALID_OPERATION;
++}
++
++/* TODO: implement freeramdisk with setstat() ? */
++
++/* Check the given io request and compute a pointer to the ramdisk data and the
++ * amount to be handled. */
++static int ramdisk_ioreq(int dev, io_req_t ior, void **data, int *amt)
++{
++	vm_offset_t ofs = ior->io_recnum * RAMDISK_BLOCKSZ;
++	if(ofs >= ramdisk[dev].size)
++		return D_INVALID_RECNUM;
++
++	*data = (char*) ramdisk[dev].data + ofs;
++	*amt = ior->io_count;
++	if(ofs + *amt > ramdisk[dev].size)
++		*amt = ramdisk[dev].size - ofs;
++
++	return KERN_SUCCESS;
++}
++
++/* Copy data from a vm_map_copy by mapping it temporarily. */
++static int mem_map_cpy(void *dst, vm_map_copy_t src, int amt)
++{
++	vm_offset_t srcaddr;
++	int err;
++
++	err = vm_map_copyout(device_io_map, &srcaddr, src);
++	if (err != KERN_SUCCESS)
++		return err;
++
++	memcpy(dst, (void *) srcaddr, amt);
++	vm_deallocate(device_io_map, srcaddr, amt);
++	return KERN_SUCCESS;
++}
++
++int ramdisk_read(dev_t dev, io_req_t ior)
++{
++	void *data;
++	int amt, err;
++
++	err = ramdisk_ioreq(dev, ior, &data, &amt);
++	if(err != KERN_SUCCESS)
++		return err;
++
++	err = device_read_alloc (ior, ior->io_count);
++	if (err != KERN_SUCCESS)
++		return err;
++
++	memcpy(ior->io_data, data, amt);
++	ior->io_residual = ior->io_count - amt;
++
++	return D_SUCCESS;
++}
++
++int ramdisk_write(dev_t dev, io_req_t ior)
++{
++	void *data;
++	int amt, err;
++
++	err = ramdisk_ioreq(dev, ior, &data, &amt);
++	if(err != KERN_SUCCESS)
++		return err;
++
++	if (!(ior->io_op & IO_INBAND)) {
++		/* Out-of-band data is transmitted as a vm_map_copy */
++		err = mem_map_cpy(data, (vm_map_copy_t) ior->io_data, amt);
++		if(err != KERN_SUCCESS)
++			return err;
++	} else {
++		/* In-band data can be accessed directly */
++		memcpy(data, ior->io_data, amt);
++	}
++
++	ior->io_residual = ior->io_count - amt;
++	return D_SUCCESS;
++}
++
++vm_offset_t ramdisk_mmap(dev_t dev, vm_offset_t off, vm_prot_t prot)
++{
++	if(dev >= ramdisk_num)
++		return -1;
++	if(off >= ramdisk[dev].size)
++		return -1;
++
++	return pmap_phys_to_frame(kvtophys((vm_offset_t) ramdisk[dev].data + off));
++}
++
+Index: gnumach/device/ramdisk.h
+===================================================================
+--- /dev/null
++++ gnumach/device/ramdisk.h
+@@ -0,0 +1,47 @@
++#ifndef _KERN_RAMDISK_H_
++#define _KERN_RAMDISK_H_
++
++#include <vm/pmap.h>
++#include <device/io_req.h>
++#include <device/conf.h>
++
++/* Maximum number of ramdisk devices */
++#define RAMDISK_MAX 4
++
++/* The block size used (userspace requires 512) */
++#define RAMDISK_BLOCKSZ 512
++
++/* Name associated to the ramdisk major */
++#define RAMDISK_NAME "rd"
++#define RAMDISK_NAMESZ (sizeof RAMDISK_NAME + sizeof (int) * 3 + 1)
++
++/* Create a new ramdisk of the given size. On success, if out_no and/or out_ptr
++ * are not NULL, the device number and pointer to the ramdisk's data are stored
++ * there. Returns D_SUCCESS or D_NO_MEMORY.  */
++int ramdisk_create(vm_size_t size, const void *initdata, int *out_no);
++
++/* Device operations */
++int ramdisk_open(dev_t, int, io_req_t);
++int ramdisk_getstat(dev_t, dev_flavor_t, dev_status_t, mach_msg_type_number_t *);
++int ramdisk_read(dev_t, io_req_t);
++int ramdisk_write(dev_t, io_req_t);
++vm_offset_t ramdisk_mmap(dev_t, vm_offset_t, vm_prot_t);
++
++/* dev_ops initializer to be used from <machine>/conf.c */
++#define RAMDISK_DEV_OPS { \
++		.d_name = RAMDISK_NAME, \
++		.d_open = ramdisk_open, \
++		.d_close = nulldev_close, \
++		.d_read = ramdisk_read, \
++		.d_write = ramdisk_write, \
++		.d_getstat = ramdisk_getstat, \
++		.d_setstat = nulldev_setstat, \
++		.d_mmap = ramdisk_mmap, \
++		.d_async_in = nodev_async_in, \
++		.d_reset = nulldev_reset, \
++		.d_port_death = nulldev_portdeath, \
++		.d_subdev = 0, \
++		.d_dev_info = nodev_info, \
++	}
++
++#endif
+Index: gnumach/kern/bootstrap.h
+===================================================================
+--- gnumach.orig/kern/bootstrap.h
++++ gnumach/kern/bootstrap.h
+@@ -22,5 +22,6 @@
+ #include <kern/boot_script.h>
+ 
+ void bootstrap_create(void);
++int boot_script_ramdisk_create(struct cmd *cmd, char **name);
+ 
+ #endif /* _KERN_BOOTSTRAP_H_ */
