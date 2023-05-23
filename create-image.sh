@@ -29,34 +29,35 @@ mount_image () {
 
 copy_files () {
    print_info "Copying system into mount..."
-   cp -R $SYSTEM/$BASE_SYS_ROOT mount/ &&
-      mkdir -p mount/{etc,boot,dev,usr,hurd,servers,libexec,proc,sbin,bin,var,root} &&
+      mkdir -p mount/{etc,boot,dev,usr,hurd,servers,lib,libexec,proc,sbin,bin,var,root,tools} &&
       mkdir -p mount/var/run &&
-      cp -R mount/$BASE_SYS_ROOT/etc/* mount/etc/ &&
       mkdir -p mount/servers/socket &&
       cp -R files/etc/* mount/etc/ &&
       mkdir -p mount/etc/hurd &&
       cp files/runsystem.hurd mount/libexec/ &&
       chmod ogu+x mount/libexec/runsystem.hurd &&
-      mkdir -p mount/$BASE_SYS_ROOT/boot/grub &&
-      sed -e "s@/tools@$SYS_ROOT@g" files/boot/grub.cfg > mount/$BASE_SYS_ROOT/boot/grub/grub.cfg &&
-      cp files/boot/servers.boot mount/$BASE_SYS_ROOT/boot &&
-      cp $SYSTEM/boot/gnumach.gz mount/$BASE_SYS_ROOT/boot &&
-      mkdir -p mount/$BASE_SYS_ROOT/servers &&
+      mkdir -p mount/boot/grub &&
+      cp files/boot/grub.cfg mount/boot/grub/grub.cfg &&
+      cp $SYSTEM/boot/gnumach.gz mount/boot &&
+      mkdir -p mount/servers &&
       touch mount/servers/{exec,crash-kill,default-pager,password,socket,startup,proc,auth,symlink} &&
-      touch mount/$BASE_SYS_ROOT/servers/{exec,crash-kill,default-pager,password,socket,startup,proc,auth,symlink} &&
       mkdir mount/tmp && chmod 01777 mount/tmp &&
-      cp $SYSTEM/$BASE_SYS_ROOT/hurd/* mount/hurd/ &&
-      cp $SYSTEM/$BASE_SYS_ROOT/sbin/* mount/sbin/ &&
-      cp $SYSTEM/$BASE_SYS_ROOT/bin/* mount/bin/ &&
-      cp $SYSTEM/$BASE_SYS_ROOT/libexec/{getty,runttys,console-run} mount/libexec/ &&
-      cp files/{rc,runsystem} mount/$BASE_SYS_ROOT/libexec/ &&
+      cp -R $SYSTEM/$BASE_SYS_ROOT/hurd/* mount/hurd/ &&
+      cp -R $SYSTEM/$BASE_SYS_ROOT/dev/* mount/dev/ &&
+      cp -R $SYSTEM/$BASE_SYS_ROOT/sbin/* mount/sbin/ &&
+      cp -R $SYSTEM/$BASE_SYS_ROOT/bin/* mount/bin/ &&
+      cp -R $SYSTEM/$BASE_SYS_ROOT/lib/* mount/lib/ &&
+      cp -R $SYSTEM/$BASE_SYS_ROOT/etc/* mount/etc/ &&
+      cp -R $SYSTEM/$BASE_SYS_ROOT/libexec/* mount/libexec/ &&
+      cp files/{rc,runsystem} mount/libexec/ &&
+      cp mount/lib/ld.so.1 mount/lib/ld.so &&
+      ln -svf / mount/$BASE_SYS_ROOT
       ln -svf /bin/bash mount/bin/sh &&
-      ln -svf $SYS_ROOT/lib/ld.so.1 mount/$BASE_SYS_ROOT/lib/ld.so &&
-      mv mount/$BASE_SYS_ROOT/lib mount/lib &&
-      ln -sf /lib mount/$BASE_SYS_ROOT/lib &&
       cp files/SETUP mount/ &&
       chmod +x mount/SETUP &&
+      pushd mount &&
+      find .
+      popd
       # Create a motd message.
       echo "Welcome to the HURD!" > mount/etc/motd &&
       echo "Cross-compiled from a $HOST on `date`" >> mount/etc/motd &&
@@ -66,7 +67,7 @@ copy_files () {
 
 install_grub () {
    print_info "Installing the GRUB on $IMG..."
-   sudo grub-install --target=i386-pc --directory=$SYS_ROOT/lib/grub/i386-pc --boot-directory=$PWD/mount/$BASE_SYS_ROOT/boot $LOOP
+   sudo grub-install --target=i386-pc --directory=$SYS_ROOT/lib/grub/i386-pc --boot-directory=$PWD/mount/boot $LOOP
 }
 
 umount_image () {

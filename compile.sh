@@ -100,10 +100,11 @@ install_gnumach() {
       --enable-pae \
       --prefix="$SYS_ROOT" \
       $disable_user32 &&
+   make clean &&
    make -j$PROCS gnumach.gz gnumach gnumach.msgids &&
    make -j$PROCS install &&
    mkdir -p $SYSTEM/boot &&
-   cp gnumach.gz $SYSTEM/boot/ &&
+   cp gnumach{,.gz} $SYSTEM/boot/ &&
    cd -
 }
 
