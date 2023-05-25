@@ -26,5 +26,6 @@ GCRYPT_VERSION=1.10.1
 MAKE_VERSION=4.3
 GREP_VERSION=3.10
 GAWK_VERSION=5.2.1
+DASH_VERSION=0.5.12
 # Mach, Hurd and Glibc are all taken from the Git repository.
 

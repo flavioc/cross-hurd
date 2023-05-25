@@ -25,6 +25,7 @@ GCRYPT_URL=ftp://ftp.gnupg.org/gcrypt/libgcrypt/"$GCRYPT_PKG"
 MAKE_URL=ftp://ftp.gnu.org/gnu/make/"$MAKE_PKG"
 GREP_URL=https://ftp.gnu.org/gnu/grep/"$GREP_PKG"
 GAWK_URL=https://ftp.gnu.org/gnu/gawk/"$GAWK_PKG"
+DASH_URL=http://gondor.apana.org.au/~herbert/dash/files/$DASH_PKG
 
 unpack () {
    if [ -d "$3" ]; then
@@ -215,4 +216,15 @@ download_gawk () {
       return 0
     fi
     unpack xf $GAWK_PKG $GAWK_SRC
+}
+
+download_dash () {
+   download $DASH_PKG $DASH_URL &&
+   if [ -d $DASH_SRC ]; then
+      return 0
+   fi
+   unpack xf $DASH_PKG $DASH_SRC
+   pushd $DASH_SRC &&
+   apply_patch $SCRIPT_DIR/patches/dash/dash-path-max.patch 1 &&
+   popd
 }

@@ -50,6 +50,7 @@ download_grep &&
 download_gawk &&
 
 download_sed &&
+download_dash &&
 download_gnumach &&
 download_mig &&
 download_hurd &&

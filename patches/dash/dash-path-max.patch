@@ -1,0 +1,12 @@
+diff -Naur dash-0.5.12/src/expand.c cross-hurd/src/dash-0.5.12/src/expand.c
+--- dash-0.5.12.old/src/expand.c	2022-12-11 01:29:21.000000000 -0500
++++ dash-0.5.12/src/expand.c	2023-05-25 00:26:17.332804650 -0400
+@@ -84,6 +84,8 @@
+ #define RMESCAPE_GROW	0x8	/* Grow strings instead of stalloc */
+ #define RMESCAPE_HEAP	0x10	/* Malloc strings instead of stalloc */
+ 
++#define PATH_MAX 4096
++
+ /* Add CTLESC when necessary. */
+ #define QUOTES_ESC	(EXP_FULL | EXP_CASE)
+ 

@@ -146,7 +146,7 @@ install_binutils ()
 }
 
 install_bash() {
-   rm -rf $BASH.obj &&
+   rm -rf $BASH_SRC.obj &&
    mkdir -p $BASH_SRC.obj &&
    cd $BASH_SRC.obj &&
       export CFLAGS="$CFLAGS -fcommon"
@@ -170,6 +170,17 @@ EOF
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..
+}
+
+install_dash () {
+   rm -f $DASH_SRC.obj &^
+   mkdir -p $DASH_SRC.obj &&
+   pushd $DASH_SRC.obj &&
+   $SOURCE/$DASH_SRC/configure --prefix=$SYS_ROOT \
+      --build=$HOST --host=$TARGET
+   make -j$PROCS &&
+      make -j$PROCS install &&
+   popd
 }
 
 install_coreutils() {
@@ -458,6 +469,7 @@ install_minimal_system() {
    install_gnumach &&
    install_hurd &&
    install_bash &&
+   install_dash &&
    install_coreutils &&
    install_util_linux &&
    install_e2fsprogs &&

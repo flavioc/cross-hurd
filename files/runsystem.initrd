@@ -1,0 +1,8 @@
+#!/bin/sh
+# runsystem for initrd.
+
+settrans -ac /dev/mach-console /hurd/streamio console
+exec <>/dev/mach-console >&0 2>&0
+echo Hello from /bin/sh!
+uname -a
+exec /bin/sh -i

@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+if [ -z $CPU ]; then
+   echo "CPU needs to be set"
+   exit 1
+fi
 
 . ./vars.sh
 
@@ -10,9 +15,6 @@ INITRD_FILE=initrd.ext2
 INITRD_SIZE=70MB
 DISK_SIZE=2048MB
 IMG=hd.img
-
-echo $LOOP
-echo $BASE_SYS_ROOT
 
 create_initrd () {
    print_info "Creating disk image $INITRD_FILE using $LOOP..."
@@ -35,10 +37,11 @@ fill_initrd () {
    touch output-initrd/servers/{exec,crash-kill,default-pager,password,socket,startup,proc,auth,symlink} &&
    cp $src/hurd/{exec,auth,init,null,devnode,storeio,ext2fs,console,hello,streamio,proc,startup} output-initrd/hurd/ &&
    cp $src/lib/*.so* output-initrd/lib/ &&
-   cp $src/bin/echo output-initrd/bin/ &&
-   cp files/console-run output-initrd/libexec/ &&
-   ln -sf / output-initrd/tools &&
-   ln -sf / output-initrd/tools-x86_64 &&
+   cp $src/bin/{settrans,echo,uname} output-initrd/bin/ &&
+   cp $src/bin/dash output-initrd/bin/sh &&
+   cp files/runsystem.initrd output-initrd/libexec/runsystem &&
+   cp $src/bin/dash output-initrd/libexec/console-run &&
+   ln -sf / output-initrd/tools-$CPU &&
    sudo mknod -m 600 output-initrd/dev/mach-console c 5 1 &&
    echo "Contents of initrd:" &&
    pushd output-initrd &&

@@ -71,6 +71,8 @@ GREP_SRC=grep-"$GREP_VERSION"
 GREP_PKG=${GREP_SRC}.tar.xz
 GAWK_SRC=gawk-"$GAWK_VERSION"
 GAWK_PKG=${GAWK_SRC}.tar.xz
+DASH_SRC=dash-$DASH_VERSION
+DASH_PKG=$DASH_SRC.tar.gz
 
 print_info ()
 {
