@@ -33,12 +33,14 @@ fill_initrd () {
    mkdir -p output-initrd &&
    sudo mount -o rw -t ext2 $LOOP output-initrd &&
    sudo chmod ogu+w -R output-initrd &&
-   mkdir -p output-initrd/{dev,hurd,bin,lib,libexec,servers} &&
+   mkdir -p output-initrd/{dev,hurd,bin,lib,libexec,proc,sbin,servers} &&
    touch output-initrd/servers/{exec,crash-kill,default-pager,password,socket,startup,proc,auth,symlink} &&
-   cp $src/hurd/{exec,auth,init,null,devnode,storeio,ext2fs,console,hello,streamio,proc,startup} output-initrd/hurd/ &&
+   cp $src/hurd/{exec,auth,init,null,devnode,storeio,ext2fs,console,hello,streamio,proc,procfs,startup} output-initrd/hurd/ &&
    cp $src/lib/*.so* output-initrd/lib/ &&
    cp $src/bin/{settrans,echo,uname} output-initrd/bin/ &&
    cp $src/bin/dash output-initrd/bin/sh &&
+   cp $src/bin/{ls,ps,settrans,cat,uptime,wall,who,yes,whoami,sleep,portinfo,msgport,fsysopts,env,sleep,date,tty,rpctrace,md5sum,cal,df,du} output-initrd/bin/ &&
+   cp $src/sbin/{halt,reboot} output-initrd/sbin/ &&
    cp files/runsystem.initrd output-initrd/libexec/runsystem &&
    cp $src/bin/dash output-initrd/libexec/console-run &&
    ln -sf / output-initrd/tools-$CPU &&
