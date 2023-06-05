@@ -2,8 +2,8 @@
 
 . ./vars.sh
 . ./download-funcs.sh
-export CC="${TARGET}-gcc"
-export CXX="${TARGET}-g++"
+export CC="$ROOT/bin/${TARGET}-gcc"
+export CXX="$ROOT/bin/${TARGET}-g++"
 export AR="${ROOT}/bin/${TARGET}-ar"
 export AS="${ROOT}/bin/${TARGET}-as"
 export RANLIB="${ROOT}/bin/${TARGET}-ranlib"
@@ -49,6 +49,23 @@ install_zlib() {
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..
+}
+
+install_bzip2() {
+   echo $PATH
+   rm -rf $BZIP2_SRC.obj &&
+   cp -R $SOURCE/$BZIP2_SRC $BZIP2_SRC.obj &&
+   pushd $BZIP2_SRC.obj &&
+   # Ensure installation of symbolic links is relative.
+   sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile &&
+   make -j$PROCS AR=$AR CC=$CC RANLIB=$RANLIB -f Makefile-libbz2_so &&
+   make -j$PROCS clean &&
+   make -j$PROCS CC=$CC AR=$AR RANLIB=$RANLIB bzip2 bzip2recover &&
+   make -j$PROCS PREFIX=$SYS_ROOT install &&
+   cp -v bzip2-shared $SYS_ROOT/bin/bzip2 &&
+   cp -av libbz2.so* $SYS_ROOT/lib &&
+   ln -fsv $SYS_ROOT/lib/libbz2.so.1.0 $SYS_ROOT/lib/libbz2.so &&
+   popd
 }
 
 install_gpg_error() {
@@ -466,6 +483,7 @@ install_gawk() {
 
 install_minimal_system() {
    install_zlib &&
+   install_bzip2 &&
    install_gnumach &&
    install_hurd &&
    install_bash &&

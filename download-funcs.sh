@@ -6,6 +6,7 @@ BINUTILS_URL=https://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
 GCC_URL=https://ftp.gnu.org/gnu/gcc/gcc-"$GCC_VERSION"/"$GCC_PKG"
 FLEX_URL=https://github.com/westes/flex/releases/download/v$FLEX_VERSION/$FLEX_PKG
 ZLIB_URL=http://zlib.net/"$ZLIB_PKG"
+BZIP2_URL=https://sourceware.org/pub/bzip2/$BZIP2_PKG
 BASH_URL=https://ftp.gnu.org/gnu/bash/"$BASH_PKG"
 COREUTILS_URL=https://ftp.gnu.org/gnu/coreutils/"$COREUTILS_PKG"
 E2FSPROGS_URL=https://www.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v"$E2FSPROGS_VERSION"/"$E2FSPROGS_PKG"

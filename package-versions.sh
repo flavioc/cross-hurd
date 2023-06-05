@@ -3,6 +3,7 @@ BINUTILS_VERSION=2.40
 GCC_VERSION=13.1.0
 FLEX_VERSION=2.6.4
 ZLIB_VERSION=1.2.13
+BZIP2_VERSION=1.0.8
 BASH_VERSION=5.2
 COREUTILS_VERSION=9.1
 # e2fsprogs 1.45.4 is failing due to something with sys/mount.h in configure

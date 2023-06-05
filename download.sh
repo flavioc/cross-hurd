@@ -12,6 +12,8 @@ download $FLEX_PKG $FLEX_URL &&
 unpack zxf $FLEX_PKG $FLEX_SRC &&
 download $ZLIB_PKG $ZLIB_URL &&
 unpack zxf $ZLIB_PKG $ZLIB_SRC &&
+download $BZIP2_PKG $BZIP2_URL &&
+unpack zxf $BZIP2_PKG $BZIP2_SRC &&
 download $BASH_PKG $BASH_URL &&
 unpack zxf $BASH_PKG $BASH_SRC &&
 download_coreutils &&
