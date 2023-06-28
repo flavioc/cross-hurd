@@ -38,7 +38,7 @@ fill_initrd () {
    cp $src/hurd/{exec,auth,init,null,devnode,storeio,ext2fs,console,hello,streamio,proc,procfs,startup} output-initrd/hurd/ &&
    cp $src/lib/*.so* output-initrd/lib/ &&
    cp $src/bin/{settrans,echo,uname} output-initrd/bin/ &&
-   cp $src/bin/dash output-initrd/bin/sh &&
+   cp $src/bin/bash output-initrd/bin/sh &&
    cp $src/bin/{ls,ps,settrans,cat,uptime,wall,who,yes,whoami,sleep,portinfo,msgport,fsysopts,env,sleep,date,tty,rpctrace,md5sum,cal,df,du} output-initrd/bin/ &&
    cp $src/sbin/{halt,reboot} output-initrd/sbin/ &&
    cp files/runsystem.initrd output-initrd/libexec/runsystem &&
