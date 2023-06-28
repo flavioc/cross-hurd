@@ -27,6 +27,7 @@ MAKE_URL=ftp://ftp.gnu.org/gnu/make/"$MAKE_PKG"
 GREP_URL=https://ftp.gnu.org/gnu/grep/"$GREP_PKG"
 GAWK_URL=https://ftp.gnu.org/gnu/gawk/"$GAWK_PKG"
 DASH_URL=http://gondor.apana.org.au/~herbert/dash/files/$DASH_PKG
+LIBPCIACCESS_URL=https://www.x.org/pub/individual/lib/$LIBPCIACCESS_PKG
 
 unpack () {
    if [ -d "$3" ]; then
@@ -229,4 +230,12 @@ download_dash () {
    pushd $DASH_SRC &&
    apply_patch $SCRIPT_DIR/patches/dash/dash-path-max.patch 1 &&
    popd
+}
+
+download_libpciaccess () {
+   download $LIBPCIACCESS_PKG $LIBPCIACCESS_URL &&
+   if [ -d $LIBPCIACCESS_SRC ]; then
+      return 0
+   fi
+   unpack xf $LIBPCIACCESS_PKG $LIBPCIACCESS_SRC
 }

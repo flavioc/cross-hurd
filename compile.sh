@@ -481,7 +481,20 @@ install_gawk() {
    cd ..
 }
 
+install_libpciaccess () {
+   rm -rf $LIBPCIACCESS_SRC.obj &&
+   mkdir -p $LIBPCIACCESS_SRC.obj &&
+   pushd $LIBPCIACCESS_SRC.obj &&
+   $SOURCE/$LIBPCIACCESS_SRC/configure --prefix=$SYS_ROOT \
+      --build=$HOST \
+      --host=$TARGET &&
+   make -j$PROCS &&
+   make install &&
+   popd
+}
+
 install_minimal_system() {
+   install_libpciaccess &&
    install_zlib &&
    install_bzip2 &&
    install_gnumach &&
