@@ -121,7 +121,6 @@ download_glibc () {
 unpack_gcc () {
    unpack zxf $GCC_PKG $GCC_SRC &&
    cd $GCC_SRC &&
-   apply_patch $SCRIPT_DIR/patches/gcc/i686/specs.patch 1 &&
    apply_patch $SCRIPT_DIR/patches/gcc/x86_64/specs.patch 1 &&
    cd ..
 }
