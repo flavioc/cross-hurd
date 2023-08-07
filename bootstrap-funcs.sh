@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+export CC=$HOST_CC
+export CXX=$HOST_CXX
 
 compile_binutils ()
 {
@@ -6,7 +9,7 @@ compile_binutils ()
    rm -rf "$BINUTILS_SRC".obj &&
    mkdir -p "$BINUTILS_SRC".obj &&
    cd "$BINUTILS_SRC".obj &&
-   AR="$HOST_MACHINE-ar" AS="$HOST_MACHINE-as" \
+   AR=$HOST_AR AS=$HOST_AS \
    $SOURCE/$BINUTILS_SRC/configure \
       --host="$HOST" \
       --target="$TARGET" \
@@ -28,7 +31,7 @@ compile_gcc ()
    rm -rf $GCC_SRC.obj &&
    mkdir -p $GCC_SRC.obj &&
    cd $GCC_SRC.obj &&
-   AR=ar LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
+   AR=$HOST_AR LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
    $SOURCE/$GCC_SRC/configure \
       --prefix="$ROOT" \
       --build="$HOST" \
@@ -127,8 +130,8 @@ compile_first_glibc() {
    rm -rf $GLIBC_SRC.first_obj &&
    mkdir -p $GLIBC_SRC.first_obj &&
    cd $GLIBC_SRC.first_obj &&
-   BUILD_CC="$HOST_MACHINE-gcc" CC="$TARGET-gcc" \
-   AR="$TARGET"-ar CXX="cxx-not-found" RANLIB="$TARGET"-ranlib \
+   BUILD_CC=$HOST_CC CC=$TARGET-gcc \
+   AR=$TARGET-ar CXX="cxx-not-found" RANLIB=$TARGET-ranlib \
    $SOURCE/$GLIBC_SRC/configure \
       --with-binutils=${ROOT}/bin \
       --build="$HOST" \
@@ -154,7 +157,7 @@ compile_full_gcc () {
    rm -rf $GCC_SRC.obj &&
    mkdir -p $GCC_SRC.obj &&
    cd $GCC_SRC.obj &&
-   AR="$HOST_MACHINE-ar" \
+   AR=$HOST_AR \
    LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
    $SOURCE/$GCC_SRC/configure \
       --prefix="$ROOT" \
@@ -184,8 +187,8 @@ compile_second_glibc() {
    mkdir -p $GLIBC_SRC.second_obj &&
    cd $GLIBC_SRC.second_obj &&
    rm -f config.cache &&
-   BUILD_CC="$HOST_MACHINE-gcc" CC="$TARGET-gcc" CXX="" \
-   AR="$TARGET"-ar RANLIB="$TARGET-ranlib" \
+   BUILD_CC=$HOST_CC CC=$TARGET-gcc CXX="" \
+   AR=$TARGET-ar RANLIB=$TARGET-ranlib \
    $SOURCE/$GLIBC_SRC/configure \
       --with-binutils=${ROOT}/bin \
       --build="$HOST" \

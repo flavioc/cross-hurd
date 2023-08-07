@@ -1,6 +1,13 @@
 # Change your host GCC here.
 export HOST_MACHINE=x86_64-linux-gnu
 
+# You can change the host toolchain used here.
+export HOST_CC=gcc
+export HOST_CXX=g++
+export HOST_AR=ar
+export HOST_AS=as
+export HOST_RANLIB=ranlib
+
 # Change how many CPUs you want to use.
 if [ -z "$PROCS" ]; then
 	export PROCS=$(nproc)

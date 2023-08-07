@@ -1,6 +1,5 @@
 . ./config.sh
 
-export AR=gar
 export SCRIPT_DIR=$PWD
 export SYSTEM=$PWD/output-$CPU
 export ROOT=/cross-tools-$CPU
@@ -10,9 +9,6 @@ export BUILD_ROOT=$PWD/build-$CPU
 export TARGET=$CPU-gnu
 export HOST="$(echo $MACHTYPE | sed "s/$(echo $MACHTYPE | cut -d- -f2)/cross/g")"
 export PATH=$ROOT/bin:$PATH
-# You can change the GCC version here.
-export CC=$HOST_MACHINE-gcc
-export CXX=$HOST_MACHINE-g++
 
 if [ ! -z "$CCACHE_DIRECTORY" ]; then
    export PATH=$CCACHE_DIRECTORY:$PATH
