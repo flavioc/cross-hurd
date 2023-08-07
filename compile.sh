@@ -497,7 +497,25 @@ install_libpciaccess () {
    popd
 }
 
+install_libacpica () {
+   rm -rf libacpica.obj &&
+   mkdir -p libacpica.obj &&
+   pushd libacpica.obj &&
+   mkdir -p src &&
+   cp -R $SOURCE/libacpica/* src/ &&
+   pushd src &&
+   (for patch in `ls debian/patches/*.diff`; do
+      print_info "Patch $patch"
+      patch -p1 < $patch
+   done) &&
+   make -j$PROCS &&
+   make PREFIX=$SYS_ROOT install &&
+   popd &&
+   popd
+}
+
 install_minimal_system() {
+   install_libacpica &&
    install_libpciaccess &&
    install_zlib &&
    install_bzip2 &&

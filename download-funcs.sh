@@ -98,6 +98,10 @@ download_rumpkernel () {
    download_from_git rumpkernel https://salsa.debian.org/hurd-team/rumpkernel.git
 }
 
+download_libacpica () {
+   download_from_git libacpica https://salsa.debian.org/hurd-team/libacpica.git
+}
+
 apply_patch() {
    print_info "Using patch $1 (level: $2)"
    patch -Np$2 < $1 || exit 1
