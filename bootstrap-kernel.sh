@@ -4,7 +4,7 @@
 . ./download-funcs.sh
 . ./bootstrap-funcs.sh
 
-print_info "Root is $ROOT"
+print_info "Root is $CROSS_TOOLS"
 print_info "Cross-compiling on $HOST to $TARGET"
 
 setup_directories
@@ -20,7 +20,7 @@ install_gnumach() {
    local mig_location=""
    if [ -z "$USER32" ]; then
       disable_user32="--disable-user32"
-      mig_location=$ROOT/bin/x86_64-gnu-mig
+      mig_location=$CROSS_TOOLS/bin/x86_64-gnu-mig
    else
       mig_location=/cross-tools-i686/bin/i686-gnu-mig
    fi &&
@@ -42,12 +42,12 @@ install_gnumach() {
 set_vars() {
    export CC="${TARGET}-gcc"
    export CXX="${TARGET}-g++"
-   export AR="${ROOT}/bin/${TARGET}-ar"
-   export AS="${ROOT}/bin/${TARGET}-as"
-   export RANLIB="${ROOT}/bin/${TARGET}-ranlib"
-   export LD="${ROOT}/bin/${TARGET}-ld"
-   export STRIP="${ROOT}/bin/${TARGET}-strip"
-   export MIG="${ROOT}/bin/${TARGET}-mig"
+   export AR="${CROSS_TOOLS}/bin/${TARGET}-ar"
+   export AS="${CROSS_TOOLS}/bin/${TARGET}-as"
+   export RANLIB="${CROSS_TOOLS}/bin/${TARGET}-ranlib"
+   export LD="${CROSS_TOOLS}/bin/${TARGET}-ld"
+   export STRIP="${CROSS_TOOLS}/bin/${TARGET}-strip"
+   export MIG="${CROSS_TOOLS}/bin/${TARGET}-mig"
 }
 
 mkdir -p $BUILD_ROOT/bootstrap-kernel &&

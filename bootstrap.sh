@@ -4,7 +4,7 @@
 . ./download-funcs.sh
 . ./bootstrap-funcs.sh
 
-print_info "Root is $ROOT"
+print_info "Root is $CROSS_TOOLS"
 print_info "Cross-compiling on $HOST to $TARGET"
 
 setup_directories

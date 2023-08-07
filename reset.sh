@@ -12,8 +12,8 @@ rm -rf build* &&
 rm -rf output* &&
 echo "Removing $SYS_ROOT"
 sudo rm -f $SYS_ROOT &&
-echo "Removing $ROOT"
-sudo rm -f $ROOT
+echo "Removing $CROSS_TOOLS"
+sudo rm -f $CROSS_TOOLS
 rm -f hd.img
 for dir in `ls $SOURCE`; do
   if [ -d $SOURCE/$dir ]; then

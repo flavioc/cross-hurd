@@ -2,13 +2,13 @@
 
 export SCRIPT_DIR=$PWD
 export SYSTEM=$PWD/output-$CPU
-export ROOT=/cross-tools-$CPU
+export CROSS_TOOLS=/cross-tools-$CPU
 export SYS_ROOT=/tools-$CPU
 export SOURCE=$PWD/src
 export BUILD_ROOT=$PWD/build-$CPU
 export TARGET=$CPU-gnu
 export HOST="$(echo $MACHTYPE | sed "s/$(echo $MACHTYPE | cut -d- -f2)/cross/g")"
-export PATH=$ROOT/bin:$PATH
+export PATH=$CROSS_TOOLS/bin:$PATH
 
 if [ ! -z "$CCACHE_DIRECTORY" ]; then
    export PATH=$CCACHE_DIRECTORY:$PATH

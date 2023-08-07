@@ -13,7 +13,7 @@ compile_binutils ()
    $SOURCE/$BINUTILS_SRC/configure \
       --host="$HOST" \
       --target="$TARGET" \
-      --prefix="$ROOT" \
+      --prefix="$CROSS_TOOLS" \
       --with-sysroot="$SYSTEM" \
       --disable-static \
       --with-lib-path="$SYS_ROOT"/lib \
@@ -31,9 +31,9 @@ compile_gcc ()
    rm -rf $GCC_SRC.obj &&
    mkdir -p $GCC_SRC.obj &&
    cd $GCC_SRC.obj &&
-   AR=$HOST_AR LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
+   AR=$HOST_AR LDFLAGS="-Wl,-rpath,${CROSS_TOOLS}/lib" \
    $SOURCE/$GCC_SRC/configure \
-      --prefix="$ROOT" \
+      --prefix=$CROSS_TOOLS \
       --build="$HOST" \
       --host="$HOST" \
       --target="$TARGET" \
@@ -97,7 +97,7 @@ install_gnumig() {
    mkdir -p $GNUMIG_SRC.host_obj &&
    cd $GNUMIG_SRC.host_obj &&
    $SOURCE/$GNUMIG_SRC/configure --target="$TARGET" \
-      --prefix="$ROOT" &&
+      --prefix=$CROSS_TOOLS &&
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..
@@ -133,7 +133,7 @@ compile_first_glibc() {
    BUILD_CC=$HOST_CC CC=$TARGET-gcc \
    AR=$TARGET-ar CXX="cxx-not-found" RANLIB=$TARGET-ranlib \
    $SOURCE/$GLIBC_SRC/configure \
-      --with-binutils=${ROOT}/bin \
+      --with-binutils=${CROSS_TOOLS}/bin \
       --build="$HOST" \
       --host="$TARGET" \
       --prefix="$SYS_ROOT" \
@@ -158,9 +158,9 @@ compile_full_gcc () {
    mkdir -p $GCC_SRC.obj &&
    cd $GCC_SRC.obj &&
    AR=$HOST_AR \
-   LDFLAGS="-Wl,-rpath,${ROOT}/lib" \
+   LDFLAGS="-Wl,-rpath,${CROSS_TOOLS}/lib" \
    $SOURCE/$GCC_SRC/configure \
-      --prefix="$ROOT" \
+      --prefix=$CROSS_TOOLS \
       --target="$TARGET" \
       --with-sysroot="$SYSTEM" \
       --with-local-prefix="$SYS_ROOT" \
@@ -190,7 +190,7 @@ compile_second_glibc() {
    BUILD_CC=$HOST_CC CC=$TARGET-gcc CXX="" \
    AR=$TARGET-ar RANLIB=$TARGET-ranlib \
    $SOURCE/$GLIBC_SRC/configure \
-      --with-binutils=${ROOT}/bin \
+      --with-binutils=$CROSS_TOOLS/bin \
       --build="$HOST" \
       --host="$TARGET" \
       --prefix="$SYS_ROOT" \
@@ -209,11 +209,11 @@ compile_second_glibc() {
 
 compile_pkgconfiglite() {
    # otherwise "ln pkg-config i586-pc-gnu-pkg-config" in the install step fails
-   rm -fv "$ROOT"/bin/*-pkg-config &&
+   rm -fv $CROSS_TOOLS/bin/*-pkg-config &&
    rm -rf $PKGCONFIGLITE_SRC.obj &&
    mkdir -p $PKGCONFIGLITE_SRC.obj &&
    cd $PKGCONFIGLITE_SRC.obj &&
-   $SOURCE/$PKGCONFIGLITE_SRC/configure --prefix="$ROOT" --host=${TARGET}\
+   $SOURCE/$PKGCONFIGLITE_SRC/configure --prefix=$CROSS_TOOLS --host=${TARGET}\
       --with-pc-path="/sys/lib/pkgconfig:/sys/share/pkgconfig" &&
    make -j$PROCS &&
    make -j$PROCS install &&
@@ -224,15 +224,15 @@ create_tools_symlink() {
     if [ ! -e $SYS_ROOT ]; then
        sudo ln -sf "$PWD"/$(basename $SYS_ROOT) $SYS_ROOT
     fi
-    if [ ! -e $ROOT ]; then
-       sudo ln -sf "$PWD"/$(basename $ROOT) $ROOT
+    if [ ! -e $CROSS_TOOLS ]; then
+       sudo ln -sf "$PWD"/$(basename $CROSS_TOOLS) $CROSS_TOOLS
     fi
 }
 
 setup_directories() {
    mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
-   mkdir -p bin boot "$(basename $SYS_ROOT)/include" "$(basename $SYS_ROOT)/lib" "$(basename $ROOT)/$TARGET" &&
+   mkdir -p bin boot "$(basename $SYS_ROOT)/include" "$(basename $SYS_ROOT)/lib" "$(basename $CROSS_TOOLS)/$TARGET" &&
 	create_tools_symlink &&
-	ln -sfn $SYS_ROOT/include $SYS_ROOT/lib $ROOT/$TARGET/ &&
+	ln -sfn $SYS_ROOT/include $SYS_ROOT/lib $CROSS_TOOLS/$TARGET/ &&
    cd -
 }

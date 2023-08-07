@@ -2,14 +2,14 @@
 
 . ./vars.sh
 . ./download-funcs.sh
-export CC="$ROOT/bin/${TARGET}-gcc"
-export CXX="$ROOT/bin/${TARGET}-g++"
-export AR="${ROOT}/bin/${TARGET}-ar"
-export AS="${ROOT}/bin/${TARGET}-as"
-export RANLIB="${ROOT}/bin/${TARGET}-ranlib"
-export LD="${ROOT}/bin/${TARGET}-ld"
-export STRIP="${ROOT}/bin/${TARGET}-strip"
-export MIG="${ROOT}/bin/${TARGET}-mig"
+export CC="$CROSS_TOOLS/bin/${TARGET}-gcc"
+export CXX="$CROSS_TOOLS/bin/${TARGET}-g++"
+export AR="$CROSS_TOOLS/bin/${TARGET}-ar"
+export AS="$CROSS_TOOLS/bin/${TARGET}-as"
+export RANLIB="$CROSS_TOOLS/bin/${TARGET}-ranlib"
+export LD="$CROSS_TOOLS/bin/${TARGET}-ld"
+export STRIP="$CROSS_TOOLS/bin/${TARGET}-strip"
+export MIG="$CROSS_TOOLS/bin/${TARGET}-mig"
 
 install_flex() {
    mkdir -p $FLEX_SRC.obj &&
@@ -107,7 +107,7 @@ install_gnumach() {
    local mig_location
    if [ -z "$USER32" ]; then
       disable_user32="--disable-user32"
-      mig_location=$ROOT/bin/x86_64-gnu-mig
+      mig_location=$CROSS_TOOLS/bin/x86_64-gnu-mig
    else
       mig_location=/cross-tools-i686/bin/i686-gnu-mig
    fi &&
@@ -378,7 +378,7 @@ install_gcc() {
       --disable-libssp \
       --with-arch=$CPU &&
    cp -v Makefile{,.orig} &&
-   sed "/^HOST_\(GMP\|ISL\|CLOOG\)\(LIBS\|INC\)/s:$SYS_ROOT:$ROOT:g" \
+   sed "/^HOST_\(GMP\|ISL\|CLOOG\)\(LIBS\|INC\)/s:$SYS_ROOT:$CROSS_TOOLS:g" \
          Makefile.orig > Makefile
    make -j$PROCS AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD" all &&
    make -j$PROCS install &&
