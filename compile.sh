@@ -515,8 +515,8 @@ install_libacpica () {
 }
 
 install_minimal_system() {
-   install_libacpica &&
    install_libpciaccess &&
+   install_libacpica &&
    install_zlib &&
    install_bzip2 &&
    install_gnumach &&
