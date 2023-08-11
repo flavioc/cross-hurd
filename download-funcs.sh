@@ -122,19 +122,12 @@ download_glibc () {
    cd ..
 }
 
-unpack_gcc () {
-   unpack zxf $GCC_PKG $GCC_SRC &&
-   cd $GCC_SRC &&
-   apply_patch $SCRIPT_DIR/patches/gcc/x86_64/specs.patch 1 &&
-   cd ..
-}
-
 download_gcc () {
    download $GCC_PKG $GCC_URL &&
    if [ -d "$GCC_SRC" ]; then
       return 0
    fi
-   unpack_gcc
+   unpack zxf $GCC_PKG $GCC_SRC
 }
 
 download_binutils () {
