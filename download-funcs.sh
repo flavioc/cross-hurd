@@ -61,7 +61,7 @@ download_from_git () {
    repo=$2
    branch=$3
    add_branch=""
-   if [ -n $branch ]; then
+   if [ -n "$branch" ]; then
      add_branch="--branch $branch"
    fi
    if [ -d $dir ]; then
