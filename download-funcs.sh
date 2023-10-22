@@ -212,6 +212,9 @@ download_grep () {
     return 0
   fi
   unpack xf $GREP_PKG $GREP_SRC
+  pushd $GREP_SRC &&
+  apply_patch $SCRIPT_DIR/patches/grep/gnulib-hurd-x86_64.patch 1 &&
+  popd
 }
 
 download_gawk () {
