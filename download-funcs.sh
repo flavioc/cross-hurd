@@ -61,7 +61,7 @@ download_from_git () {
    repo=$2
    branch=$3
    add_branch=""
-   if [ -n $branch ]; then
+   if [ -n "$branch" ]; then
      add_branch="--branch $branch"
    fi
    if [ -d $dir ]; then
@@ -212,6 +212,9 @@ download_grep () {
     return 0
   fi
   unpack xf $GREP_PKG $GREP_SRC
+  pushd $GREP_SRC &&
+  apply_patch $SCRIPT_DIR/patches/grep/gnulib-hurd-x86_64.patch 1 &&
+  popd
 }
 
 download_gawk () {
