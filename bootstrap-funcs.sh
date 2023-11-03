@@ -200,7 +200,6 @@ compile_second_glibc() {
       --enable-add-ons=libpthread \
       --enable-obsolete-rpc \
       --disable-werror \
-      --enable-crypt \
       --disable-nscd &&
    make -j$PROCS &&
    make -j$PROCS install &&

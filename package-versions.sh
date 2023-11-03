@@ -29,5 +29,6 @@ GREP_VERSION=3.11
 GAWK_VERSION=5.2.1
 DASH_VERSION=0.5.12
 LIBPCIACCESS_VERSION=0.17
+LIBXCRYPT_VERSION=4.4.36
 # Mach, Hurd and Glibc are all taken from the Git repository.
 

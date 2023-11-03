@@ -28,6 +28,7 @@ GREP_URL=https://ftp.gnu.org/gnu/grep/"$GREP_PKG"
 GAWK_URL=https://ftp.gnu.org/gnu/gawk/"$GAWK_PKG"
 DASH_URL=http://gondor.apana.org.au/~herbert/dash/files/$DASH_PKG
 LIBPCIACCESS_URL=https://www.x.org/pub/individual/lib/$LIBPCIACCESS_PKG
+LIBXCRYPT_URL=https://github.com/besser82/libxcrypt/releases/download/v$LIBXCRYPT_VERSION/$LIBXCRYPT_PKG
 
 unpack () {
    if [ -d "$3" ]; then
@@ -242,4 +243,12 @@ download_libpciaccess () {
       return 0
    fi
    unpack xf $LIBPCIACCESS_PKG $LIBPCIACCESS_SRC
+}
+
+download_libxcrypt () {
+   download $LIBXCRYPT_PKG $LIBXCRYPT_URL &&
+   if [ -d $LIBXCRYPT_SRC ]; then
+      return 0
+   fi
+   unpack xf $LIBXCRYPT_PKG $LIBXCRYPT_SRC
 }

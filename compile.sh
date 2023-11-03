@@ -274,6 +274,21 @@ install_grub() {
    cd ..
 }
 
+install_libxcrypt () {
+   mkdir -p $LIBXCRYPT_SRC.obj &&
+   cd $LIBXCRYPT_SRC.obj &&
+   $SOURCE/$LIBXCRYPT_SRC/configure --prefix=$SYS_ROOT \
+      --build=$HOST \
+      --host=$TARGET \
+      --enable-hashes=strong,glibc \
+      --enable-obsolete-api=no \
+      --disable-static \
+      --disable-failure-tokens
+   make -j$PROCS &&
+   make -j $PROCS install &&
+   cd ..
+}
+
 install_shadow () {
    cp -R $SOURCE/$SHADOW_SRC $SHADOW_SRC.copy &&
    cd $SHADOW_SRC.copy &&
@@ -515,6 +530,7 @@ install_libacpica () {
 }
 
 install_minimal_system() {
+   install_libxcrypt &&
    install_libpciaccess &&
    install_libacpica &&
    install_zlib &&
