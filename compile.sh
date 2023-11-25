@@ -215,6 +215,7 @@ EOF
       --build="$HOST" \
       --host="$TARGET" \
       --enable-install-program=hostname \
+      --disable-year2038 \
       --cache-file=config.cache &&
    make -j$PROCS &&
    make -j$PROCS install &&
