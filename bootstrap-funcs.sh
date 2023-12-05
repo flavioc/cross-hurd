@@ -18,7 +18,6 @@ compile_binutils ()
       --disable-static \
       --with-lib-path="$SYS_ROOT"/lib \
       --disable-multilib \
-      --disable-werror \
       --disable-nls &&
    make -j$PROCS all &&
    make -j$PROCS install &&
@@ -143,7 +142,6 @@ compile_first_glibc() {
       --disable-profile \
       --enable-add-ons=libpthread \
       --enable-obsolete-rpc \
-      --disable-werror \
       --disable-nscd \
       libc_cv_ctors_header=yes &&
    make -j$PROCS || # workaround for "fails first time"?
@@ -199,7 +197,6 @@ compile_second_glibc() {
       --disable-profile \
       --enable-add-ons=libpthread \
       --enable-obsolete-rpc \
-      --disable-werror \
       --disable-nscd &&
    make -j$PROCS &&
    make -j$PROCS install &&
