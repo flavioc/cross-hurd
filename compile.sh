@@ -137,10 +137,11 @@ install_hurd() {
    mkdir -p $HURD_SRC.obj &&
    cd $HURD_SRC.obj &&
    $SOURCE/$HURD_SRC/configure \
-      --build="$HOST" \
-      --host="$TARGET" \
-      --prefix="$SYS_ROOT" \
+      --build=$HOST \
+      --host=$TARGET \
+      --prefix=$SYS_ROOT \
       --without-parted \
+      --with-libgcrypt-prefix=$SYS_ROOT \
       --disable-profile &&
    make -j$PROCS all &&
    fakeroot make -j$PROCS install &&
@@ -537,6 +538,8 @@ install_minimal_system() {
    install_zlib &&
    install_bzip2 &&
    install_gnumach &&
+   install_gpg_error &&
+   install_gcrypt &&
    install_hurd &&
    install_bash &&
    install_dash &&
@@ -554,8 +557,6 @@ install_more_shell_tools() {
 }
 
 install_development_tools() {
-   install_gpg_error &&
-   install_gcrypt &&
    install_flex &&
    install_mig &&
    install_binutils &&
