@@ -292,19 +292,24 @@ install_libxcrypt () {
 }
 
 install_shadow () {
+   rm -rf $SHADOW_SRC.copy &&
    cp -R $SOURCE/$SHADOW_SRC $SHADOW_SRC.copy &&
-   cd $SHADOW_SRC.copy &&
-   cp -v src/Makefile.in src/Makefile.in.orig &&
-   sed -e 's/groups$(EXEEXT) //' \
+   pushd $SHADOW_SRC.copy &&
+   # Disable installation of some tools since they are provided by either
+   # the Hurd itself or coreutils.
+   sed -i -e 's/groups$(EXEEXT) //' \
        -e 's/= nologin$(EXEEXT)/= /' \
        -e 's/= login$(EXEEXT)/= /' \
-       -e 's/\(^suidu*bins = \).*/\1/' \
-       -e 's/\(\t$(am__append_3) $(am__append_4)\)/#\1/' \
-   src/Makefile.in.orig > src/Makefile.in &&
-   cat > config.cache << "EOF"
-shadow_cv_passwd_dir=$SYS_ROOT/bin
-EOF
-   cd - &&
+       src/Makefile.in &&
+   # Disable several manpages.
+   find man -name Makefile.in -exec sed -i 's/groups\.1 / /'   {} \;
+   find man -name Makefile.in -exec sed -i 's/getspnam\.3 / /' {} \;
+   find man -name Makefile.in -exec sed -i 's/passwd\.5 / /'   {} \;
+   sed -e 's:/var/spool/mail:/var/mail:'                   \
+    -e '/PATH=/{s@/sbin:@@;s@/bin:@@}'                  \
+    -i etc/login.defs &&
+   apply_patch $SCRIPT_DIR/patches/shadow/shadow-utmp.patch 1 &&
+   popd &&
    rm -rf $SHADOW_SRC.obj &&
    mkdir -p $SHADOW_SRC.obj &&
    cd $SHADOW_SRC.obj &&
@@ -313,9 +318,10 @@ EOF
       --host=${TARGET} \
       --cache-file=config.cache \
       --enable-subordinate-ids=no \
-      --disable-dependency-tracking &&
+      --disable-dependency-tracking \
+      --without-libbsd &&
    echo "#define ENABLE_SUBIDS 1" >> config.h &&
-   make -j$PROCS && make -j$PROCS install && cd ..
+   make -j$PROCS && make exec_prefix=$SYS_ROOT -j$PROCS install && cd ..
 }
 
 install_sed() {

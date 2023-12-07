@@ -14,8 +14,7 @@ UTIL_LINUX_MAJOR_VERSION=2.39
 # 2.39.2 fails because libmount/src/hooks.c is being compiled without proper support.
 UTIL_LINUX_VERSION=2.39
 GRUB_VERSION=2.06
-# Shadow 4.7 is failing due to sys/prctl.h missing
-SHADOW_VERSION=4.6
+SHADOW_VERSION=4.14.2
 SED_VERSION=4.9
 GMP_VERSION=6.3.0
 MPFR_VERSION=4.2.1

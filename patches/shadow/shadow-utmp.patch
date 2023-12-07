@@ -1,0 +1,11 @@
+diff -Naur build-i686/native/shadow-4.14.2.copy/lib/user_busy.c src/shadow-4.14.2/lib/user_busy.c
+--- shadow-4.14.2.copy/lib/user_busy.c	2023-11-27 23:37:31.067406127 -0500
++++ shadow-4.14.2/lib/user_busy.c	2023-11-27 23:37:08.507284180 -0500
+@@ -17,6 +17,7 @@
+ #include <dirent.h>
+ #include <fcntl.h>
+ #include <unistd.h>
++#include <utmp.h>
+ #include "defines.h"
+ #include "prototypes.h"
+ #ifdef ENABLE_SUBIDS
