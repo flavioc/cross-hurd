@@ -180,7 +180,10 @@ download_gpg_error () {
   if [ -d "$GPG_ERROR_SRC" ]; then
     return 0
   fi
-  unpack jxf $GPG_ERROR_PKG $GPG_ERROR_SRC
+  unpack jxf $GPG_ERROR_PKG $GPG_ERROR_SRC &&
+  pushd $GPG_ERROR_SRC &&
+    apply_patch $SCRIPT_DIR/patches/libgpg-error/hurd-amd64.patch 1 &&
+  popd
 }
 
 download_gcrypt () {
