@@ -209,8 +209,9 @@ compile_pkgconfiglite() {
    rm -rf $PKGCONFIGLITE_SRC.obj &&
    mkdir -p $PKGCONFIGLITE_SRC.obj &&
    cd $PKGCONFIGLITE_SRC.obj &&
-   $SOURCE/$PKGCONFIGLITE_SRC/configure --prefix=$CROSS_TOOLS --host=${TARGET}\
-      --with-pc-path="/sys/lib/pkgconfig:/sys/share/pkgconfig" &&
+   $SOURCE/$PKGCONFIGLITE_SRC/configure \
+      --prefix=$CROSS_TOOLS --host=$TARGET \
+      --with-pc-path=$SYS_ROOT/lib/pkgconfig &&
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..
