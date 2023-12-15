@@ -546,11 +546,11 @@ install_minimal_system() {
    install_gnumach &&
    install_gpg_error &&
    install_gcrypt &&
+   install_util_linux &&
    install_hurd &&
    install_bash &&
    install_dash &&
    install_coreutils &&
-   install_util_linux &&
    install_e2fsprogs &&
    install_grub &&
    install_shadow &&
