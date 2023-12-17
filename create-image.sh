@@ -40,7 +40,7 @@ copy_files () {
       cp files/boot/grub.cfg mount/boot/grub/grub.cfg &&
       cp $SYSTEM/boot/gnumach.gz mount/boot &&
       mkdir -p mount/servers &&
-      touch mount/servers/{exec,crash-kill,default-pager,password,socket,startup,proc,auth,symlink} &&
+      touch mount/servers/{acpi,exec,crash-kill,default-pager,password,socket,startup,proc,auth,symlink} &&
       mkdir mount/tmp && chmod 01777 mount/tmp &&
       cp -R $SYSTEM/$BASE_SYS_ROOT/hurd/* mount/hurd/ &&
       cp -R $SYSTEM/$BASE_SYS_ROOT/dev/* mount/dev/ &&

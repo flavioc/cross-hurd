@@ -17,7 +17,7 @@ export PATH
 umask 022
 
 # If we lose badly, try to exec each of these in turn.
-fallback_shells='/tools/bin/bash /bin/sh /bin/bash /bin/csh /bin/ash /bin/shd'
+fallback_shells='/bin/bash /bin/dash /bin/sh /bin/csh /bin/ash /bin/shd'
 
 # Shell used for normal single-user startup.
 SHELL=/bin/bash
@@ -124,7 +124,8 @@ case "$flags" in
 esac
 
 # Start the default pager.  It will bail if there is already one running.
-/hurd/mach-defpager
+# TODO: we crash if we start it, investigate to understand what is happening.
+# /hurd/mach-defpager
 
 # This is necessary to make stat / return the correct device ids.
 # Work around a race condition (probably in the root translator).
