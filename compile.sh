@@ -537,6 +537,71 @@ install_libacpica () {
    popd
 }
 
+install_rump () {
+   local arch=""
+   if [ $CPU = "i686" ]; then
+      arch="i386"
+   else
+      arch="amd64"
+   fi
+   pushd $SOURCE/rumpkernel/ &&
+      OBJ=`pwd`/obj
+      mkdir -p $OBJ &&
+      echo "OBJ $OBJ" &&
+      git clean -fdx &&
+      git checkout . &&
+      for file in `cat debian/patches/series`; do
+         echo $file
+         patch -p1 < debian/patches/$file
+      done
+      pushd buildrump.sh/src &&
+         pushd lib/librumpuser &&
+            ./configure --prefix=$SYS_ROOT \
+               --build=$HOST \
+               --host=$TARGET &&
+         popd &&
+         CFLAGS="-Wno-format-security -Wno-omit-frame-pointer" \
+         HOST_GCC=$HOST_CC TARGET_CC=$CC TARGET_CXX=$CC \
+            TARGET_LD=$LD TARGET_MIG=$MIG \
+            TARGET_LDADD="-B/$SYS_ROOT/lib -L$SYS_ROOT/lib -L$SYS_ROOT/lib" \
+            _GCC_CRTENDS= _GCC_CRTEND= _CC_CRTBEGINS= \
+            _GCC_CRTBEGIN= _GCC_CRTI= _GCC_CRTN= \
+            BSDOBJECTDIR=$OBJ \
+            ./build.sh \
+               -V TOOLS_BUILDRUMP=yes \
+               -V MKBINUTILS=no -V MKGDB=no -V MKGROFF=no \
+               -V MKDTRACE=no -V MKZFS=no \
+               -V TOPRUMP=$SOURCE/rumpkernel/buildrump.sh/src/sys/rump \
+               -V BUILDRUMP_CPPFLAGS="-Wno-error=stringop-overread" \
+               -V RUMPUSER_EXTERNAL_DPLIBS=pthread \
+               -V CPPFLAGS="-I$OBJ/destdir/usr/include -D_FILE_OFFSET_BITS=64 -DRUMP_REGISTER_T=int -DRUMPUSER_CONFIG=yes -DNO_PCI_MSI_MSIX=yes -DNUSB_DMA=1 -DPAE" \
+               -V CWARNFLAGS="-Wno-error=maybe-uninitialized -Wno-error=address-of-packed-member -Wno-error=unused-variable -Wno-error=stack-protector -Wno-error=array-parameter -Wno-error=array-bounds -Wno-error=stringop-overflow -Wno-error=int-to-pointer-cast -Wno-error=incompatible-pointer-types" \
+               -V LIBCRTBEGIN=" " -V LIBCRTEND=" " -V LIBCRT0=" " -V LIBCRTI=" " \
+               -V MIG=mig \
+               -V DESTDIR=$OBJ/destdir \
+               -V _GCC_CRTENDS=" " -V _GCC_CRTEND=" " \
+               -V _GCC_CRTBEGINS=" " -V _GCC_CRTBEGIN=" " \
+               -V _GCC_CRTI=" " -V _GCC_CRTN=" " \
+               -V TARGET_LDADD="-B$SYS_ROOT/lib -L$SYS_ROOT/lib -L$SYS_ROOT/lib" \
+               -U -u -T $OBJ/tooldir -m $arch -j $PROCS tools rump &&
+         pushd lib/librumpuser &&
+            RUMPRUN=true $OBJ/tooldir/bin/nbmake-$arch dependall
+         popd &&
+      popd &&
+      pushd pci-userspace/src-gnu &&
+         $OBJ/tooldir/bin/nbmake-$arch MIG=$MIG dependall &&
+      popd &&
+      # Perform installation by copying the required files.
+      # Copy headers.
+      cp -aR buildrump.sh/src/sys/rump/include/rump $SYS_ROOT/include/ &&
+      # Copy libraries.
+      find $OBJ/destdir buildrump.sh/src -type f,l \
+         -name "librump*.so*" -not -path '*.map' -not -path '*librumpkern_z*' -exec cp -a {} $SYS_ROOT/lib/ \; &&
+      find $OBJ/destdir buildrump.sh/src -type f,l \
+         -name "librump*.a" -not -path '*librumpkern_z*' -exec cp -a {} $SYS_ROOT/lib \; &&
+   popd
+}
+
 install_minimal_system() {
    install_libxcrypt &&
    install_libpciaccess &&
@@ -547,6 +612,7 @@ install_minimal_system() {
    install_gpg_error &&
    install_gcrypt &&
    install_util_linux &&
+   install_rump &&
    install_hurd &&
    install_bash &&
    install_dash &&
