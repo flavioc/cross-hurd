@@ -1,0 +1,13 @@
+diff --git a/configure.ac b/configure.ac
+index dd2481b0..6e754a7a 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -239,7 +239,7 @@ AS_IF([test "x$with_rump" != xno], [
+   # Save
+   oldLIBS="$LIBS"
+ 
+-  LIBS="$oldLIBS -lrump"
++  LIBS="$oldLIBS -lrump -lrumpuser -lrumpvfs -lrumpvfs_fifofs  -lrumpnet -lrumpnet_net -lrumpnet_local"
+   AC_LINK_IFELSE(
+     [AC_LANG_PROGRAM(
+       [[#include <hurd.h>

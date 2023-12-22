@@ -98,6 +98,9 @@ download_mig () {
 
 download_hurd () {
    download_from_git hurd git://git.savannah.gnu.org/hurd/hurd.git
+   pushd hurd &&
+   apply_patch $SCRIPT_DIR/patches/hurd/link-rump.patch 1
+   popd
 }
 
 download_rumpkernel () {
@@ -110,7 +113,9 @@ download_libacpica () {
 
 apply_patch() {
    print_info "Using patch $1 (level: $2)"
-   patch -Np$2 < $1 || exit 1
+   if patch -f -Np$2 --dry-run < $1 > /dev/null 2>&1; then
+    patch -Np$2 < $1 || exit 1
+   fi
 }
 
 download_glibc () {

@@ -142,6 +142,7 @@ install_hurd() {
       --prefix=$SYS_ROOT \
       --without-parted \
       --with-libgcrypt-prefix=$SYS_ROOT \
+      --enable-static-progs='ext2fs,iso9660fs,rumpdisk,pci-arbiter,acpi' \
       --disable-profile &&
    make -j$PROCS all &&
    fakeroot make -j$PROCS install &&
