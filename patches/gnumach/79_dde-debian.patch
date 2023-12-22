@@ -1,0 +1,274 @@
+This contains a compatibility layer for netdde and rump still using the experimental irq/alloc_contig support. It is the output of
+
+git diff master master-user_level_drivers-debian
+
+(master was 6054cda4de2341b9a77ec4421411725f3684006b and
+master-user_level_drivers-debian was 19283fdffa782b2e485ef39e0de1574006ec4a1a at
+the time)
+
+When dropping this, break netdde (<< 0.0.20200330-5),
+hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
+
+---
+ Makefrag.am                     |    1 
+ device/ds_routines.c            |   64 +++++++++++++++++++++++++++++++++++++++-
+ device/intr.c                   |   16 ++++++----
+ device/intr.h                   |    3 +
+ include/mach/experimental.defs  |   38 +++++++++++++++++++++++
+ linux/dev/drivers/block/genhd.c |    4 +-
+ vm/vm_user.c                    |   14 ++++++++
+ 7 files changed, 130 insertions(+), 10 deletions(-)
+
+--- a/Makefrag.am
++++ b/Makefrag.am
+@@ -362,7 +362,6 @@ include_device_HEADERS = \
+ 	include/device/disk_status.h \
+ 	include/device/input.h \
+ 	include/device/net_status.h \
+-	include/device/notify.defs \
+ 	include/device/notify.h \
+ 	include/device/tape_status.h \
+ 	include/device/tty_status.h
+--- a/device/ds_routines.c
++++ b/device/ds_routines.c
+@@ -354,7 +354,7 @@ ds_device_intr_register (device_t dev, i
+   if (! name_equal(mdev->dev_ops->d_name, 3, "irq"))
+     return D_INVALID_OPERATION;
+ 
+-  user_intr_t *e = insert_intr_entry (&irqtab, id, receive_port);
++  user_intr_t *e = insert_intr_entry (&irqtab, id, receive_port, 0);
+   if (!e)
+     return D_NO_MEMORY;
+ 
+@@ -371,6 +371,52 @@ ds_device_intr_register (device_t dev, i
+ #endif /* MACH_XEN */
+ }
+ 
++static ipc_port_t intr_receive_ports[16];
++io_return_t
++experimental_device_intr_register (ipc_port_t master_port, int line,
++		       int id, int flags, ipc_port_t receive_port)
++{
++#ifdef MACH_XEN
++  return D_INVALID_OPERATION;
++#else /* MACH_XEN */
++  io_return_t ret;
++  /* Open must be called on the master device port.  */
++  if (master_port != master_device_port)
++    return D_INVALID_OPERATION;
++
++  /* XXX: move to arch-specific */
++  if (line < 0 || line >= 16)
++    return D_INVALID_OPERATION;
++
++  if (flags != 0x04000000)
++    return D_INVALID_OPERATION;
++
++  user_intr_t *user_intr = insert_intr_entry (&irqtab, line, receive_port, 1);
++  if (!user_intr)
++    return D_NO_MEMORY;
++
++  // TODO The original port should be replaced
++  // when the same device driver calls it again,
++  // in order to handle the case that the device driver crashes and restarts.
++  ret = install_user_intr_handler (&irqtab, line, 0, user_intr);
++
++  if (ret == 0)
++  {
++    /* If the port is installed successfully, increase its reference by 1.
++     * Thus, the port won't be destroyed after its task is terminated. */
++    ip_reference (receive_port);
++
++    intr_receive_ports[line] = receive_port;
++    /* For now netdde calls device_intr_enable once after registration. Assume
++     * it does so for now. When we move to IRQ acknowledgment convention we will
++     * change this. */
++    __disable_irq (line);
++  }
++
++  return ret;
++#endif /* MACH_XEN */
++}
++
+ kern_return_t
+ ds_device_intr_ack (device_t dev, ipc_port_t receive_port)
+ {
+@@ -399,6 +445,22 @@ ds_device_intr_ack (device_t dev, ipc_po
+ #endif /* MACH_XEN */
+ }
+ 
++kern_return_t
++experimental_device_intr_enable(ipc_port_t master_port, int line, char status)
++{
++#ifdef MACH_XEN
++  return D_INVALID_OPERATION;
++#else /* MACH_XEN */
++  if (master_port != master_device_port)
++    return D_INVALID_OPERATION;
++
++  if (status != 1)
++    return D_INVALID_OPERATION;
++
++  return irq_acknowledge(intr_receive_ports[line]);
++#endif /* MACH_XEN */
++}
++
+ boolean_t
+ ds_notify (mach_msg_header_t *msg)
+ {
+--- a/device/intr.c
++++ b/device/intr.c
+@@ -25,7 +25,7 @@
+ #ifndef MACH_XEN
+ 
+ queue_head_t main_intr_queue;
+-static boolean_t deliver_intr (int id, ipc_port_t dst_port);
++static boolean_t deliver_intr (int id, mach_msg_id_t msgh_id, ipc_port_t dst_port);
+ 
+ #ifndef LINUX_DEV
+ #define SA_SHIRQ 0x04000000
+@@ -122,7 +122,7 @@ deliver_user_intr (struct irqdev *dev, i
+  * This entry exists in the queue until
+  * the corresponding interrupt port is removed.*/
+ user_intr_t *
+-insert_intr_entry (struct irqdev *dev, int id, ipc_port_t dst_port)
++insert_intr_entry (struct irqdev *dev, int id, ipc_port_t dst_port, int compat)
+ {
+   user_intr_t *e, *new, *ret;
+   int free = 0;
+@@ -146,7 +146,11 @@ insert_intr_entry (struct irqdev *dev, i
+   new->id = id;
+   new->dst_port = dst_port;
+   new->interrupts = 0;
+-  new->n_unacked = 0;
++  new->compat = compat;
++  if (compat)
++    new->n_unacked = 1;
++  else
++    new->n_unacked = 0;
+ 
+   queue_enter (dev->intr_queue, new, user_intr_t *, chain);
+ out:
+@@ -268,7 +272,7 @@ intr_thread (void)
+ 		  irqtab.tot_num_intr--;
+ 
+ 		  splx (s);
+-		  deliver_intr (id, dst_port);
++		  deliver_intr (id, e->compat ? 424242 : DEVICE_INTR_NOTIFY, dst_port);
+ 		  s = splhigh ();
+ 		}
+ 	    }
+@@ -307,7 +311,7 @@ intr_thread (void)
+ }
+ 
+ static boolean_t
+-deliver_intr (int id, ipc_port_t dst_port)
++deliver_intr (int id, mach_msg_id_t msgh_id, ipc_port_t dst_port)
+ {
+   ipc_kmsg_t kmsg;
+   device_intr_notification_t *n;
+@@ -331,7 +335,7 @@ deliver_intr (int id, ipc_port_t dst_por
+   m->msgh_seqno = DEVICE_NOTIFY_MSGH_SEQNO;
+   m->msgh_local_port = MACH_PORT_NULL;
+   m->msgh_remote_port = MACH_PORT_NULL;
+-  m->msgh_id = DEVICE_INTR_NOTIFY;
++  m->msgh_id = msgh_id;
+ 
+   t->msgt_name = MACH_MSG_TYPE_INTEGER_32;
+   t->msgt_size = 32;
+--- a/device/intr.h
++++ b/device/intr.h
+@@ -36,6 +36,7 @@ typedef struct {
+   int n_unacked;  /* Number of times irqs were disabled for this */
+   ipc_port_t dst_port; /* Notification port */
+   int id; /* Mapping to machine dependent irq_t array elem */
++  int compat;
+ } user_intr_t;
+ 
+ struct irqdev {
+@@ -52,7 +53,7 @@ struct irqdev {
+ extern queue_head_t main_intr_queue;
+ extern int install_user_intr_handler (struct irqdev *dev, int id, unsigned long flags, user_intr_t *e);
+ extern int deliver_user_intr (struct irqdev *dev, int id, user_intr_t *e);
+-extern user_intr_t *insert_intr_entry (struct irqdev *dev, int id, ipc_port_t receive_port);
++extern user_intr_t *insert_intr_entry (struct irqdev *dev, int id, ipc_port_t receive_port, int compat);
+ 
+ void intr_thread (void);
+ kern_return_t irq_acknowledge (ipc_port_t receive_port);
+--- a/include/mach/experimental.defs
++++ b/include/mach/experimental.defs
+@@ -13,3 +13,41 @@ subsystem
+ serverprefix experimental_;
+ 
+ /* This is free for experimenting RPCs, with no backward compatibility guarantees.  */
++
++type notify_port_t = MACH_MSG_TYPE_MOVE_SEND_ONCE
++	ctype: mach_port_t;
++
++skip; /*simpleroutine mach_intr_notify(
++		notify	: notify_port_t;
++		name	: int);*/
++
++routine device_intr_register(
++		master_port	: mach_port_t;
++	in	line		: int;
++	in	id		: int;
++	in	flags		: int;
++	in	receive_port	: mach_port_send_t
++	);
++
++/*
++ *	enable/disable the specified line.
++ */
++/* XXX: Naming a function taht can disable something "xxx_enable" is confusing. */
++/* Is the disable part actually used at all? AIUI, the kernel IRQ handler
++should always disable the line; and the userspace driver only has to
++reenable it, after acknowledging and handling the interrupt...
++*/
++routine device_intr_enable(
++		master_port	: mach_port_t;
++		line		: int;
++		status		: char);
++
++/*
++ *	This routine is for compatibility with old userland drivers.
++ */
++routine vm_allocate_contiguous(
++		host_priv	: host_priv_t;
++		target_task	: vm_task_t;
++	out	vaddr		: vm_address_t;
++	out	paddr		: vm_address_t;
++		size		: vm_size_t);
+--- a/linux/dev/drivers/block/genhd.c
++++ b/linux/dev/drivers/block/genhd.c
+@@ -1060,7 +1060,9 @@ void device_setup(void)
+ 	scsi_dev_init();
+ #endif
+ #ifdef CONFIG_INET
+-	net_dev_init();
++	extern char *kernel_cmdline;
++	if (!strstr(kernel_cmdline, " nonetdev"))
++		net_dev_init();
+ #endif
+ #ifndef MACH
+ 	console_map_init();
+--- a/vm/vm_user.c
++++ b/vm/vm_user.c
+@@ -688,3 +688,17 @@ kern_return_t vm_allocate_contiguous(
+ 
+ 	return KERN_SUCCESS;
+ }
++
++kern_return_t experimental_vm_allocate_contiguous(host_priv, map, result_vaddr, result_paddr, size)
++	host_t			host_priv;
++	vm_map_t		map;
++	vm_address_t		*result_vaddr;
++	vm_address_t		*result_paddr;
++	vm_size_t		size;
++{
++	rpc_phys_addr_t paddr;
++	kern_return_t ret;
++	ret = vm_allocate_contiguous(host_priv, map, result_vaddr, &paddr, size, 0, ~0ULL, 0);
++	*result_paddr = paddr;
++	return ret;
++}

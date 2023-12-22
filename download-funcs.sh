@@ -86,9 +86,10 @@ download_from_git () {
 download_gnumach () {
    download_from_git gnumach git://git.savannah.gnu.org/hurd/gnumach.git
    pushd gnumach &&
-   if [ ! -f "device/ramdisk.c" ]; then
-    apply_patch $SCRIPT_DIR/patches/gnumach/50_initrd.patch 1
-   fi
+   apply_patch $SCRIPT_DIR/patches/gnumach/50_initrd.patch 1 &&
+   apply_patch $SCRIPT_DIR/patches/gnumach/79_dde-debian.patch 1 &&
+   apply_patch $SCRIPT_DIR/patches/gnumach/90_noahci.patch 1 &&
+   apply_patch $SCRIPT_DIR/patches/gnumach/90_noide.patch 1 &&
    popd
 }
 

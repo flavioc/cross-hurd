@@ -120,6 +120,9 @@ install_gnumach() {
       --enable-kmsg \
       --enable-pae \
       --prefix="$SYS_ROOT" \
+      --disable-net-group \
+      --disable-pcmcia-group \
+      --disable-wireless-group \
       $disable_user32 &&
    make clean &&
    make -j$PROCS gnumach.gz gnumach gnumach.msgids &&
