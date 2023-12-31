@@ -20,7 +20,7 @@ umask 022
 fallback_shells='/tools/bin/bash /bin/sh /bin/bash /bin/csh /bin/ash /bin/shd'
 
 # Shell used for normal single-user startup.
-SHELL=/tools/bin/bash
+SHELL=/bin/bash
 
 # Programs that do multi-user startup.
 RUNCOM=/libexec/rc
