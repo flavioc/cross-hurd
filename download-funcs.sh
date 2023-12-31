@@ -75,7 +75,13 @@ download_from_git () {
    if [ -n "$CACHE_GIT" ]; then
        mkdir -p $DOWNLOAD_CACHE_DIRECTORY &&
        pushd $DOWNLOAD_CACHE_DIRECTORY &&
-       (test -d $dir || git clone --depth=1 $repo $add_branch $dir) &&
+       (if [ -d $dir ]; then
+          pushd $dir &&
+          git pull &&
+          popd
+       else
+          git clone --depth=1 $repo $add_branch $dir
+       fi) &&
        popd &&
        ln -sf $DOWNLOAD_CACHE_DIRECTORY/$dir .
    else
