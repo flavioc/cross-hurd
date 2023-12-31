@@ -1,7 +1,7 @@
 #!/bin/bash
 # Setup critical hurd translators
 
-PATH=/tools/bin:/tools/sbin:/bin:/sbin
+PATH=/bin:/sbin:/hurd
 
 # BOOT_DEV="$1"
 # if [ ! "$BOOT_DEV" ]; then

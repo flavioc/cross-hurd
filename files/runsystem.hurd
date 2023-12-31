@@ -11,13 +11,13 @@
 ### Where to find programs, etc.
 ###
 
-PATH=/tools/bin:/tools/sbin:/bin:/sbin
+PATH=/bin:/sbin:/hurd
 export PATH
 
 umask 022
 
 # If we lose badly, try to exec each of these in turn.
-fallback_shells='/tools/bin/bash /bin/sh /bin/bash /bin/csh /bin/ash /bin/shd'
+fallback_shells='/bin/sh /bin/bash /bin/dash /bin/csh /bin/ash /bin/shd'
 
 # Shell used for normal single-user startup.
 SHELL=/bin/bash

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PATH=/tools/bin:/tools/sbin:/bin:/sbin
+PATH=/bin:/sbin:/hurd
 
 # Set up swap space.  This will complain if no default pager is functioning.
 swapon -a

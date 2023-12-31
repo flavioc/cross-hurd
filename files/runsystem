@@ -11,7 +11,7 @@
 ### Where to find programs, etc.
 ###
 
-PATH=/bin:/sbin:/tools/bin:/tools/sbin
+PATH=/bin:/sbin:/hurd
 export PATH
 
 umask 022
