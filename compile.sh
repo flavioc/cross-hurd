@@ -111,14 +111,14 @@ install_gnumach() {
    else
       mig_location=/cross-tools-i686/bin/i686-gnu-mig
    fi &&
+   CFLAGS="-O2 -Wall -g -pipe -fno-strict-aliasing -no-pie -fno-PIE -fno-pie -Wformat -Werror=format-security" \
+   LDFLAGS="-no-pie" \
    MIGUSER=$mig_location $SOURCE/$GNUMACH_SRC/configure \
-      CFLAGS="-O2 -g" \
       --host="$TARGET" \
       --build="$HOST" \
       --exec-prefix=/tmp/throwitaway \
       --enable-kdb \
       --enable-kmsg \
-      --enable-pae \
       --prefix="$SYS_ROOT" \
       --disable-net-group \
       --disable-pcmcia-group \
