@@ -1,4 +1,4 @@
-/dev/hd0s1 / ext2fs writable,no-inherit-dir-group,store-type=typed 0 0
+/dev/wd0s1 / ext2fs writable,no-inherit-dir-group,store-type=typed 0 0
 none /run /hurd/tmpfs writable,no-suid,no-exec,no-inherit-dir-group,no-sync,size=187152K 0 0
 none /run/lock /hurd/tmpfs writable,no-suid,no-exec,no-inherit-dir-group,no-sync,size=5M 0 0
 none /run/shm /hurd/tmpfs writable,no-suid,no-exec,no-inherit-dir-group,no-sync,size=415520K 0 0

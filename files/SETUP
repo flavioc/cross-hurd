@@ -27,11 +27,13 @@ fsysopts / --writable
 /bin/settrans -c /servers/socket/local /hurd/pflocal
 /bin/settrans -c /servers/crash /hurd/crash
 /bin/settrans -c /servers/password /hurd/password
+/bin/settrans -c /servers/acpi /hurd/acpi
+/bin/settrans -c /servers/bus/pci /hurd/pci-arbiter
 
 # Setup crucial devices
 cd /dev
 rm -f console
-/bin/bash /sbin/MAKEDEV console std hd0s1 tty1 tty2 tty3 tty4 tty5 tty6
+/bin/bash /sbin/MAKEDEV console std hd0 hd0s1 sd0 rumpdisk wd0 wd0s1 tty1 tty2 tty3 tty4 tty5 tty6
 set +v
 
 # if test "$BOOT_DEV" && /bin/sh ./MAKEDEV "$BOOT_DEV"; then

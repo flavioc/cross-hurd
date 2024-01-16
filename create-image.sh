@@ -5,7 +5,7 @@
 LOOP=$(sudo losetup -f)
 LOOPPART="${LOOP}p1"
 IMG=hd.img
-IMG_SIZE=2048MB
+IMG_SIZE=10GB
 BASE_SYS_ROOT=$(basename $SYS_ROOT)
 
 create_image () {
@@ -31,7 +31,7 @@ copy_files () {
    print_info "Copying system into mount..."
       mkdir -p mount/{etc,boot,dev,usr,hurd,servers,lib,libexec,proc,sbin,bin,var,root,tools} &&
       mkdir -p mount/var/{run,lib} &&
-      mkdir -p mount/servers/socket &&
+      mkdir -p mount/servers/{socket,bus} &&
       cp -R files/etc/* mount/etc/ &&
       mkdir -p mount/etc/hurd &&
       cp files/runsystem.hurd mount/libexec/ &&
