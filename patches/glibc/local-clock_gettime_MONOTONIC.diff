@@ -1,0 +1,133 @@
+Use the realtime clock for the monotonic clock. This is of course not a proper
+implementation (which is being done in Mach), but will permit to fix at least
+the iceweasel stack.
+
+vlc however doesn't build when _POSIX_CLOCK_SELECTION is enabled but
+_POSIX_TIMERS is not, and they refuse to fix that (see #765578), so disable the
+former.
+
+---
+ sysdeps/mach/hurd/bits/posix_opt.h |    2 +-
+ sysdeps/unix/clock_gettime.c       |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+Index: glibc-2.27/sysdeps/mach/clock_gettime.c
+===================================================================
+--- glibc-2.27.orig/sysdeps/mach/clock_gettime.c
++++ glibc-2.27/sysdeps/mach/clock_gettime.c
+@@ -31,6 +31,10 @@ __clock_gettime (clockid_t clock_id, str
+   switch (clock_id) {
+ 
+     case CLOCK_REALTIME:
++    case CLOCK_MONOTONIC:
++    case CLOCK_MONOTONIC_RAW:
++    case CLOCK_REALTIME_COARSE:
++    case CLOCK_MONOTONIC_COARSE:
+       {
+ 	/* __host_get_time can only fail if passed an invalid host_t.
+ 	   __mach_host_self could theoretically fail (producing an
+Index: glibc-2.27/rt/timer_create.c
+===================================================================
+--- glibc-2.27.orig/rt/timer_create.c
++++ glibc-2.27/rt/timer_create.c
+@@ -48,7 +48,7 @@ timer_create (clockid_t clock_id, struct
+       return -1;
+     }
+ 
+-  if (clock_id != CLOCK_REALTIME)
++  if (clock_id != CLOCK_REALTIME && clock_id != CLOCK_MONOTONIC && clock_id != CLOCK_MONOTONIC_RAW && clock_id != CLOCK_REALTIME_COARSE && clock_id != CLOCK_MONOTONIC_COARSE)
+     {
+       __set_errno (EINVAL);
+       return -1;
+Index: glibc-2.27/sysdeps/mach/hurd/bits/posix_opt.h
+===================================================================
+--- glibc-2.27.orig/sysdeps/mach/hurd/bits/posix_opt.h
++++ glibc-2.27/sysdeps/mach/hurd/bits/posix_opt.h
+@@ -163,10 +163,10 @@
+ #define _POSIX_THREAD_PROCESS_SHARED	-1
+ 
+ /* The monotonic clock might be available.  */
+-#define _POSIX_MONOTONIC_CLOCK	0
++#define _POSIX_MONOTONIC_CLOCK	200809L
+ 
+-/* The clock selection interfaces are available.  */
+-#define _POSIX_CLOCK_SELECTION	200809L
++/* The clock selection interfaces are not really available yet.  */
++#define _POSIX_CLOCK_SELECTION	-1
+ 
+ /* Advisory information interfaces could be available in future.  */
+ #define _POSIX_ADVISORY_INFO	0
+Index: glibc-upstream/sysdeps/posix/clock_getres.c
+===================================================================
+--- glibc-upstream.orig/sysdeps/posix/clock_getres.c
++++ glibc-upstream/sysdeps/posix/clock_getres.c
+@@ -52,6 +52,10 @@ __clock_getres (clockid_t clock_id, stru
+   switch (clock_id)
+     {
+     case CLOCK_REALTIME:
++    case CLOCK_MONOTONIC:
++    case CLOCK_MONOTONIC_RAW:
++    case CLOCK_REALTIME_COARSE:
++    case CLOCK_MONOTONIC_COARSE:
+       retval = realtime_getres (res);
+       break;
+ 
+--- ./sysdeps/mach/clock_nanosleep.c.original	2020-07-21 00:31:35.226113142 +0200
++++ ./sysdeps/mach/clock_nanosleep.c	2020-07-21 00:31:49.026185761 +0200
+@@ -62,7 +62,7 @@
+ __clock_nanosleep (clockid_t clock_id, int flags, const struct timespec *req,
+ 		   struct timespec *rem)
+ {
+-  if (clock_id != CLOCK_REALTIME
++  if ((clock_id != CLOCK_REALTIME && clock_id != CLOCK_MONOTONIC && clock_id != CLOCK_MONOTONIC_RAW && clock_id != CLOCK_REALTIME_COARSE && clock_id != CLOCK_MONOTONIC_COARSE)
+       || !valid_nanoseconds (req->tv_nsec)
+       || (flags != 0 && flags != TIMER_ABSTIME))
+     return EINVAL;
+Index: glibc-2.32/hurd/hurdlock.c
+===================================================================
+--- glibc-2.32.orig/hurd/hurdlock.c
++++ glibc-2.32/hurd/hurdlock.c
+@@ -47,7 +47,7 @@ int
+ __lll_abstimed_wait (void *ptr, int val,
+   const struct timespec *tsp, int flags, int clk)
+ {
+-  if (clk != CLOCK_REALTIME)
++  if (clk != CLOCK_REALTIME && clk != CLOCK_MONOTONIC)
+     return EINVAL;
+ 
+   int mlsec = compute_reltime (tsp, clk);
+@@ -59,7 +59,7 @@ int
+ __lll_abstimed_wait_intr (void *ptr, int val,
+   const struct timespec *tsp, int flags, int clk)
+ {
+-  if (clk != CLOCK_REALTIME)
++  if (clk != CLOCK_REALTIME && clk != CLOCK_MONOTONIC)
+     return EINVAL;
+ 
+   int mlsec = compute_reltime (tsp, clk);
+@@ -79,7 +79,7 @@ int
+ __lll_abstimed_xwait (void *ptr, int lo, int hi,
+   const struct timespec *tsp, int flags, int clk)
+ {
+-  if (clk != CLOCK_REALTIME)
++  if (clk != CLOCK_REALTIME && clk != CLOCK_MONOTONIC)
+     return EINVAL;
+ 
+   int mlsec = compute_reltime (tsp, clk);
+@@ -91,7 +91,7 @@ int
+ __lll_abstimed_lock (void *ptr,
+   const struct timespec *tsp, int flags, int clk)
+ {
+-  if (clk != CLOCK_REALTIME)
++  if (clk != CLOCK_REALTIME && clk != CLOCK_MONOTONIC)
+     return EINVAL;
+ 
+   if (__lll_trylock (ptr) == 0)
+@@ -177,7 +177,7 @@ __lll_robust_abstimed_lock (void *ptr,
+   int wait_time = 25;
+   unsigned int val;
+ 
+-  if (clk != CLOCK_REALTIME)
++  if (clk != CLOCK_REALTIME && clk != CLOCK_MONOTONIC)
+     return EINVAL;
+ 
+   while (1)

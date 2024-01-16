@@ -122,6 +122,8 @@ apply_patch() {
    print_info "Using patch $1 (level: $2)"
    if patch -f -Np$2 --dry-run < $1 > /dev/null 2>&1; then
     patch -Np$2 < $1 || exit 1
+   else
+    echo "Cannot apply patch!"
    fi
 }
 
@@ -134,9 +136,14 @@ download_glibc () {
    git reset --hard &&
    git pull &&
    git checkout $GLIBC_TAG &&
-   apply_patch $SCRIPT_DIR/patches/glibc/tg-mach-hurd-link.diff 1 &&
-   apply_patch $SCRIPT_DIR/patches/glibc/unsubmitted-clock_t_centiseconds.diff 1 &&
+   apply_patch $SCRIPT_DIR/patches/glibc/tg-bits_atomic.h_multiple_threads.diff 1 &&
+   apply_patch $SCRIPT_DIR/patches/glibc/tg-unlockpt-chroot.diff 1 &&
+   apply_patch $SCRIPT_DIR/patches/glibc/local-clock_gettime_MONOTONIC.diff 1 &&
+   apply_patch $SCRIPT_DIR/patches/glibc/submitted-AF_LINK.diff 1 &&
    apply_patch $SCRIPT_DIR/patches/glibc/unsubmitted-prof-eintr.diff 1 &&
+   apply_patch $SCRIPT_DIR/patches/glibc/unsubmitted-getaux_at_secure.diff 1 &&
+   apply_patch $SCRIPT_DIR/patches/glibc/local-static_pthread_setcancelstate.diff 1 &&
+   apply_patch $SCRIPT_DIR/patches/glibc/tg-mach-hurd-link.diff 1 &&
    cd ..
 }
 
