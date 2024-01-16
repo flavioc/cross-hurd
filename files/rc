@@ -92,6 +92,10 @@ if test -d /var/run; then
 fi
 echo done
 
+if ! test -e /proc/cmdline ; then
+	settrans -c /proc /hurd/procfs --compatible
+fi
+
 # This file must exist for e2fsck to work. XXX
 touch /var/run/mtab
 
