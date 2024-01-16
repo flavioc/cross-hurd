@@ -48,6 +48,8 @@ download_vim &&
 
 download_gpg_error &&
 download_gcrypt &&
+download_dmidecode &&
+download_parted &&
 
 download_make &&
 download_grep &&

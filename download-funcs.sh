@@ -29,6 +29,8 @@ GAWK_URL=https://ftp.gnu.org/gnu/gawk/"$GAWK_PKG"
 DASH_URL=http://gondor.apana.org.au/~herbert/dash/files/$DASH_PKG
 LIBPCIACCESS_URL=https://www.x.org/pub/individual/lib/$LIBPCIACCESS_PKG
 LIBXCRYPT_URL=https://github.com/besser82/libxcrypt/releases/download/v$LIBXCRYPT_VERSION/$LIBXCRYPT_PKG
+PARTED_URL=https://ftp.gnu.org/gnu/parted/$PARTED_PKG
+DMIDECODE_URL=http://download.savannah.gnu.org/releases/dmidecode/$DMIDECODE_PKG
 
 unpack () {
    if [ -d "$3" ]; then
@@ -273,4 +275,20 @@ download_libxcrypt () {
       return 0
    fi
    unpack xf $LIBXCRYPT_PKG $LIBXCRYPT_SRC
+}
+
+download_parted () {
+   download $PARTED_PKG $PARTED_URL &&
+   if [ -d $PARTED_SRC ]; then
+      return 0
+   fi
+   unpack xf $PARTED_PKG $PARTED_SRC
+}
+
+download_dmidecode () {
+   download $DMIDECODE_PKG $DMIDECODE_URL &&
+   if [ -d $DMIDECODE_SRC ]; then
+      return 0
+   fi
+   unpack xf $DMIDECODE_PKG $DMIDECODE_SRC
 }

@@ -143,7 +143,6 @@ install_hurd() {
       --build=$HOST \
       --host=$TARGET \
       --prefix=$SYS_ROOT \
-      --without-parted \
       --with-libgcrypt-prefix=$SYS_ROOT \
       --enable-static-progs='ext2fs,iso9660fs,rumpdisk,pci-arbiter,acpi' \
       --disable-profile &&
@@ -293,6 +292,30 @@ install_libxcrypt () {
    make -j$PROCS &&
    make -j $PROCS install &&
    cd ..
+}
+
+install_dmidecode () {
+   rm -rf $DMIDECODE_SRC.obj &&
+   cp -R $SOURCE/$DMIDECODE_SRC ./$DMIDECODE_SRC.obj &&
+   pushd $DMIDECODE_SRC.obj &&
+   make -j$PROCS &&
+   make -j$PROCS install prefix=$SYS_ROOT &&
+   popd
+}
+
+install_parted () {
+   mkdir -p $PARTED_SRC.obj &&
+   pushd $PARTED_SRC.obj &&
+   $SOURCE/$PARTED_SRC/configure --prefix=$SYS_ROOT \
+      --build=$HOST \
+      --host=$TARGET \
+      --disable-device-mapper \
+      --enable-mtrace \
+      --enable-shared \
+      --without-readline &&
+   make -j$PROCS &&
+   make -j$PROCS install &&
+   popd
 }
 
 install_shadow () {
@@ -612,6 +635,8 @@ install_minimal_system() {
    install_libacpica &&
    install_zlib &&
    install_bzip2 &&
+   install_dmidecode &&
+   install_parted &&
    install_gnumach &&
    install_gpg_error &&
    install_gcrypt &&
