@@ -50,14 +50,19 @@ copy_files () {
       cp -R $SYSTEM/$BASE_SYS_ROOT/etc/* mount/etc/ &&
       cp -R $SYSTEM/$BASE_SYS_ROOT/libexec/* mount/libexec/ &&
       cp files/{rc,runsystem} mount/libexec/ &&
-      cp mount/lib/ld.so.1 mount/lib/ld.so &&
+      (if [ -f mount/lib/ld-x86-64.so.1 ]; then
+         ln -sfv /lib/ld-x86-64.so.1 mount/lib/ld.so
+      else
+         ln -sfv /lib/ld.so.1 mount/lib/ld.so
+      fi) &&
       ln -svf / mount/$BASE_SYS_ROOT
       ln -svf /bin/bash mount/bin/sh &&
       cp files/SETUP mount/ &&
       chmod +x mount/SETUP &&
+      rm -f manifest-$CPU.txt &&
       pushd mount &&
-      find .
-      popd
+      (find . > ../manifest-$CPU.txt || true) &&
+      popd &&
       # Create a motd message.
       echo "Welcome to the HURD!" > mount/etc/motd &&
       echo "Cross-compiled from a $HOST on `date`" >> mount/etc/motd &&

@@ -134,9 +134,10 @@ install_gnumach() {
 
 install_hurd() {
    print_info "Compiling Hurd servers..."
-   cd $SOURCE/$HURD_SRC &&
+   pushd $SOURCE/$HURD_SRC &&
    autoreconf -i &&
-   cd - &&
+   popd &&
+   local extra_flags="$1"
    mkdir -p $HURD_SRC.obj &&
    cd $HURD_SRC.obj &&
    $SOURCE/$HURD_SRC/configure \
@@ -145,7 +146,9 @@ install_hurd() {
       --prefix=$SYS_ROOT \
       --with-libgcrypt-prefix=$SYS_ROOT \
       --enable-static-progs='ext2fs,iso9660fs,rumpdisk,pci-arbiter,acpi' \
-      --disable-profile &&
+      --disable-profile \
+      $extra_flags &&
+   make -j$PROCS clean &&
    make -j$PROCS all &&
    fakeroot make -j$PROCS install &&
    cd ..
@@ -635,13 +638,16 @@ install_minimal_system() {
    install_libacpica &&
    install_zlib &&
    install_bzip2 &&
-   install_dmidecode &&
-   install_parted &&
    install_gnumach &&
    install_gpg_error &&
    install_gcrypt &&
    install_util_linux &&
    install_rump &&
+   # We need to build basic hurd libraries in order to
+   # compile parted.
+   install_hurd --without-parted &&
+   install_dmidecode &&
+   install_parted &&
    install_hurd &&
    install_bash &&
    install_dash &&
