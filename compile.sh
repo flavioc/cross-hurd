@@ -465,8 +465,9 @@ install_ncurses () {
 }
 
 install_vim () {
-  # TODO: we should do this without messing up with the original code.
-  cd $SOURCE/vim$VIM_BASE_VERSION &&
+  rm -rf $VIM_SRC.obj &&
+  cp -R $SOURCE/vim$VIM_BASE_VERSION $VIM_SRC.obj &&
+  pushd $VIM_SRC.obj &&
   cat > src/auto/config.cache << "EOF"
   vim_cv_getcwd_broken=no
   vim_cv_memmove_handles_overlap=yes
@@ -476,7 +477,6 @@ install_vim () {
   vim_cv_tty_group=world
   vim_cv_tgetent=zero
 EOF
-  echo "#define SYS_VIMRC_FILE \"${SYS_ROOT}/etc/vimrc\"" >> src/feature.h
   ./configure --build=${HOST} \
     --host=${TARGET} \
     --prefix=${SYS_ROOT} \
@@ -491,7 +491,7 @@ EOF
   make -j$PROCS uninstall &&
   make -j$PROCS install &&
   ln -sfv vim $SYS_ROOT/bin/vi &&
-  cd - &&
+  popd &&
   cat > $SYS_ROOT/etc/vimrc << "EOF"
 set nocompatible
 set backspace=2
