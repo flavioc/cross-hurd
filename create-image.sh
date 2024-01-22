@@ -29,7 +29,7 @@ mount_image () {
 
 copy_files () {
    print_info "Copying system into mount..."
-      mkdir -p mount/{etc,boot,dev,usr,hurd,servers,lib,libexec,proc,sbin,bin,var,root,tools} &&
+      mkdir -p mount/{etc,boot,dev,usr,hurd,servers,lib,libexec,proc,sbin,bin,var,root,share} &&
       mkdir -p mount/var/{run,lib} &&
       mkdir -p mount/servers/{socket,bus} &&
       cp -R files/etc/* mount/etc/ &&
@@ -47,6 +47,7 @@ copy_files () {
       cp -R $SYSTEM/$BASE_SYS_ROOT/sbin/* mount/sbin/ &&
       cp -R $SYSTEM/$BASE_SYS_ROOT/bin/* mount/bin/ &&
       cp -R $SYSTEM/$BASE_SYS_ROOT/lib/* mount/lib/ &&
+      cp -R $SYSTEM/$BASE_SYS_ROOT/share/* mount/share/ &&
       cp -R $SYSTEM/$BASE_SYS_ROOT/etc/* mount/etc/ &&
       cp -R $SYSTEM/$BASE_SYS_ROOT/libexec/* mount/libexec/ &&
       cp files/{rc,runsystem} mount/libexec/ &&
