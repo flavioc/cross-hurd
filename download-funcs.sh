@@ -96,8 +96,6 @@ download_gnumach () {
    pushd gnumach &&
    apply_patch $SCRIPT_DIR/patches/gnumach/50_initrd.patch 1 &&
    apply_patch $SCRIPT_DIR/patches/gnumach/79_dde-debian.patch 1 &&
-   apply_patch $SCRIPT_DIR/patches/gnumach/90_noahci.patch 1 &&
-   apply_patch $SCRIPT_DIR/patches/gnumach/90_noide.patch 1 &&
    popd
 }
 
