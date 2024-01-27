@@ -67,18 +67,20 @@ download_from_git () {
    if [ -n "$branch" ]; then
      add_branch="--branch $branch"
    fi
-   if [ -d $dir ]; then
-      pushd $dir || return 1
+   (if [ -d $dir ]; then
+      (pushd $dir || return 1) &&
+      git reset --hard &&
       git pull &&
       local git_result=$?
       popd &&
       return $git_result
-   fi
-   if [ -n "$CACHE_GIT" ]; then
+   fi) &&
+   (if [ -n "$CACHE_GIT" ]; then
        mkdir -p $DOWNLOAD_CACHE_DIRECTORY &&
        pushd $DOWNLOAD_CACHE_DIRECTORY &&
        (if [ -d $dir ]; then
           pushd $dir &&
+	  git reset --hard &&
           git pull &&
           popd
        else
@@ -88,11 +90,11 @@ download_from_git () {
        ln -sf $DOWNLOAD_CACHE_DIRECTORY/$dir .
    else
        git clone --depth=1 $repo
-   fi
+   fi)
 }
 
 download_gnumach () {
-   download_from_git gnumach git://git.savannah.gnu.org/hurd/gnumach.git
+   download_from_git gnumach git://git.savannah.gnu.org/hurd/gnumach.git &&
    pushd gnumach &&
    apply_patch $SCRIPT_DIR/patches/gnumach/50_initrd.patch 1 &&
    apply_patch $SCRIPT_DIR/patches/gnumach/79_dde-debian.patch 1 &&
@@ -104,7 +106,7 @@ download_mig () {
 }
 
 download_hurd () {
-   download_from_git hurd git://git.savannah.gnu.org/hurd/hurd.git
+   download_from_git hurd git://git.savannah.gnu.org/hurd/hurd.git &&
    pushd hurd &&
    apply_patch $SCRIPT_DIR/patches/hurd/link-rump.patch 1
    popd
@@ -128,9 +130,9 @@ apply_patch() {
 }
 
 download_glibc () {
-   if [ ! -d glibc ]; then
+   (if [ ! -d glibc ]; then
       git clone --depth=1 git://sourceware.org/git/glibc.git
-   fi
+   fi) &&
 
    cd glibc &&
    git reset --hard &&
