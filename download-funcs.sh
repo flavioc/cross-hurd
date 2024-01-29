@@ -154,7 +154,12 @@ download_gcc () {
    if [ -d "$GCC_SRC" ]; then
       return 0
    fi
-   unpack zxf $GCC_PKG $GCC_SRC
+   unpack zxf $GCC_PKG $GCC_SRC &&
+   pushd $GCC_SRC &&
+   apply_patch $SCRIPT_DIR/patches/gcc/hurd-amd64.diff 1 &&
+   apply_patch $SCRIPT_DIR/patches/gcc/hurd-multiarch.diff 1 &&
+   apply_patch $SCRIPT_DIR/patches/gcc/hurd-multilib-multiarch.diff 1 &&
+   popd
 }
 
 download_binutils () {
