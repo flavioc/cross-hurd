@@ -92,10 +92,6 @@ if test -d /var/run; then
 fi
 echo done
 
-if ! test -e /proc/cmdline ; then
-	settrans -c /proc /hurd/procfs --compatible
-fi
-
 # This file must exist for e2fsck to work. XXX
 touch /var/run/mtab
 
@@ -122,6 +118,14 @@ fi
 
 if test -x /sbin/sendmail -a -r /etc/sendmail.cf; then
   /sbin/sendmail -bd -q30m	&& echo -n ' sendmail'
+fi
+
+echo .
+
+echo -n starting translators:
+
+if [ ! -e /proc/cmdline ]; then
+	settrans -ac /proc /hurd/procfs --compatible && echo -n ' procfs'
 fi
 
 echo .
