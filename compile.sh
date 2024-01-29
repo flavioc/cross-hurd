@@ -157,6 +157,7 @@ install_hurd() {
 install_binutils ()
 {
    print_info "Compiling binutils"
+   rm -rf $BINUTILS_SRC.obj &&
    mkdir -p $BINUTILS_SRC.obj &&
    cd $BINUTILS_SRC.obj &&
       $SOURCE/$BINUTILS_SRC/configure \
@@ -428,8 +429,7 @@ install_gcc() {
       --with-native-system-header-dir="$SYS_ROOT/include" \
       --enable-checking=release \
       --disable-libcilkrts \
-      --disable-libssp \
-      --with-arch=$CPU &&
+      --disable-libssp
    cp -v Makefile{,.orig} &&
    sed "/^HOST_\(GMP\|ISL\|CLOOG\)\(LIBS\|INC\)/s:$SYS_ROOT:$CROSS_TOOLS:g" \
          Makefile.orig > Makefile
@@ -672,8 +672,7 @@ install_development_tools() {
    install_mpc &&
    install_gcc &&
    install_make &&
-   install_flex &&
-   install_mig
+   install_flex
 }
 
 install_editors() {
