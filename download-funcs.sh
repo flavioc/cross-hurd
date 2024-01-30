@@ -68,7 +68,7 @@ download_from_git () {
      add_branch="--branch $branch"
    fi
    (if [ -d $dir ]; then
-      (pushd $dir || return 1) &&
+      pushd $dir &&
       git reset --hard &&
       git pull &&
       local git_result=$?
