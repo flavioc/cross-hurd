@@ -33,5 +33,6 @@ LIBPCIACCESS_VERSION=0.17
 LIBXCRYPT_VERSION=4.4.36
 PARTED_VERSION=3.5
 DMIDECODE_VERSION=3.5
+GDB_VERSION=14.1
 # Mach, Hurd and Glibc are all taken from the Git repository.
 
