@@ -269,8 +269,24 @@ install_util_linux() {
 }
 
 install_grub() {
+   rm -f $SOURCE/$GRUB_SRC/grub-core/extra_deps.lst &&
+   echo depends bli part_gpt > $SOURCE/$GRUB_SRC/grub-core/extra_deps.lst &&
+   rm -rf $GRUB_SRC.obj &&
    mkdir -p $GRUB_SRC.obj &&
-   cd $GRUB_SRC.obj &&
+   pushd $GRUB_SRC.obj &&
+   local existing_cc=$CC
+   local existing_cxx=$CXX
+   local existing_ar=$AR
+   local existing_ranlib=$RANLIB
+   local existing_ld=$LD
+   local existing_strip=$STRIP
+   unset CC
+   unset AR
+   unset RANLIB
+   unset LD
+   unset STRIP
+   unset CXX
+   RANLIB=ranlib CXX=g++ AR=ar STRIP=strip TARGET_STRIP=$existing_strip TARGET_CC=$existing_cc CPP="gcc -E" \
    $SOURCE/$GRUB_SRC/configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${TARGET} \
@@ -280,7 +296,13 @@ install_grub() {
       --with-bootdir=$SYS_ROOT/boot &&
    make -j$PROCS &&
    make -j$PROCS install &&
-   cd ..
+   export CC=$existing_cc
+   export CXX=$existing_cxx
+   export AR=$existing_ar
+   export RANLIB=$existing_ranlib
+   export LD=$existing_ld
+   export STRIP=$existing_strip
+   popd
 }
 
 install_libxcrypt () {
