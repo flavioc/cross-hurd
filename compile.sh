@@ -538,18 +538,6 @@ install_gawk() {
    cd ..
 }
 
-install_gdb() {
-   rm -rf $GDB_SRC.obj &&
-   mkdir -p $GDB_SRC.obj &&
-   pushd $GDB_SRC.obj &&
-   $SOURCE/$GDB_SRC/configure --prefix=$SYS_ROOT \
-      --build=$HOST \
-      --host=$TARGET &&
-   make -j$PROCS &&
-   make install &&
-   popd
-}
-
 install_libpciaccess () {
    rm -rf $LIBPCIACCESS_SRC.obj &&
    mkdir -p $LIBPCIACCESS_SRC.obj &&
@@ -684,8 +672,7 @@ install_development_tools() {
    install_mpc &&
    install_gcc &&
    install_make &&
-   install_flex &&
-   install_gdb
+   install_flex
 }
 
 install_editors() {

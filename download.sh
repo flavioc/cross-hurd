@@ -40,9 +40,6 @@ unpack jxf $MPFR_PKG $MPFR_SRC &&
 download $MPC_PKG $MPC_URL &&
 unpack zxf $MPC_PKG $MPC_SRC &&
 
-download $GDB_PKG $GDB_URL &&
-unpack xf $GDB_PKG $GDB_SRC &&
-
 download_libxcrypt &&
 
 download_ncurses &&

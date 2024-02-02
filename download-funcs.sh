@@ -31,7 +31,6 @@ LIBPCIACCESS_URL=https://www.x.org/pub/individual/lib/$LIBPCIACCESS_PKG
 LIBXCRYPT_URL=https://github.com/besser82/libxcrypt/releases/download/v$LIBXCRYPT_VERSION/$LIBXCRYPT_PKG
 PARTED_URL=https://ftp.gnu.org/gnu/parted/$PARTED_PKG
 DMIDECODE_URL=http://download.savannah.gnu.org/releases/dmidecode/$DMIDECODE_PKG
-GDB_URL=https://ftp.gnu.org/gnu/gdb/$GDB_PKG
 
 unpack () {
    if [ -d "$3" ]; then
