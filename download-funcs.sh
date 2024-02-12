@@ -75,8 +75,7 @@ download_from_git () {
       local git_result=$?
       popd &&
       return $git_result
-   fi) &&
-   (if [ -n "$CACHE_GIT" ]; then
+   elif [ -n "$CACHE_GIT" ]; then
        mkdir -p $DOWNLOAD_CACHE_DIRECTORY &&
        pushd $DOWNLOAD_CACHE_DIRECTORY &&
        (if [ -d $dir ]; then
