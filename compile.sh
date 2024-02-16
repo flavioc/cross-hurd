@@ -262,6 +262,7 @@ install_util_linux() {
       --build="$HOST" \
       --host="$TARGET" \
       --disable-makeinstall-chown \
+      --without-ncursesw \
       --disable-makeinstall-setuid  &&
    make -j$PROCS &&
    make -j$PROCS install &&
@@ -457,6 +458,7 @@ install_ncurses () {
      --host=${TARGET} \
      --without-debug \
      --without-ada \
+     --with-termlib \
      --enable-overwrite \
      --with-build-cc=gcc &&
   make -j$PROCS &&
@@ -486,7 +488,7 @@ EOF
     --disable-gpm \
     --without-x \
     --disable-netbeans \
-    --with-tlib=ncurses &&
+    --with-tlib=tinfo &&
   make -j$PROCS &&
   make -j$PROCS uninstall &&
   make -j$PROCS install &&
@@ -641,6 +643,7 @@ install_minimal_system() {
    install_gnumach &&
    install_gpg_error &&
    install_gcrypt &&
+   install_ncurses &&
    install_util_linux &&
    install_rump &&
    # We need to build basic hurd libraries in order to
@@ -671,12 +674,10 @@ install_development_tools() {
    install_mpfr &&
    install_mpc &&
    install_gcc &&
-   install_make &&
-   install_flex
+   install_make
 }
 
 install_editors() {
-   install_ncurses &&
    install_vim
 }
 
