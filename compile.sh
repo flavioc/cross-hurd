@@ -634,6 +634,18 @@ install_rump () {
    popd
 }
 
+install_findutils () {
+   rm -rf $LIBPCIACCESS_SRC.obj &&
+   mkdir -p $LIBPCIACCESS_SRC.obj &&
+   pushd $LIBPCIACCESS_SRC.obj &&
+   $SOURCE/$FINDUTILS_SRC/configure --prefix=$SYS_ROOT \
+      --build="$HOST" \
+      --host="$TARGET" &&
+   make -j$PROCS &&
+   make -j$PROCS install &&
+   popd
+}
+
 install_minimal_system() {
    install_libxcrypt &&
    install_libpciaccess &&
@@ -656,6 +668,7 @@ install_minimal_system() {
    install_dash &&
    install_coreutils &&
    install_e2fsprogs &&
+   install_findutils &&
    install_grub &&
    install_shadow &&
    install_sed

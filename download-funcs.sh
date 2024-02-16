@@ -31,6 +31,7 @@ LIBPCIACCESS_URL=https://www.x.org/pub/individual/lib/$LIBPCIACCESS_PKG
 LIBXCRYPT_URL=https://github.com/besser82/libxcrypt/releases/download/v$LIBXCRYPT_VERSION/$LIBXCRYPT_PKG
 PARTED_URL=https://ftp.gnu.org/gnu/parted/$PARTED_PKG
 DMIDECODE_URL=http://download.savannah.gnu.org/releases/dmidecode/$DMIDECODE_PKG
+FINDUTILS_URL=https://ftp.gnu.org/gnu/findutils/$FINDUTILS_PKG
 
 unpack () {
    if [ -d "$3" ]; then
@@ -295,4 +296,12 @@ download_dmidecode () {
       return 0
    fi
    unpack xf $DMIDECODE_PKG $DMIDECODE_SRC
+}
+
+download_findutils () {
+   download $FINDUTILS_PKG $FINDUTILS_URL &&
+   if [ -d $FINDUTILS_SRC ]; then
+      return 0
+   fi
+   unpack xf $FINDUTILS_PKG $FINDUTILS_SRC
 }
