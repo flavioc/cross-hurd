@@ -17,21 +17,27 @@ install_gnumach() {
    mkdir -p $GNUMACH_SRC.obj &&
    cd $GNUMACH_SRC.obj &&
    local disable_user32=""
-   local mig_location=""
-   if [ -z "$USER32" ]; then
-      disable_user32="--disable-user32"
-      mig_location=$CROSS_TOOLS/bin/x86_64-gnu-mig
+   local user_mig=""
+   local user_cc
+   if [ ! -z "$USER32" ]; then
+      enable_user32="--enable-user32"
+      user_mig=/cross-tools-i686/bin/i686-gnu-mig
+      user_cc=/cross-tools-i686/bin/i686-gnu-gcc
+      user_cpp="$user_cc -E"
    else
-      mig_location=/cross-tools-i686/bin/i686-gnu-mig
+      user_mig=$CROSS_TOOLS/bin/x86_64-gnu-mig
+      user_cc=$CROSS_TOOLS/bin/x86_64-gnu-gcc
+      user_cpp="$user_cc -E"
    fi &&
-   MIGUSER=$mig_location $SOURCE/$GNUMACH_SRC/configure \
+   USER_CC="$user_cc" USER_CPP="$user_cpp" \
+   USER_MIG="$user_mig" $SOURCE/$GNUMACH_SRC/configure \
       --host="$TARGET" \
       --build="$HOST" \
       --exec-prefix=$SYSTEM \
       --enable-kdb \
       --enable-kmsg \
       --prefix="$SYS_ROOT" \
-      $disable_user32 &&
+      $enable_user32 &&
    make -j$PROCS gnumach.gz gnumach gnumach.msgids &&
    make -j$PROCS install &&
    mkdir -p $SYSTEM/boot &&
