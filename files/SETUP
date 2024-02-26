@@ -33,7 +33,7 @@ fsysopts / --writable
 # Setup crucial devices
 cd /dev
 rm -f console
-/bin/bash /sbin/MAKEDEV console std hd0 hd0s1 sd0 rumpdisk wd0 wd0s1 tty1 tty2 tty3 tty4 tty5 tty6
+/bin/bash /sbin/MAKEDEV console cd0 cd1 std hd0 hd0s1 sd0 rumpdisk wd0 wd0s1 tty1 tty2 tty3 tty4 tty5 tty6
 set +v
 
 # if test "$BOOT_DEV" && /bin/sh ./MAKEDEV "$BOOT_DEV"; then
