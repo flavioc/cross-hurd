@@ -25,3 +25,10 @@ Once the toolchain is in place, run "bash compile.sh" to build a very basic set 
 If everything went alright, then run "bash create-image.sh" to create a bootable disk image. You will be asked for a sudo password because you need access to the loopback device. The script will use the base system built previously. The script runs 'grub-install' on the final disk image and needs to have the files for the i386-pc architecture (in debian, you need to install grub-pc-bin).
 
 Once the file "hd.img" is in place, just run it on your favorite virtual machine. The grub bootloader will load GNU Mach and the Hurd and complete the installation process by populating the /dev directory and then rebooting. Afterwards, just enter "login root" to log into the system.
+
+# Qemu specific parameters
+In files/boot/grub.cfg, device type defined as "noide". Therefore, in qemu you need to add machine type Standard PC (Q35 + ICH9, 2009) by appending "-M q35".
+
+example: $ qemu-system-i386 2G -drive cache=writeback,file=hd.img -M q35
+
+But in case of image created with "create-initrd.sh", you don't need to append "-M q35".

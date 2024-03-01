@@ -12,7 +12,7 @@ LOOPPART="${LOOP}p1"
 IMG_SIZE=2048MB
 BASE_SYS_ROOT=$(basename $SYS_ROOT)
 INITRD_FILE=initrd.ext2
-INITRD_SIZE=100MB
+INITRD_SIZE=250MB
 DISK_SIZE=2048MB
 IMG=hd.img
 
@@ -76,7 +76,12 @@ fill_disk () {
    mkdir -p output-disk/{sbin,boot,tools,lib} &&
    mkdir -p output-disk/boot/grub &&
    cp $src/hurd/ext2fs.static output-disk/sbin &&
-   cp $src/lib/ld-x86-64.so.1 output-disk/lib/ld.so.1 &&
+   (if [ -f mount/lib/ld-x86-64.so.1 ]; then
+      cp $src/lib/ld-x86-64.so.1 output-disk/lib/ld.so.1
+    else
+      cp $src/lib/ld.so.1 output-disk/lib/ld.so.1
+   fi) &&
+   ln -sfv /lib/ld.so.1 output-disk/lib/ld.so &&
    mv $INITRD_FILE output-disk/boot &&
    cp $SYSTEM/boot/gnumach output-disk/boot &&
    cp files/boot/grub.initrd.cfg output-disk/boot/grub/grub.cfg &&
