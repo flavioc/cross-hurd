@@ -58,3 +58,23 @@ In files/boot/grub.cfg, device type defined as "noide". Therefore, in qemu you n
 `$ qemu-system-i386 -m 2G -drive cache=writeback,file=hd.img -M q35`
 
 But in case of image created with "create-initrd.sh", you don't need to append "-M q35".
+
+# Troubleshooting guide
+
+If you get compilation error due to latest git commit of some of the packages, check **download-funcs.sh** and find the git URL of the failing package.
+
+Example: We are trying to git clone with depth 5 and reset to a last known working commit hash.
+Please set the depth based on the number of commits from the latest commit and last known working commit hash.
+
+```
+$ cd src/
+$ rm -fr package_name
+$ git clone --depth 5 https://URL/package_name.git
+$ cd package_name
+$ git reset --hard 95f0e08fe16bc73b6c5ab337ea461ae119a38728
+$ git clean -df
+$ cd ../../
+$ CPU=i686 bash compile.sh
+```
+
+If it is still failing, you may also need to adjust **compile.sh** for that package.
