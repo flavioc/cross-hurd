@@ -29,6 +29,7 @@ fsysopts / --writable
 /bin/settrans -c /servers/password /hurd/password
 /bin/settrans -c /servers/acpi /hurd/acpi
 /bin/settrans -c /servers/bus/pci /hurd/pci-arbiter
+/bin/settrans -c /servers/shutdown /hurd/shutdown
 
 # Setup crucial devices
 cd /dev
