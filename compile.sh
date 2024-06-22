@@ -540,15 +540,37 @@ install_gawk() {
    cd ..
 }
 
+generate_meson_cross_file () {
+   local cross_file="$1"
+   rm -f $cross_file &&
+   cat <<EOF > $cross_file
+[paths]
+prefix = '$SYS_ROOT'
+
+[host_machine]
+system = 'gnu'
+cpu_family = '$CPU'
+cpu = '$CPU'
+endian = 'little'
+
+[binaries]
+c = '$CROSS_TOOLS/bin/$CPU-gnu-gcc'
+cpp = '$CROSS_TOOLS/bin/$CPU-gnu-cpp'
+ar = '$CROSS_TOOLS/bin/$CPU-gnu-ar'
+ld = '$CROSS_TOOLS/bin/$CPU-gnu-ld'
+strip = '$CROSS_TOOLS/bin/$CPU-strip'
+EOF
+}
+
 install_libpciaccess () {
    rm -rf $LIBPCIACCESS_SRC.obj &&
    mkdir -p $LIBPCIACCESS_SRC.obj &&
-   pushd $LIBPCIACCESS_SRC.obj &&
-   $SOURCE/$LIBPCIACCESS_SRC/configure --prefix=$SYS_ROOT \
-      --build=$HOST \
-      --host=$TARGET &&
-   make -j$PROCS &&
-   make install &&
+   local build_dir=$PWD/$LIBPCIACCESS_SRC.obj &&
+   pushd $SOURCE/$LIBPCIACCESS_SRC &&
+   generate_meson_cross_file cross-file-$CPU.txt &&
+   meson setup --cross-file cross-file-$CPU.txt $build_dir &&
+   meson compile -C $build_dir &&
+   meson install -C $build_dir &&
    popd
 }
 
