@@ -543,13 +543,22 @@ install_gawk() {
 generate_meson_cross_file () {
    local cross_file="$1"
    rm -f $cross_file &&
+   local cpu_family
+   if [ "$CPU" = "i686" ]; then
+      cpu_family="x86"
+   else
+      cpu_family="x86_64"
+   fi
    cat <<EOF > $cross_file
+[built-in options]
+default_library = 'both'
+
 [paths]
 prefix = '$SYS_ROOT'
 
 [host_machine]
 system = 'gnu'
-cpu_family = '$CPU'
+cpu_family = '$cpu_family'
 cpu = '$CPU'
 endian = 'little'
 
@@ -559,6 +568,7 @@ cpp = '$CROSS_TOOLS/bin/$CPU-gnu-cpp'
 ar = '$CROSS_TOOLS/bin/$CPU-gnu-ar'
 ld = '$CROSS_TOOLS/bin/$CPU-gnu-ld'
 strip = '$CROSS_TOOLS/bin/$CPU-strip'
+pkg-config = '$CROSS_TOOLS/bin/pkg-config'
 EOF
 }
 

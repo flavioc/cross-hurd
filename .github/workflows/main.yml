@@ -14,7 +14,7 @@ jobs:
     - run: apt-get update
     - run: apt-get install apt-transport-https ca-certificates -y
     - run: update-ca-certificates
-    - run: apt install -y gcc make autoconf g++ texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext
+    - run: apt install -y gcc make autoconf g++ texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext meson
     - run: bash download.sh
     - run: bash bootstrap.sh
     - run: bash compile.sh
