@@ -154,7 +154,7 @@ download_gcc () {
    if [ -d "$GCC_SRC" ]; then
       return 0
    fi
-   unpack zxf $GCC_PKG $GCC_SRC &&
+   unpack zxf $GCC_PKG $GCC_SRC
 }
 
 download_binutils () {
