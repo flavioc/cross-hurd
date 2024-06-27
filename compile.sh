@@ -139,7 +139,7 @@ install_hurd() {
    popd &&
    local extra_flags="$1"
    mkdir -p $HURD_SRC.obj &&
-   cd $HURD_SRC.obj &&
+   pushd $HURD_SRC.obj &&
    $SOURCE/$HURD_SRC/configure \
       --build=$HOST \
       --host=$TARGET \
@@ -151,7 +151,13 @@ install_hurd() {
    make -j$PROCS clean &&
    make -j$PROCS all &&
    fakeroot make -j$PROCS install &&
-   cd ..
+   (if [ -z "$extra_flags" ]; then
+     make -j$PROCS libddekit &&
+     make -j$PROCS libmachdevdde &&
+     fakeroot make -j$PROCS -C libddekit install &&
+     fakeroot make -j$PROCS -C libmachdevdde install
+   fi) &&
+   popd
 }
 
 install_binutils ()

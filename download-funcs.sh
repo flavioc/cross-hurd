@@ -109,6 +109,9 @@ download_hurd () {
    download_from_git hurd git://git.savannah.gnu.org/hurd/hurd.git &&
    pushd hurd &&
    apply_patch $SCRIPT_DIR/patches/hurd/link-rump.patch 1
+   cp -R $SOURCE/dde/libmachdevdde ./libmachdevdde &&
+   cp -R $SOURCE/dde/libddekit ./libddekit &&
+   cp -R $SOURCE/dde/libdde_linux26 ./libdde-linux26 &&
    popd
 }
 
@@ -118,6 +121,10 @@ download_rumpkernel () {
 
 download_libacpica () {
    download_from_git libacpica https://salsa.debian.org/hurd-team/libacpica.git
+}
+
+download_dde () {
+   download_from_git dde git://git.savannah.gnu.org/hurd/incubator.git dde
 }
 
 apply_patch() {

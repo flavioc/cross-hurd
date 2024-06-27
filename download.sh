@@ -61,6 +61,7 @@ download_dash &&
 download_libpciaccess &&
 download_gnumach &&
 download_mig &&
+download_dde &&
 download_hurd &&
 download_glibc &&
 download_libacpica &&
