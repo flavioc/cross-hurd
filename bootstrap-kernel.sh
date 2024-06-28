@@ -5,7 +5,7 @@
 . ./bootstrap-funcs.sh
 
 print_info "Root is $CROSS_TOOLS"
-print_info "Cross-compiling on $HOST to $TARGET"
+print_info "Cross-compiling on $HOST to $CROSS_HURD_TARGET"
 
 setup_directories
 
@@ -31,7 +31,7 @@ install_gnumach() {
    fi &&
    USER_CC="$user_cc" USER_CPP="$user_cpp" \
    USER_MIG="$user_mig" $SOURCE/$GNUMACH_SRC/configure \
-      --host="$TARGET" \
+      --host="$CROSS_HURD_TARGET" \
       --build="$HOST" \
       --exec-prefix=$SYSTEM \
       --enable-kdb \
@@ -46,14 +46,14 @@ install_gnumach() {
 }
 
 set_vars() {
-   export CC="${TARGET}-gcc"
-   export CXX="${TARGET}-g++"
-   export AR="${CROSS_TOOLS}/bin/${TARGET}-ar"
-   export AS="${CROSS_TOOLS}/bin/${TARGET}-as"
-   export RANLIB="${CROSS_TOOLS}/bin/${TARGET}-ranlib"
-   export LD="${CROSS_TOOLS}/bin/${TARGET}-ld"
-   export STRIP="${CROSS_TOOLS}/bin/${TARGET}-strip"
-   export MIG="${CROSS_TOOLS}/bin/${TARGET}-mig"
+   export CC="${CROSS_HURD_TARGET}-gcc"
+   export CXX="${CROSS_HURD_TARGET}-g++"
+   export AR="${CROSS_TOOLS}/bin/${CROSS_HURD_TARGET}-ar"
+   export AS="${CROSS_TOOLS}/bin/${CROSS_HURD_TARGET}-as"
+   export RANLIB="${CROSS_TOOLS}/bin/${CROSS_HURD_TARGET}-ranlib"
+   export LD="${CROSS_TOOLS}/bin/${CROSS_HURD_TARGET}-ld"
+   export STRIP="${CROSS_TOOLS}/bin/${CROSS_HURD_TARGET}-strip"
+   export MIG="${CROSS_TOOLS}/bin/${CROSS_HURD_TARGET}-mig"
 }
 
 mkdir -p $BUILD_ROOT/bootstrap-kernel &&

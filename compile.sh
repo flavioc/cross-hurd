@@ -2,14 +2,14 @@
 
 . ./vars.sh
 . ./download-funcs.sh
-export CC="$CROSS_TOOLS/bin/${TARGET}-gcc"
-export CXX="$CROSS_TOOLS/bin/${TARGET}-g++"
-export AR="$CROSS_TOOLS/bin/${TARGET}-ar"
-export AS="$CROSS_TOOLS/bin/${TARGET}-as"
-export RANLIB="$CROSS_TOOLS/bin/${TARGET}-ranlib"
-export LD="$CROSS_TOOLS/bin/${TARGET}-ld"
-export STRIP="$CROSS_TOOLS/bin/${TARGET}-strip"
-export MIG="$CROSS_TOOLS/bin/${TARGET}-mig"
+export CC="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-gcc"
+export CXX="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-g++"
+export AR="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-ar"
+export AS="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-as"
+export RANLIB="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-ranlib"
+export LD="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-ld"
+export STRIP="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-strip"
+export MIG="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-mig"
 
 install_flex() {
    mkdir -p $FLEX_SRC.obj &&
@@ -17,7 +17,7 @@ install_flex() {
    ac_cv_func_realloc_0_nonnull=yes ac_cv_func_malloc_0_nonnull=yes \
    $SOURCE/$FLEX_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
-      --host="$TARGET" &&
+      --host="$CROSS_HURD_TARGET" &&
    sed -i -e 's/tests//' Makefile &&
    make -j$PROCS all &&
    make -j$PROCS install &&
@@ -33,9 +33,9 @@ install_mig() {
    cd "$GNUMIG_SRC".obj &&
    $SOURCE/$GNUMIG_SRC/configure \
       --build="$HOST" \
-      --host="$TARGET" \
+      --host="$CROSS_HURD_TARGET" \
       --prefix="$SYS_ROOT" \
-      --target="$TARGET" &&
+      --target="$CROSS_HURD_TARGET" &&
    make clean &&
    make -j$PROCS all &&
    make -j$PROCS install &&
@@ -76,7 +76,7 @@ install_gpg_error() {
    cd $GPG_ERROR_SRC.obj &&
    $SOURCE/$GPG_ERROR_SRC/configure --prefix=$SYS_ROOT \
       --build="$HOST" \
-      --host="$TARGET" &&
+      --host="$CROSS_HURD_TARGET" &&
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..
@@ -87,7 +87,7 @@ install_gcrypt() {
    cd $GCRYPT_SRC.obj &&
    $SOURCE/$GCRYPT_SRC/configure --prefix=$SYS_ROOT \
       --build="$HOST" \
-      --host="$TARGET" \
+      --host="$CROSS_HURD_TARGET" \
       --disable-padlock-support \
       --with-gpg-error-prefix="$SYS_ROOT" \
       --disable-asm &&
@@ -114,7 +114,7 @@ install_gnumach() {
    CFLAGS="-O2 -Wall -g -pipe -fno-strict-aliasing -no-pie -fno-PIE -fno-pie -Wformat -Werror=format-security" \
    LDFLAGS="-no-pie" \
    MIGUSER=$mig_location $SOURCE/$GNUMACH_SRC/configure \
-      --host="$TARGET" \
+      --host="$CROSS_HURD_TARGET" \
       --build="$HOST" \
       --exec-prefix=/tmp/throwitaway \
       --enable-kdb \
@@ -142,7 +142,7 @@ install_hurd() {
    pushd $HURD_SRC.obj &&
    $SOURCE/$HURD_SRC/configure \
       --build=$HOST \
-      --host=$TARGET \
+      --host=$CROSS_HURD_TARGET \
       --prefix=$SYS_ROOT \
       --with-libgcrypt-prefix=$SYS_ROOT \
       --enable-static-progs='ext2fs,iso9660fs,rumpdisk,pci-arbiter,acpi' \
@@ -169,8 +169,8 @@ install_binutils ()
       $SOURCE/$BINUTILS_SRC/configure \
       --prefix="$SYS_ROOT" \
       --build="$HOST" \
-      --host="$TARGET" \
-      --target="$TARGET" \
+      --host="$CROSS_HURD_TARGET" \
+      --target="$CROSS_HURD_TARGET" \
       --with-lib-path="$SYS_ROOT"/lib \
       --disable-nls \
       --enable-shared \
@@ -200,7 +200,7 @@ bash_cv_unusable_rtsigs=no
 gt_cv_int_divbyzero_sigfpe=yes
 EOF
    $SOURCE/$BASH_SRC/configure --prefix="$SYS_ROOT" \
-      --build="$HOST" --host="$TARGET" \
+      --build="$HOST" --host="$CROSS_HURD_TARGET" \
       --without-bash-malloc --cache-file=config.cache &&
    make -j$PROCS &&
    make -j$PROCS install &&
@@ -212,7 +212,7 @@ install_dash () {
    mkdir -p $DASH_SRC.obj &&
    pushd $DASH_SRC.obj &&
    $SOURCE/$DASH_SRC/configure --prefix=$SYS_ROOT \
-      --build=$HOST --host=$TARGET
+      --build=$HOST --host=$CROSS_HURD_TARGET
    make -j$PROCS &&
       make -j$PROCS install &&
    popd
@@ -227,7 +227,7 @@ gl_cv_func_working_mkstemp=yes
 EOF
    $SOURCE/$COREUTILS_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
-      --host="$TARGET" \
+      --host="$CROSS_HURD_TARGET" \
       --enable-install-program=hostname \
       --disable-year2038 \
       --cache-file=config.cache &&
@@ -240,7 +240,7 @@ install_libuuid() {
    cd "$LIBUUID_SRC" &&
    ./configure --prefix="$SYS_ROOT" \
       --host="$HOST" \
-      --target="$TARGET" &&
+      --target="$CROSS_HURD_TARGET" &&
    make -j$PROCS && make -j$PROCS install &&
    cd ..
 }
@@ -253,7 +253,7 @@ install_e2fsprogs() {
       --prefix="$SYS_ROOT" \
       --enable-elf-shlibs \
       --build=${HOST} \
-      --host=${TARGET} \
+      --host=${CROSS_HURD_TARGET} \
       --disable-libblkid \
       --disable-libuuid  \
       --disable-uuidd &&
@@ -266,7 +266,7 @@ install_util_linux() {
    cd $UTIL_LINUX_SRC.obj &&
    $SOURCE/$UTIL_LINUX_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
-      --host="$TARGET" \
+      --host="$CROSS_HURD_TARGET" \
       --disable-makeinstall-chown \
       --without-ncursesw \
       --disable-makeinstall-setuid  &&
@@ -280,7 +280,7 @@ install_grub() {
    cd $GRUB_SRC.obj &&
    $SOURCE/$GRUB_SRC/configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
-      --host=${TARGET} \
+      --host=${CROSS_HURD_TARGET} \
       --disable-efiemu \
       --disable-werror \
       --enable-grub-mkfont=no \
@@ -295,7 +295,7 @@ install_libxcrypt () {
    cd $LIBXCRYPT_SRC.obj &&
    $SOURCE/$LIBXCRYPT_SRC/configure --prefix=$SYS_ROOT \
       --build=$HOST \
-      --host=$TARGET \
+      --host=$CROSS_HURD_TARGET \
       --enable-hashes=strong,glibc \
       --enable-obsolete-api=no \
       --disable-static \
@@ -319,7 +319,7 @@ install_parted () {
    pushd $PARTED_SRC.obj &&
    $SOURCE/$PARTED_SRC/configure --prefix=$SYS_ROOT \
       --build=$HOST \
-      --host=$TARGET \
+      --host=$CROSS_HURD_TARGET \
       --disable-device-mapper \
       --enable-mtrace \
       --enable-shared \
@@ -353,7 +353,7 @@ install_shadow () {
    cd $SHADOW_SRC.obj &&
    ../$SHADOW_SRC.copy/configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
-      --host=${TARGET} \
+      --host=${CROSS_HURD_TARGET} \
       --cache-file=config.cache \
       --enable-subordinate-ids=no \
       --disable-dependency-tracking \
@@ -367,7 +367,7 @@ install_sed() {
    cd $SED_SRC.obj &&
    $SOURCE/$SED_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
-      --host="$TARGET" &&
+      --host="$CROSS_HURD_TARGET" &&
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..
@@ -380,7 +380,7 @@ install_gmp() {
   CC_FOR_BUILD="$HOST_MACHINE-gcc" $SOURCE/$GMP_SRC/configure \
       --prefix="$SYS_ROOT" \
       --build=${HOST} \
-      --host=${TARGET} &&
+      --host=${CROSS_HURD_TARGET} &&
   make -j$PROCS &&
   make -j$PROCS install &&
   cd ..
@@ -392,7 +392,7 @@ install_mpfr() {
    cd $MPFR_SRC.obj &&
    $SOURCE/$MPFR_SRC/configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
-      --host=${TARGET} &&
+      --host=${CROSS_HURD_TARGET} &&
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..
@@ -404,7 +404,7 @@ install_mpc() {
    cd $MPC_SRC.obj &&
    $SOURCE/$MPC_SRC/configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
-      --host=${TARGET} &&
+      --host=${CROSS_HURD_TARGET} &&
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..
@@ -424,8 +424,8 @@ install_gcc() {
    ../$GCC_SRC.compiler/configure \
       --prefix=$SYS_ROOT \
       --build=${HOST} \
-      --target=${TARGET} \
-      --host=${TARGET} \
+      --target=${CROSS_HURD_TARGET} \
+      --host=${CROSS_HURD_TARGET} \
       --disable-multilib \
       --disable-bootstrap \
       --with-local-prefix="$SYS_ROOT" \
@@ -461,7 +461,7 @@ install_ncurses () {
      --prefix="${SYS_ROOT}" \
      --with-shared \
      --build=${HOST} \
-     --host=${TARGET} \
+     --host=${CROSS_HURD_TARGET} \
      --without-debug \
      --without-ada \
      --with-termlib \
@@ -486,7 +486,7 @@ install_vim () {
   vim_cv_tgetent=zero
 EOF
   ./configure --build=${HOST} \
-    --host=${TARGET} \
+    --host=${CROSS_HURD_TARGET} \
     --prefix=${SYS_ROOT} \
     --enable-gui=no \
     --disable-gtktest \
@@ -516,7 +516,7 @@ install_make() {
    cd $MAKE_SRC.obj &&
    $SOURCE/$MAKE_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
-      --host="$TARGET" &&
+      --host="$CROSS_HURD_TARGET" &&
    make -j$PROCS &&
    make -j$PROCS install &&
    cd ..
@@ -528,7 +528,7 @@ install_grep() {
    cd $GREP_SRC.obj &&
    $SOURCE/$GREP_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
-      --host="$TARGET" &&
+      --host="$CROSS_HURD_TARGET" &&
    make -j$PROCS &&
    make install &&
    cd ..
@@ -540,7 +540,7 @@ install_gawk() {
    cd $GAWK_SRC.obj &&
    $SOURCE/$GAWK_SRC/configure --prefix="$SYS_ROOT" \
       --build="$HOST" \
-      --host="$TARGET" &&
+      --host="$CROSS_HURD_TARGET" &&
    make -j$PROCS &&
    make install &&
    cd ..
@@ -628,7 +628,7 @@ install_rump () {
          pushd lib/librumpuser &&
             ./configure --prefix=$SYS_ROOT \
                --build=$HOST \
-               --host=$TARGET &&
+               --host=$CROSS_HURD_TARGET &&
          popd &&
          CFLAGS="-Wno-format-security -Wno-omit-frame-pointer" \
          HOST_GCC=$HOST_CC TARGET_CC=$CC TARGET_CXX=$CC \
@@ -678,7 +678,7 @@ install_findutils () {
    pushd $LIBPCIACCESS_SRC.obj &&
    $SOURCE/$FINDUTILS_SRC/configure --prefix=$SYS_ROOT \
       --build="$HOST" \
-      --host="$TARGET" &&
+      --host="$CROSS_HURD_TARGET" &&
    make -j$PROCS &&
    make -j$PROCS install &&
    popd

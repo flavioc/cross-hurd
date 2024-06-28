@@ -12,7 +12,7 @@ compile_binutils ()
    AR=$HOST_AR AS=$HOST_AS \
    $SOURCE/$BINUTILS_SRC/configure \
       --host="$HOST" \
-      --target="$TARGET" \
+      --target="$CROSS_HURD_TARGET" \
       --prefix="$CROSS_TOOLS" \
       --with-sysroot="$SYSTEM" \
       --disable-static \
@@ -35,7 +35,7 @@ compile_gcc ()
       --prefix=$CROSS_TOOLS \
       --build="$HOST" \
       --host="$HOST" \
-      --target="$TARGET" \
+      --target="$CROSS_HURD_TARGET" \
       --with-sysroot="$SYSTEM" \
       --with-local-prefix="$SYS_ROOT" \
       --with-native-system-header-dir="$SYS_ROOT"/include \
@@ -59,7 +59,7 @@ compile_gcc ()
    make -j$PROCS all-gcc &&
    make -j$PROCS install-gcc &&
    make -j$PROCS configure-target-libgcc &&
-   cd "$TARGET"/libgcc &&
+   cd "$CROSS_HURD_TARGET"/libgcc &&
    make -j$PROCS all &&
    make -j$PROCS install &&
    cd - &&
@@ -80,7 +80,7 @@ install_gnumach_headers() {
    fi
    cd "$GNUMACH_SRC".obj &&
       $SOURCE/$GNUMACH_SRC/configure \
-      --host="$TARGET" \
+      --host="$CROSS_HURD_TARGET" \
       --prefix="$SYS_ROOT" \
       $disable_user32 &&
    make -j$PROCS install-data &&
@@ -95,7 +95,7 @@ install_gnumig() {
    rm -rf $GNUMIG_SRC.host_obj &&
    mkdir -p $GNUMIG_SRC.host_obj &&
    cd $GNUMIG_SRC.host_obj &&
-   $SOURCE/$GNUMIG_SRC/configure --target="$TARGET" \
+   $SOURCE/$GNUMIG_SRC/configure --target="$CROSS_HURD_TARGET" \
       --prefix=$CROSS_TOOLS &&
    make -j$PROCS &&
    make -j$PROCS install &&
@@ -111,8 +111,8 @@ install_hurd_headers() {
    mkdir -p $HURD_SRC.obj &&
    cd $HURD_SRC.obj &&
    $SOURCE/$HURD_SRC/configure \
-      --host="$TARGET" \
-      --target="$TARGET" \
+      --host="$CROSS_HURD_TARGET" \
+      --target="$CROSS_HURD_TARGET" \
       --prefix= \
       --disable-profile \
       --without-libbz2 \
@@ -129,12 +129,12 @@ compile_first_glibc() {
    rm -rf $GLIBC_SRC.first_obj &&
    mkdir -p $GLIBC_SRC.first_obj &&
    cd $GLIBC_SRC.first_obj &&
-   BUILD_CC=$HOST_CC CC=$TARGET-gcc \
-   AR=$TARGET-ar CXX="cxx-not-found" RANLIB=$TARGET-ranlib \
+   BUILD_CC=$HOST_CC CC=$CROSS_HURD_TARGET-gcc \
+   AR=$CROSS_HURD_TARGET-ar CXX="cxx-not-found" RANLIB=$CROSS_HURD_TARGET-ranlib \
    $SOURCE/$GLIBC_SRC/configure \
       --with-binutils=${CROSS_TOOLS}/bin \
       --build="$HOST" \
-      --host="$TARGET" \
+      --host="$CROSS_HURD_TARGET" \
       --prefix="$SYS_ROOT" \
       --with-headers="$SYS_ROOT"/include \
       --cache-file=config.cache \
@@ -159,7 +159,7 @@ compile_full_gcc () {
    LDFLAGS="-Wl,-rpath,${CROSS_TOOLS}/lib" \
    $SOURCE/$GCC_SRC/configure \
       --prefix=$CROSS_TOOLS \
-      --target="$TARGET" \
+      --target="$CROSS_HURD_TARGET" \
       --with-sysroot="$SYSTEM" \
       --with-local-prefix="$SYS_ROOT" \
       --with-native-system-header-dir="$SYS_ROOT"/include \
@@ -174,7 +174,7 @@ compile_full_gcc () {
       --disable-bootstrap \
       --disable-libcilkrts \
       --disable-libgomp &&
-   make -j$PROCS AS_FOR_TARGET="$TARGET-as" LD_FOR_TARGET="$TARGET-ld" all &&
+   make -j$PROCS AS_FOR_TARGET="$CROSS_HURD_TARGET-as" LD_FOR_TARGET="$CROSS_HURD_TARGET-ld" all &&
    make -j$PROCS install &&
    cd ..
 }
@@ -185,12 +185,12 @@ compile_second_glibc() {
    mkdir -p $GLIBC_SRC.second_obj &&
    cd $GLIBC_SRC.second_obj &&
    rm -f config.cache &&
-   BUILD_CC=$HOST_CC CC=$TARGET-gcc CXX="" \
-   AR=$TARGET-ar RANLIB=$TARGET-ranlib \
+   BUILD_CC=$HOST_CC CC=$CROSS_HURD_TARGET-gcc CXX="" \
+   AR=$CROSS_HURD_TARGET-ar RANLIB=$CROSS_HURD_TARGET-ranlib \
    $SOURCE/$GLIBC_SRC/configure \
       --with-binutils=$CROSS_TOOLS/bin \
       --build="$HOST" \
-      --host="$TARGET" \
+      --host="$CROSS_HURD_TARGET" \
       --prefix="$SYS_ROOT" \
       --with-headers="$SYS_ROOT"/include \
       --enable-obsolete-rpc \
@@ -210,7 +210,7 @@ compile_pkgconfiglite() {
    mkdir -p $PKGCONFIGLITE_SRC.obj &&
    cd $PKGCONFIGLITE_SRC.obj &&
    $SOURCE/$PKGCONFIGLITE_SRC/configure \
-      --prefix=$CROSS_TOOLS --host=$TARGET \
+      --prefix=$CROSS_TOOLS --host=$CROSS_HURD_TARGET \
       --with-pc-path=$SYS_ROOT/lib/pkgconfig &&
    make -j$PROCS &&
    make -j$PROCS install &&
@@ -228,8 +228,8 @@ create_tools_symlink() {
 
 setup_directories() {
    mkdir -p "$SYSTEM" && cd "$SYSTEM" &&
-   mkdir -p bin boot "$(basename $SYS_ROOT)/include" "$(basename $SYS_ROOT)/lib" "$(basename $CROSS_TOOLS)/$TARGET" &&
+   mkdir -p bin boot "$(basename $SYS_ROOT)/include" "$(basename $SYS_ROOT)/lib" "$(basename $CROSS_TOOLS)/$CROSS_HURD_TARGET" &&
 	create_tools_symlink &&
-	ln -sfn $SYS_ROOT/include $SYS_ROOT/lib $CROSS_TOOLS/$TARGET/ &&
+	ln -sfn $SYS_ROOT/include $SYS_ROOT/lib $CROSS_TOOLS/$CROSS_HURD_TARGET/ &&
    cd -
 }
