@@ -1,0 +1,13 @@
+diff --git a/machdev.c b/machdev.c
+index dda5eb8..69345a1 100644
+--- a/machdev.c
++++ b/machdev.c
+@@ -18,5 +18,7 @@ void machdev_run1 (void *arg)
+ 
+ void machdev_run2(void)
+ {
+-	machdev_trivfs_server(bootstrap);
++	mach_port_t bootstrap = FALSE;
++	machdev_trivfs_server_startup(bootstrap);
++	machdev_trivfs_server_loop(NULL);
+ }

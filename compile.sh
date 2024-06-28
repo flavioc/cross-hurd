@@ -175,6 +175,20 @@ install_hurd() {
    popd
 }
 
+install_netdde () {
+  rm -rf netdde.obj &&
+  cp -R $SOURCE/netdde ./netdde.obj &&
+  pushd netdde.obj &&
+  make -j$PROCS convert PKGDIR=$SYS_ROOT/share/libdde_linux26 &&
+  rm -f Makefile.inc &&
+  make -j$PROCS ARCH=x86 CC=$CC LINK_PROGRAM=$CC PKGDIR=$SYS_ROOT/share/libdde_linux26 &&
+  cp netdde $SYS_ROOT/hurd/ &&
+  rm -f Makefile.inc &&
+  make -j$PROCS ARCH=x86 TARGET=netdde.static CC=$CC LINK_PROGRAM="$CC -static" PKGDIR=$SYS_ROOT/share/libdde_linux26 &&
+  cp netdde.static $SYS_ROOT/hurd/ &&
+  popd
+}
+
 install_binutils ()
 {
    print_info "Compiling binutils"
@@ -313,7 +327,6 @@ install_libxcrypt () {
       --host=$CROSS_HURD_TARGET \
       --enable-hashes=strong,glibc \
       --enable-obsolete-api=no \
-      --disable-static \
       --disable-failure-tokens
    make -j$PROCS &&
    make -j $PROCS install &&
@@ -717,6 +730,7 @@ install_minimal_system() {
    install_dmidecode &&
    install_parted &&
    install_hurd &&
+   install_netdde &&
    install_bash &&
    install_dash &&
    install_coreutils &&
