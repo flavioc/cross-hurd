@@ -1,0 +1,13 @@
+diff --git a/libdde_linux26/Makeconf b/libdde_linux26/Makeconf
+index d233ec5..350d46b 100644
+--- a/libdde_linux26/Makeconf
++++ b/libdde_linux26/Makeconf
+@@ -43,7 +43,7 @@ PRIVATE_INCDIR += $(MY_DDE_INCDIR) $(MY_LINUX26_INCDIR) $(PKGDIR)/../libddekit
+ 
+ DEFINES += -D__KERNEL__ -DDDE_LINUX $(KBUILD_DEFINES)
+ CPPFLAGS += $(KBUILD_CPPFLAGS)
+-CFLAGS += -ffunction-sections
++CFLAGS += -ffunction-sections -Wno-error=implicit-int -Wno-error=declaration-missing-parameter-type -Wno-error=int-conversion
+ ASFLAGS += -D__ASSEMBLY__
+ 
+ WARNINGS  += -Wall -Wstrict-prototypes -fno-strict-aliasing

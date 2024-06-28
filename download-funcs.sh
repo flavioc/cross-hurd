@@ -111,7 +111,6 @@ download_hurd () {
    apply_patch $SCRIPT_DIR/patches/hurd/link-rump.patch 1
    cp -R $SOURCE/dde/libmachdevdde ./libmachdevdde &&
    cp -R $SOURCE/dde/libddekit ./libddekit &&
-   cp -R $SOURCE/dde/libdde_linux26 ./libdde-linux26 &&
    popd
 }
 
@@ -124,7 +123,10 @@ download_libacpica () {
 }
 
 download_dde () {
-   download_from_git dde git://git.savannah.gnu.org/hurd/incubator.git dde
+   download_from_git dde git://git.savannah.gnu.org/hurd/incubator.git dde &&
+   pushd dde &&
+   apply_patch $SCRIPT_DIR/patches/dde/gcc-14.patch 1 &&
+   popd
 }
 
 apply_patch() {

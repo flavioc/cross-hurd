@@ -156,6 +156,21 @@ install_hurd() {
      make -j$PROCS libmachdevdde &&
      fakeroot make -j$PROCS -C libddekit install &&
      fakeroot make -j$PROCS -C libmachdevdde install
+     rm -rf libdde-linux26-build &&
+     mkdir libdde-linux26-build &&
+     pushd libdde-linux26-build &&
+       cp -R $SOURCE/dde/libdde_linux26 libdde-linux26 &&
+       cp -R $SOURCE/dde/libddekit libddekit &&
+       pushd libdde-linux26 &&
+	 install -d build/include/x86 &&
+         make -j$PROCS ARCH=x86 LDFLAGS= BUILDDIR=build CC=$CC PKGDIR=$PWD &&
+         make -j$PROCS ARCH=x86 LDFLAGS= BUILDDIR=build CC=$CC PKGDIR=$PWD install &&
+	 mkdir -p $SYS_ROOT/share/libdde_linux26 &&
+	 cp -R build $SYS_ROOT/share/libdde_linux26 &&
+	 cp -R Makeconf Makeconf.local mk $SYS_ROOT/share/libdde_linux26 &&
+	 cp lib/src/libdde_linux26*.a $SYS_ROOT/lib/ &&
+       popd &&
+     popd
    fi) &&
    popd
 }
