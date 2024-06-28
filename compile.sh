@@ -132,6 +132,14 @@ install_gnumach() {
    cd -
 }
 
+get_arch () {
+  if [ "$CPU" = "x86_64" ]; then
+    echo "amd64"
+  else
+    echo "x86"
+  fi
+}
+
 install_hurd() {
    print_info "Compiling Hurd servers..."
    pushd $SOURCE/$HURD_SRC &&
@@ -163,8 +171,10 @@ install_hurd() {
        cp -R $SOURCE/dde/libddekit libddekit &&
        pushd libdde-linux26 &&
 	 install -d build/include/x86 &&
-         make -j$PROCS ARCH=x86 LDFLAGS= BUILDDIR=build CC=$CC PKGDIR=$PWD &&
-         make -j$PROCS ARCH=x86 LDFLAGS= BUILDDIR=build CC=$CC PKGDIR=$PWD install &&
+         ln -sf x86 build/include/amd64 &&
+         ln -sf asm-x86 build/include/amd64/asm-x86_64 &&
+         make -j$PROCS ARCH=`get_arch` LDFLAGS= BUILDDIR=build CC=$CC &&
+         make -j$PROCS ARCH=`get_arch` LDFLAGS= BUILDDIR=build CC=$CC install &&
 	 mkdir -p $SYS_ROOT/share/libdde_linux26 &&
 	 cp -R build $SYS_ROOT/share/libdde_linux26 &&
 	 cp -R Makeconf Makeconf.local mk $SYS_ROOT/share/libdde_linux26 &&
@@ -181,10 +191,10 @@ install_netdde () {
   pushd netdde.obj &&
   make -j$PROCS convert PKGDIR=$SYS_ROOT/share/libdde_linux26 &&
   rm -f Makefile.inc &&
-  make -j$PROCS ARCH=x86 CC=$CC LINK_PROGRAM=$CC PKGDIR=$SYS_ROOT/share/libdde_linux26 &&
+  make -j$PROCS ARCH=`get_arch` CC=$CC LINK_PROGRAM=$CC PKGDIR=$SYS_ROOT/share/libdde_linux26 &&
   cp netdde $SYS_ROOT/hurd/ &&
   rm -f Makefile.inc &&
-  make -j$PROCS ARCH=x86 TARGET=netdde.static CC=$CC LINK_PROGRAM="$CC -static" PKGDIR=$SYS_ROOT/share/libdde_linux26 &&
+  make -j$PROCS ARCH=`get_arch` TARGET=netdde.static CC=$CC LINK_PROGRAM="$CC -static" PKGDIR=$SYS_ROOT/share/libdde_linux26 &&
   cp netdde.static $SYS_ROOT/hurd/ &&
   popd
 }
