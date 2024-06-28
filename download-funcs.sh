@@ -101,6 +101,14 @@ download_gnumach () {
    popd
 }
 
+download_netdde () {
+   download_from_git netdde git://git.savannah.gnu.org/hurd/incubator.git dde_net &&
+   pushd netdde &&
+   apply_patch $SCRIPT_DIR/patches/netdde/machdev.patch 1 &&
+   apply_patch $SCRIPT_DIR/patches/netdde/gcc-14.patch 1 &&
+   popd
+}
+
 download_mig () {
    download_from_git mig git://git.savannah.gnu.org/hurd/mig.git
 }
