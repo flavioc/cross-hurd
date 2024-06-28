@@ -95,5 +95,5 @@ create_image &&
    copy_files &&
    install_grub &&
 print_info "Disk image available on $IMG" &&
-print_info "Run 'qemu-system-i386 -m 2G -drive cache=writeback,file=$IMG -M q35' to enjoy the Hurd!" &&
+print_info "Run 'qemu-system-$CPU -m 4G -drive cache=writeback,file=$IMG -M q35' to enjoy the Hurd!" &&
 exit 0
