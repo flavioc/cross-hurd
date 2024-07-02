@@ -722,6 +722,29 @@ install_findutils () {
    popd
 }
 
+install_inetutils () {
+   rm -rf $INETUTILS_SRC.obj &&
+   mkdir -p $INETUTILS_SRC.obj &&
+   pushd $INETUTILS_SRC.obj &&
+   $SOURCE/$INETUTILS_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT \
+      --localstatedir=/var \
+      --disable-logger \
+      --disable-whois \
+      --disable-rcp \
+      --disable-rexec \
+      --disable-rlogin \
+      --disable-rsh \
+      --disable-talk \
+      --disable-talkd \
+      --disable-servers &&
+   make -j$PROCS &&
+   make -j$PROCS install &&
+   popd
+}
+
 install_minimal_system() {
    install_libxcrypt &&
    install_libpciaccess &&
@@ -756,6 +779,10 @@ install_more_shell_tools() {
    install_gawk
 }
 
+install_networking_tools () {
+   install_inetutils
+}
+
 install_development_tools() {
    install_flex &&
    install_mig &&
@@ -776,6 +803,7 @@ mkdir -p $BUILD_ROOT/native &&
    install_minimal_system &&
    if [ $BUILD_TYPE = "full" ]; then
       install_more_shell_tools &&
+      install_networking_tools &&
       install_editors &&
       install_development_tools
    fi &&

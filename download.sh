@@ -58,6 +58,9 @@ download_gawk &&
 
 download_sed &&
 download_dash &&
+
+download_inetutils &&
+
 download_libpciaccess &&
 download_gnumach &&
 download_mig &&

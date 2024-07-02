@@ -37,6 +37,12 @@ rm -f console
 /bin/bash /sbin/MAKEDEV console cd0 cd1 std hd0 hd0s1 sd0 rumpdisk wd0 wd0s1 tty1 tty2 tty3 tty4 tty5 tty6 netdde eth0
 set +v
 
+# Rely on QEMU's default's user networking
+# https://wiki.qemu.org/Documentation/Networking
+/bin/settrans -c /servers/socket/2 /hurd/pfinet -i /dev/eth0 -a 10.0.2.15 -g 10.0.2.2 -m 255.255.255.0
+echo "nameserver 10.0.2.3" > /etc/resolv.conf
+ln -sf /servers/socket/2 /servers/socket/inet
+
 # if test "$BOOT_DEV" && /bin/sh ./MAKEDEV "$BOOT_DEV"; then
 #   echo -n "Install grub as main boot record on $BOOT_DEV? [y] "
 #   read yn
