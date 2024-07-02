@@ -761,6 +761,8 @@ install_inetutils () {
       --disable-servers &&
    make -j$PROCS &&
    make -j$PROCS install &&
+   # Somehow these binaries are not getting the executable bit.
+   chmod ogu+rx $SYS_ROOT/bin/{ping,ping6,traceroute} &&
    popd
 }
 
