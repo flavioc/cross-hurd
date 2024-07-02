@@ -55,6 +55,7 @@ download_parted &&
 download_make &&
 download_grep &&
 download_gawk &&
+download_less &&
 
 download_sed &&
 download_dash &&

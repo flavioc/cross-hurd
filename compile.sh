@@ -584,6 +584,20 @@ install_gawk() {
    cd ..
 }
 
+install_less () {
+   rm -rf $LESS_SRC.obj &&
+   mkdir -p $LESS_SRC.obj &&
+   pushd $LESS_SRC.obj &&
+   $SOURCE/$LESS_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT \
+      --sysconfdir=/etc &&
+   make -j$PROCS &&
+   make -j$PROCS install &&
+   popd
+}
+
 generate_meson_cross_file () {
    local cross_file="$1"
    rm -f $cross_file &&
@@ -781,7 +795,8 @@ install_minimal_system() {
 
 install_more_shell_tools() {
    install_grep &&
-   install_gawk
+   install_gawk &&
+   install_less
 }
 
 install_networking_tools () {

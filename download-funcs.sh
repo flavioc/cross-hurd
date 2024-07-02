@@ -26,6 +26,7 @@ GCRYPT_URL=ftp://ftp.gnupg.org/gcrypt/libgcrypt/"$GCRYPT_PKG"
 MAKE_URL=ftp://ftp.gnu.org/gnu/make/"$MAKE_PKG"
 GREP_URL=https://ftp.gnu.org/gnu/grep/"$GREP_PKG"
 GAWK_URL=https://ftp.gnu.org/gnu/gawk/"$GAWK_PKG"
+LESS_URL=https://www.greenwoodsoftware.com/less/$LESS_PKG
 DASH_URL=http://gondor.apana.org.au/~herbert/dash/files/$DASH_PKG
 LIBPCIACCESS_URL=https://www.x.org/pub/individual/lib/$LIBPCIACCESS_PKG
 LIBXCRYPT_URL=https://github.com/besser82/libxcrypt/releases/download/v$LIBXCRYPT_VERSION/$LIBXCRYPT_PKG
@@ -267,6 +268,11 @@ download_gawk () {
       return 0
     fi
     unpack xf $GAWK_PKG $GAWK_SRC
+}
+
+download_less () {
+   download $LESS_PKG $LESS_URL &&
+   unpack xf $LESS_PKG $LESS_SRC
 }
 
 download_dash () {
