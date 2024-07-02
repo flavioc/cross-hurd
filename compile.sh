@@ -722,6 +722,11 @@ install_findutils () {
    popd
 }
 
+install_iana_etc () {
+   echo "Copying protocols and services from iana-etc" &&
+   cp $SOURCE/$IANA_ETC_SRC/{protocols,services} $SYS_ROOT/etc/
+}
+
 install_inetutils () {
    rm -rf $INETUTILS_SRC.obj &&
    mkdir -p $INETUTILS_SRC.obj &&
@@ -780,6 +785,7 @@ install_more_shell_tools() {
 }
 
 install_networking_tools () {
+   install_iana_etc &&
    install_inetutils
 }
 
