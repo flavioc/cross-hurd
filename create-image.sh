@@ -84,6 +84,14 @@ umount_image () {
       rmdir mount
 }
 
+qemu_arch () {
+   if [ "$CPU" = "i686" ]; then
+      echo "i386"
+   else
+      echo "x86_64"
+   fi
+}
+
 trap umount_image EXIT
 trap umount_image INT
 
@@ -95,5 +103,5 @@ create_image &&
    copy_files &&
    install_grub &&
 print_info "Disk image available on $IMG" &&
-print_info "Run 'qemu-system-$CPU -m 4G -drive cache=writeback,file=$IMG -M q35' to enjoy the Hurd!" &&
+print_info "Run 'qemu-system-`qemu_arch` --enable-kvm -m 4G -drive cache=writeback,file=$IMG -M q35 -net user -net nic,model=e1000' to enjoy the Hurd!" &&
 exit 0
