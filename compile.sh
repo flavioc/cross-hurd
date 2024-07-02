@@ -766,6 +766,23 @@ install_inetutils () {
    popd
 }
 
+install_openssl () {
+   rm -rf $OPENSSL_SRC.obj &&
+   mkdir -p $OPENSSL_SRC.obj &&
+   pushd $OPENSSL_SRC.obj &&
+   CXX=g++ CC=gcc AR=ar RANLIB=ranlib $SOURCE/$OPENSSL_SRC/config \
+      --cross-compile-prefix=$CROSS_TOOLS/bin/$CPU-gnu- \
+      --prefix=$SYS_ROOT         \
+         --openssldir=$SYS_ROOT/etc/ssl \
+         --libdir=lib          \
+	 hurd-x86 \
+         shared                \
+         zlib-dynamic &&
+   make -j$PROCS &&
+   make MANSUFFIX=ssl install
+   popd
+}
+
 install_minimal_system() {
    install_libxcrypt &&
    install_libpciaccess &&
@@ -803,7 +820,8 @@ install_more_shell_tools() {
 
 install_networking_tools () {
    install_iana_etc &&
-   install_inetutils
+   install_inetutils &&
+   install_openssl
 }
 
 install_development_tools() {
