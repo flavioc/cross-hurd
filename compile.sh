@@ -772,14 +772,28 @@ install_openssl () {
    pushd $OPENSSL_SRC.obj &&
    CXX=g++ CC=gcc AR=ar RANLIB=ranlib $SOURCE/$OPENSSL_SRC/config \
       --cross-compile-prefix=$CROSS_TOOLS/bin/$CPU-gnu- \
-      --prefix=$SYS_ROOT         \
+      --prefix=$SYS_ROOT \
          --openssldir=$SYS_ROOT/etc/ssl \
-         --libdir=lib          \
+         --libdir=lib \
 	 hurd-x86 \
-         shared                \
+         shared \
          zlib-dynamic &&
    make -j$PROCS &&
    make MANSUFFIX=ssl install
+   popd
+}
+
+install_wget () {
+   mkdir $WGET_SRC.obj &&
+   mkdir -p $WGET_SRC.obj &&
+   pushd $WGET_SRC.obj &&
+   $SOURCE/$WGET_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT \
+      --with-ssl=openssl &&
+   make -j$PROCS &&
+   make -j$PROCS install &&
    popd
 }
 
@@ -821,7 +835,8 @@ install_more_shell_tools() {
 install_networking_tools () {
    install_iana_etc &&
    install_inetutils &&
-   install_openssl
+   install_openssl &&
+   install_wget
 }
 
 install_development_tools() {

@@ -36,6 +36,7 @@ FINDUTILS_URL=https://ftp.gnu.org/gnu/findutils/$FINDUTILS_PKG
 IANA_ETC_URL=https://github.com/Mic92/iana-etc/releases/download/$IANA_ETC_VERSION/$IANA_ETC_PKG
 INETUTILS_URL=https://ftp.gnu.org/gnu/inetutils/$INETUTILS_PKG
 OPENSSL_URL=https://www.openssl.org/source/$OPENSSL_PKG
+WGET_URL=https://ftp.gnu.org/gnu/wget/$WGET_PKG
 
 unpack () {
    if [ -d "$3" ]; then
@@ -346,4 +347,9 @@ download_openssl () {
       return 0
    fi) &&
    unpack xf $OPENSSL_PKG $OPENSSL_SRC
+}
+
+download_wget () {
+   download $WGET_PKG $WGET_URL &&
+   unpack xf $WGET_PKG $WGET_SRC
 }
