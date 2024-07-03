@@ -612,6 +612,19 @@ install_less () {
    popd
 }
 
+install_file () {
+   rm -rf $FILE_SRC.obj &&
+   mkdir -p $FILE_SRC.obj &&
+   pushd $FILE_SRC.obj &&
+   $SOURCE/$FILE_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      prefix=$SYS_ROOT
+   make -j$PROCS &&
+   make -j$PROCS install &&
+   popd
+}
+
 generate_meson_cross_file () {
    local cross_file="$1"
    rm -f $cross_file &&
@@ -844,7 +857,8 @@ install_minimal_system() {
 install_more_shell_tools() {
    install_grep &&
    install_gawk &&
-   install_less
+   install_less &&
+   install_file
 }
 
 install_networking_tools () {
