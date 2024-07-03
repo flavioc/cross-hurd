@@ -20,6 +20,7 @@ GMP_URL=https://ftp.gnu.org/gnu/gmp/"$GMP_PKG"
 MPFR_URL=http://mpfr.org/mpfr-current/"$MPFR_PKG"
 MPC_URL=https://ftp.gnu.org/gnu/mpc/"$MPC_PKG"
 NCURSES_URL=https://ftp.gnu.org/gnu/ncurses/"$NCURSES_PKG"
+LIBEDIT_URL=https://thrysoee.dk/editline/$LIBEDIT_PKG
 VIM_URL=ftp://ftp.vim.org/pub/vim/unix/"$VIM_PKG"
 GPG_ERROR_URL=ftp://ftp.gnupg.org/gcrypt/libgpg-error/"$GPG_ERROR_PKG"
 GCRYPT_URL=ftp://ftp.gnupg.org/gcrypt/libgcrypt/"$GCRYPT_PKG"
@@ -208,6 +209,11 @@ download_ncurses () {
     return 0
   fi
   unpack zxf $NCURSES_PKG $NCURSES_SRC
+}
+
+download_libedit () {
+   download $LIBEDIT_PKG $LIBEDIT_URL &&
+   unpack zxf $LIBEDIT_PKG $LIBEDIT_SRC
 }
 
 download_vim () {

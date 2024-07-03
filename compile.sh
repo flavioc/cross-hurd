@@ -510,6 +510,19 @@ install_ncurses () {
   popd
 }
 
+install_libedit () {
+   rm -rf $LIBEDIT_SRC.obj &&
+   mkdir -p $LIBEDIT_SRC.obj &&
+   pushd $LIBEDIT_SRC.obj &&
+   $SOURCE/$LIBEDIT_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT
+   make -j$PROCS &&
+   make -j$PROCS install &&
+   popd
+}
+
 install_vim () {
   rm -rf $VIM_SRC.obj &&
   cp -R $SOURCE/vim$VIM_BASE_VERSION $VIM_SRC.obj &&
@@ -807,6 +820,7 @@ install_minimal_system() {
    install_gpg_error &&
    install_gcrypt &&
    install_ncurses &&
+   install_libedit &&
    install_util_linux &&
    install_rump &&
    # We need to build basic hurd libraries in order to

@@ -43,6 +43,7 @@ unpack zxf $MPC_PKG $MPC_SRC &&
 download_libxcrypt &&
 
 download_ncurses &&
+download_libedit &&
 
 download_vim &&
 

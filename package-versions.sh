@@ -20,6 +20,7 @@ GMP_VERSION=6.3.0
 MPFR_VERSION=4.2.1
 MPC_VERSION=1.3.1
 NCURSES_VERSION=6.4
+LIBEDIT_VERSION=20240517-3.1
 # 8.1: checking what tgetent() returns for an unknown terminal... configure: error: failed to compile test program.
 VIM_BASE_VERSION=90
 VIM_VERSION=9.0
