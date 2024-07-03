@@ -1,4 +1,4 @@
-diff -Naur dash-0.5.12/src/expand.c cross-hurd/src/dash-0.5.12/src/expand.c
+diff -Naur dash-0.5.12/src/expand.c dash-0.5.12/src/expand.c
 --- dash-0.5.12.old/src/expand.c	2022-12-11 01:29:21.000000000 -0500
 +++ dash-0.5.12/src/expand.c	2023-05-25 00:26:17.332804650 -0400
 @@ -84,6 +84,8 @@
@@ -10,3 +10,14 @@ diff -Naur dash-0.5.12/src/expand.c cross-hurd/src/dash-0.5.12/src/expand.c
  /* Add CTLESC when necessary. */
  #define QUOTES_ESC	(EXP_FULL | EXP_CASE)
  
+diff -Naur dash-0.5.12.old/src/histedit.c dash-0.5.12/src/histedit.c
+--- dash-0.5.12.old/src/histedit.c	2020-06-03 02:19:23.000000000 +0100
++++ dash-0.5.12/src/histedit.c	2024-07-03 12:19:29.496061680 +0100
+@@ -58,6 +58,7 @@
+ 
+ #define MAXHISTLOOPS	4	/* max recursions through fc */
+ #define DEFEDITOR	"ed"	/* default editor *should* be $EDITOR */
++#define MAXPATHLEN 4096
+ 
+ History *hist;	/* history cookie */
+ EditLine *el;	/* editline cookie */

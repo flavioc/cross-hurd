@@ -251,7 +251,8 @@ install_dash () {
    mkdir -p $DASH_SRC.obj &&
    pushd $DASH_SRC.obj &&
    $SOURCE/$DASH_SRC/configure --prefix=$SYS_ROOT \
-      --build=$HOST --host=$CROSS_HURD_TARGET
+      --build=$HOST --host=$CROSS_HURD_TARGET \
+      --with-libedit
    make -j$PROCS &&
       make -j$PROCS install &&
    popd
