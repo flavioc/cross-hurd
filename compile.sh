@@ -371,6 +371,21 @@ install_parted () {
    popd
 }
 
+install_libdaemon () {
+   create_temp $LIBDAEMON_SRC.obj &&
+   pushd $SOURCE/$LIBDAEMON_SRC &&
+      autoreconf -fi &&
+   popd &&
+   pushd $LIBDAEMON_SRC.obj &&
+   $SOURCE/$LIBDAEMON_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT &&
+   make -j$PROCS &&
+   make -j$PROCS install &&
+   popd
+}
+
 install_shadow () {
    rm -rf $SHADOW_SRC.copy &&
    cp -R $SOURCE/$SHADOW_SRC $SHADOW_SRC.copy &&
@@ -925,6 +940,7 @@ install_minimal_system() {
    install_hurd --without-parted &&
    install_dmidecode &&
    install_parted &&
+   install_libdaemon &&
    install_hurd &&
    install_netdde &&
    install_bash &&

@@ -52,6 +52,7 @@ download_gcrypt &&
 download_dmidecode &&
 download_findutils &&
 download_parted &&
+download_package $LIBDAEMON_URL &&
 
 download_make &&
 download_grep &&

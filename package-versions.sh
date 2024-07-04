@@ -68,3 +68,9 @@ CURL_VERSION=8.8.0
 CURL_SRC=curl-$CURL_VERSION
 CURL_PKG=$CURL_SRC.tar.xz
 CURL_URL=https://curl.se/download/$CURL_PKG
+
+# libdaemon
+LIBDAEMON_VERSION=0.14
+LIBDAEMON_SRC=libdaemon-$LIBDAEMON_VERSION
+LIBDAEMON_PKG=$LIBDAEMON_SRC.tar.gz
+LIBDAEMON_URL=https://0pointer.de/lennart/projects/libdaemon/$LIBDAEMON_PKG
