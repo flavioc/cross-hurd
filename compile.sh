@@ -870,6 +870,23 @@ install_libpsl () {
    popd
 }
 
+install_curl () {
+   create_temp $CURL_SRC.obj &&
+   pushd $CURL_SRC.obj &&
+   # If NM is set, libtool will fail with a syntax error.
+   NM="" $SOURCE/$CURL_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT \
+      --disable-static \
+      --with-openssl \
+      --enable-threaded-resolver \
+      --with-ca-path=/etc/ssl/certs &&
+   make -j$PROCS &&
+   make -j$PROCS install &&
+   popd
+}
+
 install_perl () {
    rm -rf $PERL_SRC.obj &&
    mkdir -p $PERL_SRC.obj &&
@@ -934,7 +951,8 @@ install_networking_tools () {
    install_wget &&
    install_libunistring &&
    install_libidn2 &&
-   install_libpsl
+   install_libpsl &&
+   install_curl
 }
 
 install_development_tools() {

@@ -71,6 +71,7 @@ download_perl &&
 download_package $LIBUNISTRING_URL &&
 download_package $LIBIDN2_URL &&
 download_package $LIBPSL_URL &&
+download_package $CURL_URL &&
 
 download_libpciaccess &&
 download_gnumach &&

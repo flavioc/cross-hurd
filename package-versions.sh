@@ -62,3 +62,9 @@ LIBPSL_VERSION=0.21.5
 LIBPSL_SRC=libpsl-$LIBPSL_VERSION
 LIBPSL_PKG=$LIBPSL_SRC.tar.gz
 LIBPSL_URL=https://github.com/rockdaboot/libpsl/releases/download/$LIBPSL_VERSION/$LIBPSL_PKG
+
+# curl
+CURL_VERSION=8.8.0
+CURL_SRC=curl-$CURL_VERSION
+CURL_PKG=$CURL_SRC.tar.xz
+CURL_URL=https://curl.se/download/$CURL_PKG
