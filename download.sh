@@ -68,7 +68,8 @@ download_openssl &&
 download_wget &&
 
 download_perl &&
-download_package $LIBUNISTRING_URL xf &&
+download_package $LIBUNISTRING_URL &&
+download_package $LIBIDN2_URL &&
 
 download_libpciaccess &&
 download_gnumach &&

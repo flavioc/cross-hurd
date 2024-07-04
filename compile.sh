@@ -846,6 +846,18 @@ install_libunistring () {
    popd
 }
 
+install_libidn2 () {
+   create_temp $LIBIDN2_SRC.obj &&
+   pushd $LIBIDN2_SRC.obj &&
+   $SOURCE/$LIBIDN2_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT &&
+   make -j$PROCS &&
+   make -j$PROCS install &&
+   popd
+}
+
 install_perl () {
    rm -rf $PERL_SRC.obj &&
    mkdir -p $PERL_SRC.obj &&
@@ -908,7 +920,8 @@ install_networking_tools () {
    install_inetutils &&
    install_openssl &&
    install_wget &&
-   install_libunistring
+   install_libunistring &&
+   install_libidn2
 }
 
 install_development_tools() {
