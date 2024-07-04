@@ -67,6 +67,8 @@ download_inetutils &&
 download_openssl &&
 download_wget &&
 
+download_perl &&
+
 download_libpciaccess &&
 download_gnumach &&
 download_mig &&

@@ -39,6 +39,8 @@ IANA_ETC_URL=https://github.com/Mic92/iana-etc/releases/download/$IANA_ETC_VERSI
 INETUTILS_URL=https://ftp.gnu.org/gnu/inetutils/$INETUTILS_PKG
 OPENSSL_URL=https://www.openssl.org/source/$OPENSSL_PKG
 WGET_URL=https://ftp.gnu.org/gnu/wget/$WGET_PKG
+PERL_CROSS_URL=https://github.com/arsv/perl-cross/raw/releases/$PERL_CROSS_PKG
+PERL_URL=https://www.cpan.org/src/5.0/$PERL_PKG
 
 unpack () {
    if [ -d "$3" ]; then
@@ -364,4 +366,11 @@ download_openssl () {
 download_wget () {
    download $WGET_PKG $WGET_URL &&
    unpack xf $WGET_PKG $WGET_SRC
+}
+
+download_perl () {
+   download $PERL_CROSS_PKG $PERL_CROSS_URL &&
+   unpack xf $PERL_CROSS_PKG $PERL_CROSS_SRC &&
+   download $PERL_PKG $PERL_URL &&
+   unpack xf $PERL_PKG $PERL_SRC
 }

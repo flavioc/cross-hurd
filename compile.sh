@@ -9,6 +9,9 @@ export AS="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-as"
 export RANLIB="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-ranlib"
 export LD="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-ld"
 export STRIP="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-strip"
+export NM=$CROSS_TOOLS/bin/$CROSS_HURD_TARGET-strip
+export READELF=$CROSS_TOOLS/bin/$CROSS_HURD_TARGET-readelf
+export OBJDUMP=$CROSS_TOOLS/bin/$CROSS_HURD_TARGET-objdump
 export MIG="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-mig"
 
 install_flex() {
@@ -811,7 +814,7 @@ install_openssl () {
 }
 
 install_wget () {
-   mkdir $WGET_SRC.obj &&
+   rm -rf $WGET_SRC.obj &&
    mkdir -p $WGET_SRC.obj &&
    pushd $WGET_SRC.obj &&
    $SOURCE/$WGET_SRC/configure \
@@ -821,6 +824,26 @@ install_wget () {
       --with-ssl=openssl &&
    make -j$PROCS &&
    make -j$PROCS install &&
+   popd
+}
+
+install_perl () {
+   rm -rf $PERL_SRC.obj &&
+   mkdir -p $PERL_SRC.obj &&
+   cp -vR $SOURCE/$PERL_SRC/* $PERL_SRC.obj &&
+   cp -vR $SOURCE/$PERL_CROSS_SRC/* $PERL_SRC.obj &&
+   pushd $PERL_SRC.obj &&
+   ./configure \
+      --build=$HOST \
+      --target=$CROSS_HURD_TARGET \
+      --host-cc=$HOST_CC \
+      --host=$CROSS_HURD_TARGET \
+      --target-tools-prefix=$CPU-gnu \
+      --prefix=$SYS_ROOT &&
+   make crosspatch &&
+   make -j$PROCS miniperl &&
+   make -j$PROCS all &&
+   make -j$PROCS install
    popd
 }
 
@@ -876,7 +899,8 @@ install_development_tools() {
    install_mpfr &&
    install_mpc &&
    install_gcc &&
-   install_make
+   install_make &&
+   install_perl
 }
 
 install_editors() {
