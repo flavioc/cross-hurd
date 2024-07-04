@@ -56,3 +56,9 @@ LIBIDN2_VERSION=2.3.7
 LIBIDN2_SRC=libidn2-$LIBIDN2_VERSION
 LIBIDN2_PKG=$LIBIDN2_SRC.tar.gz
 LIBIDN2_URL=https://ftp.gnu.org/gnu/libidn/$LIBIDN2_PKG
+
+# libpsl
+LIBPSL_VERSION=0.21.5
+LIBPSL_SRC=libpsl-$LIBPSL_VERSION
+LIBPSL_PKG=$LIBPSL_SRC.tar.gz
+LIBPSL_URL=https://github.com/rockdaboot/libpsl/releases/download/$LIBPSL_VERSION/$LIBPSL_PKG

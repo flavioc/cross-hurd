@@ -858,6 +858,18 @@ install_libidn2 () {
    popd
 }
 
+install_libpsl () {
+   create_temp $LIBPSL_SRC.obj &&
+   pushd $LIBPSL_SRC.obj &&
+   $SOURCE/$LIBPSL_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT &&
+   make -j$PROCS &&
+   make -j$PROCS install &&
+   popd
+}
+
 install_perl () {
    rm -rf $PERL_SRC.obj &&
    mkdir -p $PERL_SRC.obj &&
@@ -921,7 +933,8 @@ install_networking_tools () {
    install_openssl &&
    install_wget &&
    install_libunistring &&
-   install_libidn2
+   install_libidn2 &&
+   install_libpsl
 }
 
 install_development_tools() {
