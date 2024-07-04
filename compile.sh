@@ -827,6 +827,25 @@ install_wget () {
    popd
 }
 
+# $1 - package directory
+create_temp () {
+   local package_dir=$1
+   rm -rf $package_dir &&
+   mkdir -p $package_dir
+}
+
+install_libunistring () {
+   create_temp $LIBUNISTRING_SRC.obj &&
+   pushd $LIBUNISTRING_SRC.obj &&
+   $SOURCE/$LIBUNISTRING_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT &&
+   make -j$PROCS &&
+   make -j$PROCS install &&
+   popd
+}
+
 install_perl () {
    rm -rf $PERL_SRC.obj &&
    mkdir -p $PERL_SRC.obj &&
@@ -888,7 +907,8 @@ install_networking_tools () {
    install_iana_etc &&
    install_inetutils &&
    install_openssl &&
-   install_wget
+   install_wget &&
+   install_libunistring
 }
 
 install_development_tools() {

@@ -69,6 +69,17 @@ download () {
    fi
 }
 
+# $1 - url of the package
+# $2 - arguments to pass to tar to extract.
+download_package () {
+   local url=$1
+   local package_file=`basename $url`
+   download $package_file $url
+   local dir_name=`basename $(basename $package_file .tar.gz) .tar.xz`
+   local tar_arguments=$2
+   unpack $tar_arguments $package_file $dir_name
+}
+
 download_from_git () {
    dir=$1
    repo=$2

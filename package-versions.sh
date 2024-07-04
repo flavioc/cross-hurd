@@ -45,3 +45,8 @@ PERL_CROSS_VERSION=1.5.3
 PERL_VERSION=5.40.0
 # Mach, Hurd and Glibc are all taken from the Git repository.
 
+# libunistring
+LIBUNISTRING_VERSION=1.1
+LIBUNISTRING_SRC=libunistring-$LIBUNISTRING_VERSION
+LIBUNISTRING_PKG=$LIBUNISTRING_SRC.tar.xz
+LIBUNISTRING_URL=https://ftp.gnu.org/gnu/libunistring/$LIBUNISTRING_PKG
