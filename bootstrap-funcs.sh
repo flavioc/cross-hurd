@@ -98,6 +98,7 @@ install_gnumig() {
    $SOURCE/$GNUMIG_SRC/configure --target="$CROSS_HURD_TARGET" \
       --prefix=$CROSS_TOOLS &&
    make -j$PROCS &&
+   make -j$PROCS check &&
    make -j$PROCS install &&
    cd ..
 }
