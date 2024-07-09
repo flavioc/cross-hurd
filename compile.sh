@@ -551,7 +551,7 @@ install_libedit () {
 
 install_vim () {
   rm -rf $VIM_SRC.obj &&
-  cp -R $SOURCE/vim$VIM_BASE_VERSION $VIM_SRC.obj &&
+  cp -Rv $SOURCE/$VIM_SRC $VIM_SRC.obj &&
   pushd $VIM_SRC.obj &&
   cat > src/auto/config.cache << "EOF"
   vim_cv_getcwd_broken=no
@@ -562,6 +562,7 @@ install_vim () {
   vim_cv_tty_group=world
   vim_cv_tgetent=zero
 EOF
+  CFLAGS="-Wno-error=implicit-function-declaration" \
   ./configure --build=${HOST} \
     --host=${CROSS_HURD_TARGET} \
     --prefix=${SYS_ROOT} \

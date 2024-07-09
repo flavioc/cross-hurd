@@ -44,8 +44,7 @@ download_libxcrypt &&
 
 download_ncurses &&
 download_libedit &&
-
-download_vim &&
+download_package $VIM_URL &&
 
 download_gpg_error &&
 download_gcrypt &&

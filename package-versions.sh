@@ -21,9 +21,6 @@ MPFR_VERSION=4.2.1
 MPC_VERSION=1.3.1
 NCURSES_VERSION=6.4
 LIBEDIT_VERSION=20240517-3.1
-# 8.1: checking what tgetent() returns for an unknown terminal... configure: error: failed to compile test program.
-VIM_BASE_VERSION=90
-VIM_VERSION=9.0
 GPG_ERROR_VERSION=1.47
 GCRYPT_VERSION=1.10.3
 MAKE_VERSION=4.4
@@ -44,6 +41,12 @@ WGET_VERSION=1.24.5
 PERL_CROSS_VERSION=1.5.3
 PERL_VERSION=5.40.0
 # Mach, Hurd and Glibc are all taken from the Git repository.
+
+# vim
+VIM_VERSION=9.1.0041
+VIM_SRC=vim-"$VIM_VERSION"
+VIM_PKG=$VIM_SRC.tar.gz
+VIM_URL=https://github.com/vim/vim/archive/v$VIM_VERSION/$VIM_PKG
 
 # libunistring
 LIBUNISTRING_VERSION=1.1
