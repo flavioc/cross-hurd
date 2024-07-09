@@ -916,6 +916,24 @@ install_curl () {
    popd
 }
 
+install_git () {
+   create_temp $GIT_SRC.obj &&
+   cp -vR $SOURCE/$GIT_SRC/* $GIT_SRC.obj &&
+   pushd $GIT_SRC.obj &&
+   ac_cv_fread_reads_directories=yes \
+   ac_cv_snprintf_returns_bogus=yes \
+   ./configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT \
+      --without-iconv &&
+   make uname_S=Hurd uname_O=GNU uname_P=unknown \
+      -j$PROCS CURL_CONFIG=$SYS_ROOT/bin/curl-config all &&
+   make uname_S=Hurd uname_O=GNU uname_P=unknown \
+      -j$PROCS CURL_CONFIG=$SYS_ROOT/bin/curl-config install &&
+   popd
+}
+
 install_perl () {
    rm -rf $PERL_SRC.obj &&
    mkdir -p $PERL_SRC.obj &&
@@ -995,7 +1013,8 @@ install_development_tools() {
    install_mpc &&
    install_gcc &&
    install_make &&
-   install_perl
+   install_perl &&
+   install_git
 }
 
 install_editors() {
