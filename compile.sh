@@ -14,6 +14,13 @@ export READELF=$CROSS_TOOLS/bin/$CROSS_HURD_TARGET-readelf
 export OBJDUMP=$CROSS_TOOLS/bin/$CROSS_HURD_TARGET-objdump
 export MIG="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-mig"
 
+# $1 - package directory
+create_temp () {
+   local package_dir=$1
+   rm -rf $package_dir &&
+   mkdir -p $package_dir
+}
+
 install_flex() {
    mkdir -p $FLEX_SRC.obj &&
    cd $FLEX_SRC.obj &&
@@ -781,6 +788,20 @@ install_findutils () {
    popd
 }
 
+install_ca_certificates () {
+   create_temp $CA_CERTIFICATES_SRC.obj &&
+   cp -R $SOURCE/$CA_CERTIFICATES_SRC/* $CA_CERTIFICATES_SRC.obj &&
+   pushd $CA_CERTIFICATES_SRC.obj &&
+   pushd sbin &&
+      make SBINDIR=$SYS_ROOT/sbin &&
+   popd &&
+   pushd mozilla &&
+      make CERTSDIR=$SYS_ROOT/etc/ssl/certs install &&
+      openssl rehash -v $SYS_ROOT/etc/ssl/certs &&
+   popd &&
+   popd
+}
+
 install_iana_etc () {
    echo "Copying protocols and services from iana-etc" &&
    cp $SOURCE/$IANA_ETC_SRC/{protocols,services} $SYS_ROOT/etc/
@@ -840,13 +861,6 @@ install_wget () {
    make -j$PROCS &&
    make -j$PROCS install &&
    popd
-}
-
-# $1 - package directory
-create_temp () {
-   local package_dir=$1
-   rm -rf $package_dir &&
-   mkdir -p $package_dir
 }
 
 install_libunistring () {
@@ -961,6 +975,7 @@ install_more_shell_tools() {
 }
 
 install_networking_tools () {
+   install_ca_certificates &&
    install_iana_etc &&
    install_inetutils &&
    install_openssl &&

@@ -156,6 +156,10 @@ download_dde () {
    popd
 }
 
+download_ca_certificates () {
+   download_from_git ca-certificates $CA_CERTIFICATES_URL
+}
+
 apply_patch() {
    print_info "Using patch $1 (level: $2)"
    if patch -f -Np$2 --dry-run < $1 > /dev/null 2>&1; then

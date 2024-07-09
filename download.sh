@@ -63,6 +63,7 @@ download_file &&
 download_sed &&
 download_dash &&
 
+download_ca_certificates &&
 download_iana_etc &&
 download_inetutils &&
 download_openssl &&

@@ -74,3 +74,7 @@ LIBDAEMON_VERSION=0.14
 LIBDAEMON_SRC=libdaemon-$LIBDAEMON_VERSION
 LIBDAEMON_PKG=$LIBDAEMON_SRC.tar.gz
 LIBDAEMON_URL=https://0pointer.de/lennart/projects/libdaemon/$LIBDAEMON_PKG
+
+# ca-certificates
+CA_CERTIFICATES_URL=https://salsa.debian.org/debian/ca-certificates.git
+CA_CERTIFICATES_SRC=ca-certificates
