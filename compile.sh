@@ -9,7 +9,7 @@ export AS="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-as"
 export RANLIB="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-ranlib"
 export LD="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-ld"
 export STRIP="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-strip"
-export NM=$CROSS_TOOLS/bin/$CROSS_HURD_TARGET-strip
+export NM=$CROSS_TOOLS/bin/$CROSS_HURD_TARGET-nm
 export READELF=$CROSS_TOOLS/bin/$CROSS_HURD_TARGET-readelf
 export OBJDUMP=$CROSS_TOOLS/bin/$CROSS_HURD_TARGET-objdump
 export MIG="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-mig"
@@ -441,7 +441,7 @@ install_gmp() {
   rm -rf $GMP_SRC.obj &&
   mkdir -p $GMP_SRC.obj &&
   cd $GMP_SRC.obj &&
-  CC_FOR_BUILD="$HOST_MACHINE-gcc" $SOURCE/$GMP_SRC/configure \
+  NM="" CC_FOR_BUILD="$HOST_MACHINE-gcc" $SOURCE/$GMP_SRC/configure \
       --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${CROSS_HURD_TARGET} &&
