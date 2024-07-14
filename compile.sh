@@ -771,9 +771,9 @@ install_rump () {
       cp -aR buildrump.sh/src/sys/rump/include/rump $SYS_ROOT/include/ &&
       # Copy libraries.
       find $OBJ/destdir buildrump.sh/src -type f,l \
-         -name "librump*.so*" -not -path '*.map' -not -path '*librumpkern_z*' -exec cp -a {} $SYS_ROOT/lib/ \; &&
+         -name "librump*.so*" -not -path '*.map' -not -path '*librumpkern_z*' -exec install -v -m 0644 {} $SYS_ROOT/lib/ \; &&
       find $OBJ/destdir buildrump.sh/src -type f,l \
-         -name "librump*.a" -not -path '*librumpkern_z*' -exec cp -a {} $SYS_ROOT/lib \; &&
+         -name "librump*.a" -not -path '*librumpkern_z*' -exec install -v -m 0644 {} $SYS_ROOT/lib \; &&
    popd
 }
 
