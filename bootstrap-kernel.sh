@@ -11,12 +11,12 @@ setup_directories
 
 install_gnumach() {
    cd $SOURCE/$GNUMACH_SRC &&
-   autoreconf -i &&
-   cd - &&
-   rm -rf $GNUMACH_SRC.obj &&
-   mkdir -p $GNUMACH_SRC.obj &&
-   cd $GNUMACH_SRC.obj &&
-   local disable_user32=""
+      autoreconf -i &&
+      cd - &&
+      rm -rf $GNUMACH_SRC.obj &&
+      mkdir -p $GNUMACH_SRC.obj &&
+      cd $GNUMACH_SRC.obj &&
+      local disable_user32=""
    local user_mig=""
    local user_cc
    if [ ! -z "$USER32" ]; then
@@ -29,20 +29,20 @@ install_gnumach() {
       user_cc=$CROSS_TOOLS/bin/x86_64-gnu-gcc
       user_cpp="$user_cc -E"
    fi &&
-   USER_CC="$user_cc" USER_CPP="$user_cpp" \
-   USER_MIG="$user_mig" $SOURCE/$GNUMACH_SRC/configure \
-      --host="$CROSS_HURD_TARGET" \
-      --build="$HOST" \
-      --exec-prefix=$SYSTEM \
-      --enable-kdb \
-      --enable-kmsg \
-      --prefix="$SYS_ROOT" \
-      $enable_user32 &&
-   make -j$PROCS gnumach.gz gnumach gnumach.msgids &&
-   make -j$PROCS install &&
-   mkdir -p $SYSTEM/boot &&
-   cp gnumach.gz $SYSTEM/boot/ &&
-   cd -
+      USER_CC="$user_cc" USER_CPP="$user_cpp" \
+         USER_MIG="$user_mig" $SOURCE/$GNUMACH_SRC/configure \
+         --host="$CROSS_HURD_TARGET" \
+         --build="$HOST" \
+         --exec-prefix=$SYSTEM \
+         --enable-kdb \
+         --enable-kmsg \
+         --prefix="$SYS_ROOT" \
+         $enable_user32 &&
+      make -j$PROCS gnumach.gz gnumach gnumach.msgids &&
+      make -j$PROCS install &&
+      mkdir -p $SYSTEM/boot &&
+      cp gnumach.gz $SYSTEM/boot/ &&
+      cd -
 }
 
 set_vars() {
@@ -59,11 +59,11 @@ set_vars() {
 mkdir -p $BUILD_ROOT/bootstrap-kernel &&
    cd $BUILD_ROOT/bootstrap-kernel &&
    if [ ! "$1" = "--kernel-only" ]; then
-   compile_binutils &&
-   compile_gcc &&
-   compile_pkgconfiglite &&
-   install_gnumach_headers &&
-   install_gnumig
+      compile_binutils &&
+         compile_gcc &&
+         compile_pkgconfiglite &&
+         install_gnumach_headers &&
+         install_gnumig
    fi &&
    set_vars &&
    install_gnumach &&

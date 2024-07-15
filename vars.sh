@@ -99,7 +99,6 @@ PERL_CROSS_PKG=$PERL_CROSS_SRC.tar.gz
 PERL_SRC=perl-$PERL_VERSION
 PERL_PKG=$PERL_SRC.tar.gz
 
-print_info ()
-{
+print_info() {
    echo "* $*"
 }

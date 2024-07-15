@@ -9,15 +9,15 @@ fi
 echo "Removing from $SYSTEM..."
 
 rm -rf build* &&
-rm -rf output* &&
-echo "Removing $SYS_ROOT"
+  rm -rf output* &&
+  echo "Removing $SYS_ROOT"
 sudo rm -f $SYS_ROOT &&
-echo "Removing $CROSS_TOOLS"
+  echo "Removing $CROSS_TOOLS"
 sudo rm -f $CROSS_TOOLS
 echo "Removing $SYSTEM"
 rm -rf $SYSTEM
 rm -f hd.img
-for dir in `ls $SOURCE`; do
+for dir in $(ls $SOURCE); do
   if [ -d $SOURCE/$dir ]; then
     if [ ! -d $SOURCE/$dir/.git ]; then
       echo "Removing $SOURCE/$dir"
