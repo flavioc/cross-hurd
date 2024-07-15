@@ -53,7 +53,7 @@ mkdir -p $SOURCE &&
   download_ca_certificates &&
   download_iana_etc &&
   download_inetutils &&
-  download_openssl &&
+  download_package $OPENSSL_URL &&
   download_wget &&
   download_perl &&
   download_package $LIBUNISTRING_URL &&

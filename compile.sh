@@ -836,6 +836,17 @@ install_inetutils() {
     popd
 }
 
+openssl_arch() {
+  if [ "$CPU" = "i686" ]; then
+    echo "hurd-x86"
+  elif [ "$CPU" = "x86_64" ]; then
+    echo "hurd-x86_64"
+  else
+    echo "Unknown CPU $CPU"
+    exit 1
+  fi
+}
+
 install_openssl() {
   rm -rf $OPENSSL_SRC.obj &&
     mkdir -p $OPENSSL_SRC.obj &&
@@ -845,7 +856,7 @@ install_openssl() {
       --prefix=$SYS_ROOT \
       --openssldir=$SYS_ROOT/etc/ssl \
       --libdir=lib \
-      hurd-x86 \
+      $(openssl_arch) \
       shared \
       zlib-dynamic &&
     make -j$PROCS &&

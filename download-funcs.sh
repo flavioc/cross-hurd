@@ -36,7 +36,6 @@ DMIDECODE_URL=http://download.savannah.gnu.org/releases/dmidecode/$DMIDECODE_PKG
 FINDUTILS_URL=https://ftp.gnu.org/gnu/findutils/$FINDUTILS_PKG
 IANA_ETC_URL=https://github.com/Mic92/iana-etc/releases/download/$IANA_ETC_VERSION/$IANA_ETC_PKG
 INETUTILS_URL=https://ftp.gnu.org/gnu/inetutils/$INETUTILS_PKG
-OPENSSL_URL=https://www.openssl.org/source/$OPENSSL_PKG
 WGET_URL=https://ftp.gnu.org/gnu/wget/$WGET_PKG
 PERL_CROSS_URL=https://github.com/arsv/perl-cross/raw/releases/$PERL_CROSS_PKG
 PERL_URL=https://www.cpan.org/src/5.0/$PERL_PKG
@@ -358,14 +357,6 @@ download_inetutils() {
       return 0
     fi) &&
     unpack xf $INETUTILS_PKG $INETUTILS_SRC
-}
-
-download_openssl() {
-  download $OPENSSL_PKG $OPENSSL_URL &&
-    (if [ -d $OPENSSL_SRC ]; then
-      return 0
-    fi) &&
-    unpack xf $OPENSSL_PKG $OPENSSL_SRC
 }
 
 download_wget() {
