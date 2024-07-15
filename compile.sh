@@ -849,8 +849,8 @@ install_openssl() {
       shared \
       zlib-dynamic &&
     make -j$PROCS &&
-    make MANSUFFIX=ssl install
-  popd
+    make MANSUFFIX=ssl install &&
+    popd
 }
 
 install_wget() {
