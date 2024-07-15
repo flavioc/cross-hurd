@@ -5,7 +5,6 @@ FLEX_VERSION=2.6.4
 ZLIB_VERSION=1.3.1
 BZIP2_VERSION=1.0.8
 BASH_VERSION=5.2.21
-COREUTILS_VERSION=9.4
 # e2fsprogs 1.45.4 is failing due to something with sys/mount.h in configure
 E2FSPROGS_VERSION=1.44.1
 PKGCONFIGLITE_VERSION=0.28-1
@@ -40,6 +39,12 @@ WGET_VERSION=1.24.5
 PERL_CROSS_VERSION=1.5.3
 PERL_VERSION=5.40.0
 # Mach, Hurd and Glibc are all taken from the Git repository.
+
+# coreutils
+COREUTILS_VERSION=9.5
+COREUTILS_SRC=coreutils-$COREUTILS_VERSION
+COREUTILS_PKG=$COREUTILS_SRC.tar.xz
+COREUTILS_URL=https://ftp.gnu.org/gnu/coreutils/$COREUTILS_PKG
 
 # vim
 VIM_VERSION=9.1.0041

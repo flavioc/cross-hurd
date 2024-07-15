@@ -15,7 +15,7 @@ mkdir -p $SOURCE &&
   unpack zxf $BZIP2_PKG $BZIP2_SRC &&
   download $BASH_PKG $BASH_URL &&
   unpack zxf $BASH_PKG $BASH_SRC &&
-  download_coreutils &&
+  download_package $COREUTILS_URL &&
   download $E2FSPROGS_PKG $E2FSPROGS_URL &&
   unpack zxf $E2FSPROGS_PKG $E2FSPROGS_SRC &&
   download $PKGCONFIGLITE_PKG $PKGCONFIGLITE_URL &&

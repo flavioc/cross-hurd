@@ -8,7 +8,6 @@ FLEX_URL=https://github.com/westes/flex/releases/download/v$FLEX_VERSION/$FLEX_P
 ZLIB_URL=http://zlib.net/"$ZLIB_PKG"
 BZIP2_URL=https://sourceware.org/pub/bzip2/$BZIP2_PKG
 BASH_URL=https://ftp.gnu.org/gnu/bash/"$BASH_PKG"
-COREUTILS_URL=https://ftp.gnu.org/gnu/coreutils/"$COREUTILS_PKG"
 E2FSPROGS_URL=https://www.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v"$E2FSPROGS_VERSION"/"$E2FSPROGS_PKG"
 PKGCONFIGLITE_URL=http://downloads.sourceforge.net/project/pkgconfiglite/"$PKGCONFIGLITE_VERSION"/"$PKGCONFIGLITE_PKG"
 LIBUUID_URL=http://downloads.sourceforge.net/project/libuuid/"$LIBUUID_PKG"
@@ -201,13 +200,6 @@ download_binutils() {
       return 0
     fi
   unpack jxf $BINUTILS_PKG $BINUTILS_SRC
-}
-
-download_coreutils() {
-  download $COREUTILS_PKG $COREUTILS_URL &&
-    if [ ! -d "$COREUTILS_SRC" ]; then
-      unpack Jxf $COREUTILS_PKG $COREUTILS_SRC
-    fi
 }
 
 download_sed() {
