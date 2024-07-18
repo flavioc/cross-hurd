@@ -20,5 +20,7 @@ mkdir -p $BUILD_ROOT/bootstrap &&
    compile_first_glibc &&
    compile_full_gcc &&
    compile_second_glibc &&
+   # Run a few testsuites that are not possible with a cross-compiler.
+   check_gnumig &&
    print_info "bootstrap.sh finished successfully" &&
    exit 0
