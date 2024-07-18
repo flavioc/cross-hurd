@@ -20,7 +20,6 @@ MPFR_VERSION=4.2.1
 MPC_VERSION=1.3.1
 NCURSES_VERSION=6.4
 LIBEDIT_VERSION=20240517-3.1
-GPG_ERROR_VERSION=1.47
 GCRYPT_VERSION=1.10.3
 MAKE_VERSION=4.4
 GREP_VERSION=3.11
@@ -94,6 +93,12 @@ GIT_URL=https://www.kernel.org/pub/software/scm/git/$GIT_PKG
 
 # openssl
 OPENSSL_VERSION=3.3.1
-OPENSSL_URL=https://www.openssl.org/source/$OPENSSL_PKG
 OPENSSL_SRC=openssl-$OPENSSL_VERSION
 OPENSSL_PKG=$OPENSSL_SRC.tar.gz
+OPENSSL_URL=https://www.openssl.org/source/$OPENSSL_PKG
+
+# libgpg-error
+GPG_ERROR_VERSION=1.50
+GPG_ERROR_SRC=libgpg-error-$GPG_ERROR_VERSION
+GPG_ERROR_PKG=$GPG_ERROR_SRC.tar.bz2
+GPG_ERROR_URL=https://gnupg.org/ftp/gcrypt/libgpg-error/$GPG_ERROR_PKG

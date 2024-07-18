@@ -37,7 +37,7 @@ mkdir -p $SOURCE &&
   download_ncurses &&
   download_libedit &&
   download_package $VIM_URL &&
-  download_gpg_error &&
+  download_package $GPG_ERROR_URL &&
   download_gcrypt &&
   download_dmidecode &&
   download_findutils &&
