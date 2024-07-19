@@ -6,7 +6,7 @@
 mkdir -p $SOURCE &&
   cd $SOURCE &&
   download_gcc &&
-  download_binutils &&
+  download_package $BINUTILS_URL &&
   download $FLEX_PKG $FLEX_URL &&
   unpack zxf $FLEX_PKG $FLEX_SRC &&
   download $ZLIB_PKG $ZLIB_URL &&

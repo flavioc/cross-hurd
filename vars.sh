@@ -17,8 +17,6 @@ fi
 
 . ./package-versions.sh
 
-BINUTILS_SRC=binutils-"$BINUTILS_VERSION"
-BINUTILS_PKG="${BINUTILS_SRC}.tar.bz2"
 GCC_SRC=gcc-"$GCC_VERSION"
 GCC_PKG="$GCC_SRC".tar.gz
 GNUMACH_SRC=gnumach

@@ -191,14 +191,6 @@ download_gcc() {
   unpack zxf $GCC_PKG $GCC_SRC
 }
 
-download_binutils() {
-  download $BINUTILS_PKG $BINUTILS_URL &&
-    if [ -d "$BINUTILS_SRC" ]; then
-      return 0
-    fi
-  unpack jxf $BINUTILS_PKG $BINUTILS_SRC
-}
-
 download_sed() {
   download $SED_PKG $SED_URL &&
     if [ -d "$SED_SRC" ]; then
