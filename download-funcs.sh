@@ -66,12 +66,12 @@ download() {
 
 # $1 - url of the package
 download_package() {
-  local url=$1
-  local package_file=$(basename $url)
-  download $package_file $url
-  local dir_name=$(basename $(basename $package_file .tar.gz) .tar.xz)
-  local extension="${package_file##.*}"
-  unpack "xf" $package_file $dir_name
+  local url=$1 &&
+    local package_file=$(basename $url) &&
+    download $package_file $url &&
+    local dir_name=$(basename $(basename $(basename $package_file .tar.gz) .tar.xz) .tar.bz2) &&
+    local extension="${package_file##.*}" &&
+    unpack "xf" $package_file $dir_name
 }
 
 download_from_git() {
