@@ -161,7 +161,7 @@ install_hurd() {
     cp -R $SOURCE/dde/libmachdevdde ./libmachdevdde &&
     cp -R $SOURCE/dde/libddekit ./libddekit &&
     cp -R $SOURCE/dde/libdde_linux26 ./libdde-linux26 &&
-    ./configure \
+    PKG_CONFIG=$CROSS_TOOLS/bin/pkg-config ./configure \
       --build=$HOST \
       --host=$CROSS_HURD_TARGET \
       --prefix=$SYS_ROOT \
