@@ -131,8 +131,9 @@ download_mig() {
 download_hurd() {
   download_from_git hurd git://git.savannah.gnu.org/hurd/hurd.git &&
     pushd hurd &&
-    apply_patch $SCRIPT_DIR/patches/hurd/link-rump.patch 1
-  popd
+    apply_patch $SCRIPT_DIR/patches/hurd/link-rump.patch 1 &&
+    apply_patch $SCRIPT_DIR/patches/hurd/git-libgcrypt 1 &&
+    popd
 }
 
 download_rumpkernel() {

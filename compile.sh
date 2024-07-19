@@ -13,6 +13,7 @@ export NM=$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-nm
 export READELF=$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-readelf
 export OBJDUMP=$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-objdump
 export MIG="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-mig"
+export PKG_CONFIG="$CROSS_TOOLS/bin/pkg-config"
 
 # $1 - package directory
 create_temp() {
@@ -161,11 +162,10 @@ install_hurd() {
     cp -R $SOURCE/dde/libmachdevdde ./libmachdevdde &&
     cp -R $SOURCE/dde/libddekit ./libddekit &&
     cp -R $SOURCE/dde/libdde_linux26 ./libdde-linux26 &&
-    PKG_CONFIG=$CROSS_TOOLS/bin/pkg-config ./configure \
+    ./configure \
       --build=$HOST \
       --host=$CROSS_HURD_TARGET \
       --prefix=$SYS_ROOT \
-      --with-libgcrypt-prefix=$SYS_ROOT \
       --enable-static-progs='ext2fs,iso9660fs,rumpdisk,pci-arbiter,acpi' \
       --disable-profile \
       $extra_flags &&
