@@ -789,6 +789,9 @@ install_ca_certificates() {
   create_temp $CA_CERTIFICATES_SRC.obj &&
     cp -R $SOURCE/$CA_CERTIFICATES_SRC/* $CA_CERTIFICATES_SRC.obj &&
     pushd $CA_CERTIFICATES_SRC.obj &&
+    pushd mozilla &&
+    make &&
+    popd &&
     pushd sbin &&
     make SBINDIR=$SYS_ROOT/sbin &&
     popd &&
