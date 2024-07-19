@@ -132,9 +132,7 @@ download_hurd() {
   download_from_git hurd git://git.savannah.gnu.org/hurd/hurd.git &&
     pushd hurd &&
     apply_patch $SCRIPT_DIR/patches/hurd/link-rump.patch 1
-  cp -R $SOURCE/dde/libmachdevdde ./libmachdevdde &&
-    cp -R $SOURCE/dde/libddekit ./libddekit &&
-    popd
+  popd
 }
 
 download_rumpkernel() {
