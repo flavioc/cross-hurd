@@ -541,6 +541,35 @@ install_ncurses() {
       --with-termlib \
       --enable-overwrite \
       --without-cxx-binding \
+      --disable-widec \
+      --enable-normal \
+      --with-build-cc=gcc &&
+    make -j$PROCS &&
+    make -j$PROCS install.libs install.includes &&
+    popd
+}
+
+install_ncursesw() {
+  create_temp $NCURSES_SRC.w.obj &&
+    pushd $NCURSES_SRC.w.obj &&
+    # Build required host tools.
+    mkdir host &&
+    pushd host &&
+    CC=gcc RANLIB=ranlib AR=ar LD=ld PATH=/usr/bin \
+      $SOURCE/$NCURSES_SRC/configure &&
+    make -j$PROCS -C include &&
+    make -j$PROCS -C progs tic &&
+    popd &&
+    LDFLAGS="-lpthread" CPPFLAGS="-P" $SOURCE/$NCURSES_SRC/configure \
+      --prefix="${SYS_ROOT}" \
+      --with-shared \
+      --build=${HOST} \
+      --host=${CROSS_HURD_TARGET} \
+      --without-debug \
+      --without-ada \
+      --with-termlib \
+      --enable-overwrite \
+      --without-cxx-binding \
       --enable-widec \
       --with-build-cc=gcc &&
     make -j$PROCS &&
@@ -991,6 +1020,7 @@ install_minimal_system() {
     install_gpg_error &&
     install_gcrypt &&
     install_ncurses &&
+    install_ncursesw &&
     install_libedit &&
     install_util_linux &&
     install_rump &&
