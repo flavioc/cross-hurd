@@ -43,6 +43,7 @@ mkdir -p $SOURCE &&
   download_findutils &&
   download_parted &&
   download_package $LIBDAEMON_URL &&
+  download_libtirpc &&
   download_make &&
   download_grep &&
   download_gawk &&

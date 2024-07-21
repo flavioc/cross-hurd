@@ -212,6 +212,15 @@ download_libedit() {
     unpack zxf $LIBEDIT_PKG $LIBEDIT_SRC
 }
 
+download_libtirpc() {
+  download_package $LIBTIRPC_URL &&
+    pushd $LIBTIRPC_SRC &&
+    apply_patch $SCRIPT_DIR/patches/libtirpc/03-kfreebsd.diff 1 &&
+    apply_patch $SCRIPT_DIR/patches/libtirpc/05-hurd-port.diff 1 &&
+    apply_patch $SCRIPT_DIR/patches/libtirpc/06-hurd-client-port.diff 1 &&
+    popd
+}
+
 download_make() {
   download $MAKE_PKG $MAKE_URL &&
     if [ -d "$MAKE_SRC" ]; then

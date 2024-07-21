@@ -389,6 +389,20 @@ install_libdaemon() {
     popd
 }
 
+install_libtirpc() {
+  create_temp $LIBTIRPC_SRC.obj &&
+    pushd $LIBTIRPC_SRC.obj &&
+    $SOURCE/$LIBTIRPC_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT \
+      --disable-static \
+      --disable-gssapi &&
+    make -j$PROCS &&
+    make -j$PROCS install &&
+    popd
+}
+
 install_shadow() {
   rm -rf $SHADOW_SRC.copy &&
     cp -R $SOURCE/$SHADOW_SRC $SHADOW_SRC.copy &&
@@ -984,6 +998,7 @@ install_minimal_system() {
     install_dmidecode &&
     install_parted &&
     install_libdaemon &&
+    install_libtirpc &&
     install_hurd &&
     install_netdde &&
     install_bash &&
