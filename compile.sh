@@ -541,6 +541,7 @@ install_ncurses() {
       --with-termlib \
       --enable-overwrite \
       --without-cxx-binding \
+      --enable-widec \
       --with-build-cc=gcc &&
     make -j$PROCS &&
     make -j$PROCS TIC_PATH=$PWD/host/progs/tic install &&
