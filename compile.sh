@@ -540,6 +540,7 @@ install_ncurses() {
       --without-ada \
       --with-termlib \
       --enable-overwrite \
+      --without-cxx-binding \
       --with-build-cc=gcc &&
     make -j$PROCS &&
     make -j$PROCS TIC_PATH=$PWD/host/progs/tic install &&
