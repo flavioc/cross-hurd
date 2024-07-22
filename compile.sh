@@ -12,6 +12,7 @@ export STRIP="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-strip"
 export NM=$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-nm
 export READELF=$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-readelf
 export OBJDUMP=$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-objdump
+export OBJCOPY=$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-objcopy
 export MIG="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-mig"
 export PKG_CONFIG="$CROSS_TOOLS/bin/pkg-config"
 
@@ -322,18 +323,30 @@ install_util_linux() {
 }
 
 install_grub() {
-  mkdir -p $GRUB_SRC.obj &&
-    cd $GRUB_SRC.obj &&
-    $SOURCE/$GRUB_SRC/configure --prefix="$SYS_ROOT" \
+  rm -rf $GRUB_SRC.obj &&
+    mkdir -p $GRUB_SRC.obj &&
+    pushd $GRUB_SRC.obj &&
+    HOST_CFLAGS="-Wno-error=incompatible-pointer-types" \
+      STRIP="" RANLIB="" AR="" \
+      BUILD_CC=$HOST_CC \
+      HOST_CC=$CC \
+      TARGET_CC=$CC \
+      TARGET_NM=$NM \
+      TARGET_OBJCOPY=$OBJCOPY \
+      TARGET_STRIP=$STRIP \
+      TARGET_RANLIB=$RANLIB \
+      $SOURCE/$GRUB_SRC/configure --prefix="$SYS_ROOT" \
+      --target=i386 \
       --build=${HOST} \
       --host=${CROSS_HURD_TARGET} \
+      --with-platform=pc \
       --disable-efiemu \
       --disable-werror \
       --enable-grub-mkfont=no \
       --with-bootdir=$SYS_ROOT/boot &&
-    make -j$PROCS &&
+    make -j$PROCS all &&
     make -j$PROCS install &&
-    cd ..
+    popd
 }
 
 install_libxcrypt() {

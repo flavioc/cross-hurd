@@ -24,7 +24,7 @@ mkdir -p $SOURCE &&
   unpack zxf $LIBUUID_PKG $LIBUUID_SRC &&
   download $UTIL_LINUX_PKG $UTIL_LINUX_URL &&
   unpack zxf $UTIL_LINUX_PKG $UTIL_LINUX_SRC &&
-  download_package $GRUB_URL &&
+  download_grub &&
   download $SHADOW_PKG $SHADOW_URL &&
   unpack Jxf $SHADOW_PKG $SHADOW_SRC &&
   download $GMP_PKG $GMP_URL &&

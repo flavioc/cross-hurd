@@ -220,6 +220,13 @@ download_libtirpc() {
     popd
 }
 
+download_grub() {
+  download_package $GRUB_URL &&
+    pushd $GRUB_SRC &&
+    apply_patch $SCRIPT_DIR/patches/grub/0001-Add-missing-grub-core-extra_deps.lst-file-in-release.patch 1 &&
+    popd
+}
+
 download_make() {
   download $MAKE_PKG $MAKE_URL &&
     if [ -d "$MAKE_SRC" ]; then

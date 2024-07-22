@@ -125,7 +125,7 @@ OPENSSH_PKG=$OPENSSH_SRC.tar.gz
 OPENSSH_URL=https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/$OPENSSH_PKG
 
 # grub
-GRUB_VERSION=2.06
+GRUB_VERSION=2.12
 GRUB_SRC=grub-$GRUB_VERSION
 GRUB_PKG=$GRUB_SRC.tar.gz
 GRUB_URL=https://ftp.gnu.org/gnu/grub/$GRUB_PKG
