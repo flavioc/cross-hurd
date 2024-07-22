@@ -110,14 +110,17 @@ chmod 664 /etc/motd
 echo -n starting daemons:
 
 if [ -x "/sbin/syslogd" ]; then
-	/sbin/syslogd	&& echo -n ' syslogd'
+  /sbin/syslogd && echo -n ' syslogd'
 fi
 if [ -x "/sbin/inetd" ]; then
-	/sbin/inetd	&& echo -n ' inetd'
+  /sbin/inetd && echo -n ' inetd'
+fi
+if [ -x "/sbin/sshd" ]; then
+  /sbin/sshd -E /var/log/sshd.log -f /etc/sshd_config -h /etc/ssh_host_rsa_key && echo -n ' sshd'
 fi
 
 if test -x /sbin/sendmail -a -r /etc/sendmail.cf; then
-  /sbin/sendmail -bd -q30m	&& echo -n ' sendmail'
+  /sbin/sendmail -bd -q30m && echo -n ' sendmail'
 fi
 
 echo .

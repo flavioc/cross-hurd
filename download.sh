@@ -62,6 +62,7 @@ mkdir -p $SOURCE &&
   download_package $LIBPSL_URL &&
   download_package $CURL_URL &&
   download_package $GIT_URL &&
+  download_package $OPENSSH_URL &&
   download_libpciaccess &&
   download_gnumach &&
   download_mig &&

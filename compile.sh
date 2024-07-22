@@ -972,6 +972,34 @@ install_curl() {
     popd
 }
 
+install_openssh() {
+  create_temp $OPENSSH_SRC.obj &&
+    pushd $OPENSSH_SRC.obj &&
+    $SOURCE/$OPENSSH_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT \
+      --with-privsep-path=/var/lib/sshd \
+      --with-default-path=/bin \
+      --with-superuser-path=/bin:/sbin \
+      --sysconfdir=/etc/ssh \
+      --with-pid-dir=/run \
+      --with-libedit &&
+    make -j$PROCS &&
+    fakeroot make -j$PROCS DESTDIR=$SYS_ROOT install-sysconf &&
+    install -v -m755 $SOURCE/$OPENSSH_SRC/contrib/ssh-copy-id $SYS_ROOT/bin/ &&
+    install -v -m755 {ssh,ssh-add,ssh-agent,ssh-keysign,ssh-keyscan} $SYS_ROOT/bin/ &&
+    install -v -m755 {scp,sftp} $SYS_ROOT/bin/ &&
+    install -v -m755 {sshd,sshd-session,sftp-server} $SYS_ROOT/sbin/ &&
+    cat >$SYS_ROOT/etc/sshd_config <<"EOF"
+Port 22
+PermitRootLogin yes
+PermitEmptyPasswords yes
+PasswordAuthentication yes
+EOF
+  popd
+}
+
 install_git() {
   create_temp $GIT_SRC.obj &&
     cp -vR $SOURCE/$GIT_SRC/* $GIT_SRC.obj &&
@@ -1059,7 +1087,8 @@ install_networking_tools() {
     install_libunistring &&
     install_libidn2 &&
     install_libpsl &&
-    install_curl
+    install_curl &&
+    install_openssh
 }
 
 install_development_tools() {

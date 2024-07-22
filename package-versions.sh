@@ -118,3 +118,9 @@ LIBTIRPC_VERSION=1.3.4
 LIBTIRPC_SRC=libtirpc-$LIBTIRPC_VERSION
 LIBTIRPC_PKG=$LIBTIRPC_SRC.tar.bz2
 LIBTIRPC_URL=https://sourceforge.net/projects/libtirpc/files/libtirpc/$LIBTIRPC_VERSION/$LIBTIRPC_PKG
+
+# openssh
+OPENSSH_VERSION=9.8p1
+OPENSSH_SRC=openssh-$OPENSSH_VERSION
+OPENSSH_PKG=$OPENSSH_SRC.tar.gz
+OPENSSH_URL=https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/$OPENSSH_PKG

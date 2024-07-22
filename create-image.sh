@@ -8,7 +8,7 @@ IMG=hd.img
 IMG_SIZE=10GB
 BASE_SYS_ROOT=$(basename $SYS_ROOT)
 
-create_image () {
+create_image() {
    print_info "Creating disk image $IMG using $LOOP..."
    fallocate -l $IMG_SIZE $IMG &&
       sudo losetup $LOOP $IMG &&
@@ -17,20 +17,21 @@ create_image () {
       sudo parted -s $LOOP -- set 1 boot on &&
       sudo losetup -d $LOOP &&
       sudo losetup -P $LOOP $IMG &&
-   sleep 2 &&
+      sleep 2 &&
       sudo mkfs.ext2 -o hurd -m 1 -v $LOOPPART
 }
 
-mount_image () {
+mount_image() {
    mkdir -p mount &&
       sudo mount -o rw -t ext2 $LOOPPART mount &&
       sudo chmod ogu+w -R mount/
 }
 
-copy_files () {
+copy_files() {
    print_info "Copying system into mount..."
-      mkdir -p mount/{etc,boot,dev,usr,hurd,include,servers,lib,libexec,proc,sbin,bin,var,root,share} &&
-      mkdir -p mount/var/{run,lib} &&
+   mkdir -p mount/{etc,boot,dev,usr,hurd,include,servers,lib,libexec,proc,sbin,bin,var,root,run,share} &&
+      mkdir -p mount/var/{run,lib,log} &&
+      install -d -m700 mount/var/lib/sshd &&
       mkdir -p mount/servers/{socket,bus} &&
       cp -R files/etc/* mount/etc/ &&
       mkdir -p mount/etc/hurd &&
@@ -57,34 +58,34 @@ copy_files () {
       else
          ln -sfv /lib/ld.so.1 mount/lib/ld.so
       fi) &&
-      ln -svf / mount/$BASE_SYS_ROOT
+      ln -svf / mount/$BASE_SYS_ROOT &&
       ln -svf /bin/bash mount/bin/sh &&
       cp files/SETUP mount/ &&
       chmod +x mount/SETUP &&
       rm -f manifest-$CPU.txt &&
       pushd mount &&
-      (find . > ../manifest-$CPU.txt || true) &&
+      (find . >../manifest-$CPU.txt || true) &&
       popd &&
       # Create a motd message.
-      echo "Welcome to the HURD!" > mount/etc/motd &&
-      echo "Cross-compiled from a $HOST on `date`" >> mount/etc/motd &&
+      echo "Welcome to the HURD!" >mount/etc/motd &&
+      echo "Cross-compiled from a $HOST on $(date)" >>mount/etc/motd &&
       # Ensure all files are owned by root inside the system image.
       sudo chown root:root -R mount/*
 }
 
-install_grub () {
+install_grub() {
    print_info "Installing the GRUB on $IMG..."
    sudo grub-install --target=i386-pc --directory=$SYS_ROOT/lib/grub/i386-pc --boot-directory=$PWD/mount/boot $LOOP
 }
 
-umount_image () {
+umount_image() {
    print_info "Umounting $LOOP"
    sudo umount mount >/dev/null 2>&1 &&
       sudo losetup -d $LOOP &&
       rmdir mount
 }
 
-qemu_arch () {
+qemu_arch() {
    if [ "$CPU" = "i686" ]; then
       echo "i386"
    else
@@ -102,6 +103,10 @@ create_image &&
    mount_image &&
    copy_files &&
    install_grub &&
-print_info "Disk image available on $IMG" &&
-print_info "Run 'qemu-system-`qemu_arch` --enable-kvm -m 4G -drive cache=writeback,file=$IMG -M q35 -net user -net nic,model=e1000' to enjoy the Hurd!" &&
-exit 0
+   print_info "Disk image available on $IMG" &&
+   local fwd_qemu=""
+if [[ -f $SYS_ROOT/sbin/sshd ]]; then
+   fwd_qemu=",hostfwd=tcp:127.0.0.1:2222-:22"
+fi &&
+   print_info "Run 'qemu-system-$(qemu_arch) --enable-kvm -m 4G -drive cache=writeback,file=$IMG -M q35 -net user$fwd_qemu -net nic,model=e1000' to enjoy the Hurd!" &&
+   exit 0
