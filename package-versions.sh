@@ -11,7 +11,6 @@ LIBUUID_VERSION=1.0.3
 UTIL_LINUX_MAJOR_VERSION=2.39
 # 2.39.2 fails because libmount/src/hooks.c is being compiled without proper support.
 UTIL_LINUX_VERSION=2.39
-GRUB_VERSION=2.06
 SHADOW_VERSION=4.14.2
 SED_VERSION=4.9
 GMP_VERSION=6.3.0
@@ -124,3 +123,9 @@ OPENSSH_VERSION=9.8p1
 OPENSSH_SRC=openssh-$OPENSSH_VERSION
 OPENSSH_PKG=$OPENSSH_SRC.tar.gz
 OPENSSH_URL=https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/$OPENSSH_PKG
+
+# grub
+GRUB_VERSION=2.06
+GRUB_SRC=grub-$GRUB_VERSION
+GRUB_PKG=$GRUB_SRC.tar.gz
+GRUB_URL=https://ftp.gnu.org/gnu/grub/$GRUB_PKG

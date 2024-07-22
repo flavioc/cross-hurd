@@ -12,7 +12,6 @@ E2FSPROGS_URL=https://www.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v"$
 PKGCONFIGLITE_URL=http://downloads.sourceforge.net/project/pkgconfiglite/"$PKGCONFIGLITE_VERSION"/"$PKGCONFIGLITE_PKG"
 LIBUUID_URL=http://downloads.sourceforge.net/project/libuuid/"$LIBUUID_PKG"
 UTIL_LINUX_URL=https://www.kernel.org/pub/linux/utils/util-linux/v$UTIL_LINUX_MAJOR_VERSION/"$UTIL_LINUX_PKG"
-GRUB_URL=https://ftp.gnu.org/gnu/grub/"$GRUB_PKG"
 SHADOW_URL=https://github.com/shadow-maint/shadow/releases/download/"$SHADOW_VERSION"/"$SHADOW_PKG"
 SED_URL=https://ftp.gnu.org/gnu/sed/"$SED_PKG"
 GMP_URL=https://ftp.gnu.org/gnu/gmp/"$GMP_PKG"
@@ -227,14 +226,6 @@ download_make() {
       return 0
     fi
   unpack xf $MAKE_PKG $MAKE_SRC
-}
-
-download_grub() {
-  download $GRUB_PKG $GRUB_URL &&
-    if [ -d "$GRUB_SRC" ]; then
-      return 0
-    fi
-  unpack zxf $GRUB_PKG $GRUB_SRC
 }
 
 download_grep() {
