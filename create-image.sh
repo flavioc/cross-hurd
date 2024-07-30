@@ -104,7 +104,7 @@ create_image &&
    copy_files &&
    install_grub &&
    print_info "Disk image available on $IMG" &&
-   local fwd_qemu=""
+   fwd_qemu=""
 if [[ -f $SYS_ROOT/sbin/sshd ]]; then
    fwd_qemu=",hostfwd=tcp:127.0.0.1:2222-:22"
 fi &&
