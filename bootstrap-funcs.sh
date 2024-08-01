@@ -146,7 +146,6 @@ compile_first_glibc() {
       --enable-obsolete-rpc \
       --disable-profile \
       --enable-add-ons=libpthread \
-      --enable-obsolete-rpc \
       --disable-nscd \
       libc_cv_ctors_header=yes &&
     make -j$PROCS || # workaround for "fails first time"?
@@ -198,7 +197,6 @@ compile_second_glibc() {
       --host="$CROSS_HURD_TARGET" \
       --prefix="$SYS_ROOT" \
       --with-headers="$SYS_ROOT"/include \
-      --enable-obsolete-rpc \
       --disable-profile \
       --enable-add-ons=libpthread \
       --enable-obsolete-rpc \
