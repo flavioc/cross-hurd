@@ -773,10 +773,9 @@ install_rump() {
   else
     arch="amd64"
   fi
+  OBJ=$(pwd)/obj
   pushd $SOURCE/rumpkernel/ &&
-    OBJ=$(pwd)/obj
-  mkdir -p $OBJ &&
-    echo "OBJ $OBJ" &&
+    mkdir -p $OBJ &&
     git clean -fdx &&
     git checkout . &&
     for file in $(cat debian/patches/series); do
@@ -790,7 +789,8 @@ install_rump() {
       --host=$CROSS_HURD_TARGET &&
     popd &&
     CFLAGS="-Wno-format-security -Wno-omit-frame-pointer" \
-      HOST_GCC=$HOST_CC TARGET_CC=$CC TARGET_CXX=$CC \
+      HOST_GCC=$HOST_CC HOST_CFLAGS="-Wno-error=implicit-function-declaration" \
+      TARGET_CC=$CC TARGET_CXX=$CC \
       TARGET_LD=$LD TARGET_MIG=$MIG \
       TARGET_LDADD="-B/$SYS_ROOT/lib -L$SYS_ROOT/lib -L$SYS_ROOT/lib" \
       _GCC_CRTENDS= _GCC_CRTEND= _CC_CRTBEGINS= \
