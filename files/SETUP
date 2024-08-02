@@ -25,7 +25,7 @@ fsysopts / --writable
 
 # Set up standard passive translators
 /bin/settrans -c /servers/socket/local /hurd/pflocal
-/bin/settrans -c /servers/crash /hurd/crash
+/bin/settrans -c /servers/crash /hurd/crash --dump-core
 /bin/settrans -c /servers/password /hurd/password
 /bin/settrans -c /servers/acpi /hurd/acpi
 /bin/settrans -c /servers/bus/pci /hurd/pci-arbiter
