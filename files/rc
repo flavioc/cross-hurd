@@ -6,51 +6,47 @@ PATH=/bin:/sbin:/hurd
 swapon -a
 
 # Check filesystems.
-if [ -r /fastboot ]
-then
-	# ... or don't.
-	rm -f /fastboot
-	echo Fast boot ... skipping disk checks
-elif [ $1x = autobootx ]
-then
-	echo Automatic boot in progress...
-	date
+if [ -r /fastboot ]; then
+    # ... or don't.
+    rm -f /fastboot
+    echo Fast boot ... skipping disk checks
+elif [ $1x = autobootx ]; then
+    echo Automatic boot in progress...
+    date
 
-	/sbin/fsck -a
+    /sbin/fsck -a
 
-	case $? in
-	# Successful completion
-	0)
-		;;
-	# Filesystem modified (but ok now)
-	1)
-		;;
-	# Filesystem modified, filesystem should be restarted
-	# Ideally we would only restart the filesystem
-	2 | 3)
-		/sbin/reboot
-		;;
-	# Fsck couldn't fix it.
-	4 | 5 | 8 | 9)
-		echo "Automatic boot failed... help!"
-		exit 1
-		;;
-	# Signal that really interrupted something
-	20 | 130 | 131)
-		echo "Boot interrupted"
-		exit 1
-		;;
-	# Special `let fsck finish' interruption (SIGQUIT)
-	12)
-		echo "Boot interrupted (filesystem checks complete)"
-		exit 1
-		;;
-	# Oh dear.
-	*)
-		echo "Unknown error during fsck (exit status $?)"
-		exit 1
-		;;
-	esac
+    case $? in
+        # Successful completion
+        0) ;;
+        # Filesystem modified (but ok now)
+        1) ;;
+        # Filesystem modified, filesystem should be restarted
+        # Ideally we would only restart the filesystem
+        2 | 3)
+            /sbin/reboot
+            ;;
+        # Fsck couldn't fix it.
+        4 | 5 | 8 | 9)
+            echo "Automatic boot failed... help!"
+            exit 1
+            ;;
+        # Signal that really interrupted something
+        20 | 130 | 131)
+            echo "Boot interrupted"
+            exit 1
+            ;;
+        # Special `let fsck finish' interruption (SIGQUIT)
+        12)
+            echo "Boot interrupted (filesystem checks complete)"
+            exit 1
+            ;;
+        # Oh dear.
+        *)
+            echo "Unknown error during fsck (exit status $?)"
+            exit 1
+            ;;
+    esac
 fi
 
 fsysopts / --writable
@@ -59,36 +55,42 @@ rm -f /etc/nologin
 rm -f /var/lock/LCK.*
 if test -d /tmp; then
 
-  # Forcibly remove all translators in the directory.
-  # It is then safe to attempt to remove files and descend directories.
-  # All parameters must begin with "./".
-  function remove_translators() {
-    local f
-    for f; do
-      settrans -pagfS "$f"
-      if [ -L "$f" ] || [ ! -d "$f" ]; then
-	rm "$f"
-      else
-	remove_translators "$f"/* "$f"/.[!.] "$f"/.??*
-	rmdir "$f"
-      fi
-    done
-  }
+    # Forcibly remove all translators in the directory.
+    # It is then safe to attempt to remove files and descend directories.
+    # All parameters must begin with "./".
+    function remove_translators() {
+        local f
+        for f; do
+            settrans -pagfS "$f"
+            if [ -L "$f" ] || [ ! -d "$f" ]; then
+                rm "$f"
+            else
+                remove_translators "$f"/* "$f"/.[!.] "$f"/.??*
+                rmdir "$f"
+            fi
+        done
+    }
 
-  (cd /tmp
-   shopt -s nullglob
-   for f in * .[!.] .??*; do
-     case "$f" in
-     'lost+found'|'quotas') ;;
-     *) remove_translators "./$f"
-     esac
-   done)
+    (
+        cd /tmp
+        shopt -s nullglob
+        for f in * .[!.] .??*; do
+            case "$f" in
+                'lost+found' | 'quotas') ;;
+                *) remove_translators "./$f" ;;
+            esac
+        done
+    )
 
-  unset -f remove_translators  # because it relies on nullglob
+    unset -f remove_translators # because it relies on nullglob
 
 fi
 if test -d /var/run; then
-  (cd /var/run && { rm -rf -- *; cp /dev/null utmp; chmod 644 utmp; })
+    (cd /var/run && {
+        rm -rf -- *
+        cp /dev/null utmp
+        chmod 644 utmp
+    })
 fi
 echo done
 
@@ -110,17 +112,17 @@ chmod 664 /etc/motd
 echo -n starting daemons:
 
 if [ -x "/sbin/syslogd" ]; then
-  /sbin/syslogd && echo -n ' syslogd'
+    /sbin/syslogd && echo -n ' syslogd'
 fi
 if [ -x "/sbin/inetd" ]; then
-  /sbin/inetd && echo -n ' inetd'
+    /sbin/inetd && echo -n ' inetd'
 fi
 if [ -x "/sbin/sshd" ]; then
-  /sbin/sshd -E /var/log/sshd.log -f /etc/sshd_config -h /etc/ssh_host_rsa_key && echo -n ' sshd'
+    /sbin/sshd -E /var/log/sshd.log -f /etc/sshd_config -h /etc/ssh/ssh_host_rsa_key && echo -n ' sshd'
 fi
 
 if test -x /sbin/sendmail -a -r /etc/sendmail.cf; then
-  /sbin/sendmail -bd -q30m && echo -n ' sendmail'
+    /sbin/sendmail -bd -q30m && echo -n ' sendmail'
 fi
 
 echo .
@@ -128,7 +130,7 @@ echo .
 echo -n starting translators:
 
 if [ ! -e /proc/cmdline ]; then
-	settrans -ac /proc /hurd/procfs --compatible && echo -n ' procfs'
+    settrans -ac /proc /hurd/procfs --compatible && echo -n ' procfs'
 fi
 
 echo .
