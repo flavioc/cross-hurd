@@ -1,0 +1,13 @@
+diff --git a/Makefile b/Makefile
+index f151833..cb2b9a3 100644
+--- a/Makefile
++++ b/Makefile
+@@ -7,7 +7,7 @@ TARGET         = netdde
+ 
+ SRC_C          = main.c machdev.c check_kernel.c
+ 
+-LIBS          += $(libmachdevdde_path) $(libmachdev_path) -ldde_linux26.o -ldde_linux26_net $(libddekit_path) -ltrivfs -lpciaccess -lz -lshouldbeinlibc -lports -liohelp -lfshelp -lihash -lpthread -lirqhelp $(libslab_path) $(libbpf_path)
++LIBS          += $(libmachdevdde_path) $(libmachdev_path) -ldde_linux26.o -ldde_linux26_net $(libddekit_path) -ltrivfs -lpciaccess -lz -lshouldbeinlibc -lports -liohelp -lfshelp -lihash -lpthread -lirqhelp -lcrypt $(libslab_path) $(libbpf_path)
+ CFLAGS        += -Wno-error=implicit-function-declaration -g -I$(PKGDIR)/include -I$(BUILDDIR)/include
+ LDFLAGS       += -g
+ 

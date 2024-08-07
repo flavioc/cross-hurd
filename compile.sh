@@ -94,8 +94,8 @@ install_gpg_error() {
 }
 
 install_gcrypt() {
-    mkdir -p $GCRYPT_SRC.obj &&
-        cd $GCRYPT_SRC.obj &&
+    create_temp $GCRYPT_SRC.obj &&
+        pushd $GCRYPT_SRC.obj &&
         $SOURCE/$GCRYPT_SRC/configure --prefix=$SYS_ROOT \
             --build="$HOST" \
             --host="$CROSS_HURD_TARGET" \
@@ -104,7 +104,7 @@ install_gcrypt() {
             --disable-asm &&
         make -j$PROCS &&
         make -j$PROCS install &&
-        cd ..
+        popd
 }
 
 install_gnumach() {
@@ -338,17 +338,18 @@ install_grub() {
 }
 
 install_libxcrypt() {
-    mkdir -p $LIBXCRYPT_SRC.obj &&
-        cd $LIBXCRYPT_SRC.obj &&
+    rm -rf $LIBXCRYPT_SRC.obj &&
+        mkdir -p $LIBXCRYPT_SRC.obj &&
+        pushd $LIBXCRYPT_SRC.obj &&
         $SOURCE/$LIBXCRYPT_SRC/configure --prefix=$SYS_ROOT \
             --build=$HOST \
             --host=$CROSS_HURD_TARGET \
             --enable-hashes=strong,glibc \
             --enable-obsolete-api=no \
-            --disable-failure-tokens
-    make -j$PROCS &&
+            --disable-failure-tokens &&
+        make -j$PROCS &&
         make -j $PROCS install &&
-        cd ..
+        popd
 }
 
 install_dmidecode() {
