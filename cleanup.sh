@@ -6,3 +6,5 @@ rm -rfv output* build*
 
 # Remove built image
 rm -fv hd.img
+
+rm -fv manifest*.txt
