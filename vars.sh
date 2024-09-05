@@ -17,8 +17,6 @@ fi
 
 . ./package-versions.sh
 
-GCC_SRC=gcc-"$GCC_VERSION"
-GCC_PKG="$GCC_SRC".tar.gz
 GNUMACH_SRC=gnumach
 GNUMIG_SRC=mig
 HURD_SRC=hurd

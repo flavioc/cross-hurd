@@ -3,7 +3,6 @@
 . ./config.sh
 
 BINUTILS_URL=https://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
-GCC_URL=https://ftp.gnu.org/gnu/gcc/gcc-"$GCC_VERSION"/"$GCC_PKG"
 FLEX_URL=https://github.com/westes/flex/releases/download/v$FLEX_VERSION/$FLEX_PKG
 ZLIB_URL=http://zlib.net/"$ZLIB_PKG"
 BZIP2_URL=https://sourceware.org/pub/bzip2/$BZIP2_PKG
@@ -179,14 +178,6 @@ download_glibc() {
         apply_patch $SCRIPT_DIR/patches/glibc/local-static_pthread_setcancelstate.diff 1 &&
         apply_patch $SCRIPT_DIR/patches/glibc/tg-mach-hurd-link.diff 1 &&
         cd ..
-}
-
-download_gcc() {
-    download $GCC_PKG $GCC_URL &&
-        if [ -d "$GCC_SRC" ]; then
-            return 0
-        fi
-    unpack zxf $GCC_PKG $GCC_SRC
 }
 
 download_sed() {

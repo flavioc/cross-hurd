@@ -1,5 +1,4 @@
 # Package versions.
-GCC_VERSION=14.1.0
 FLEX_VERSION=2.6.4
 ZLIB_VERSION=1.3.1
 BZIP2_VERSION=1.0.8
@@ -107,10 +106,16 @@ GCRYPT_PKG=$GCRYPT_SRC.tar.bz2
 GCRYPT_URL=https://gnupg.org/ftp/gcrypt/libgcrypt/$GCRYPT_PKG
 
 # binutils
-BINUTILS_VERSION=2.41
+BINUTILS_VERSION=2.43
 BINUTILS_SRC=binutils-$BINUTILS_VERSION
 BINUTILS_PKG=$BINUTILS_SRC.tar.bz2
 BINUTILS_URL=https://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
+
+# GCC
+GCC_VERSION=14.2.0
+GCC_SRC=gcc-$GCC_VERSION
+GCC_PKG=$GCC_SRC.tar.xz
+GCC_URL=https://ftp.gnu.org/gnu/gcc/gcc-$GCC_VERSION/$GCC_PKG
 
 # libtirpc
 LIBTIRPC_VERSION=1.3.4
