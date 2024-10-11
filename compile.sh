@@ -156,8 +156,28 @@ install_hurd() {
     local extra_flags="$1"
     rm -rf $HURD_SRC.obj &&
         mkdir -p $HURD_SRC.obj &&
-        cp -R $SOURCE/hurd/* $HURD_SRC.obj/ &&
         pushd $HURD_SRC.obj &&
+        pushd $SOURCE/$HURD_SRC &&
+        autoreconf -i &&
+        popd &&
+        $SOURCE/$HURD_SRC/configure \
+            --build=$HOST \
+            --host=$CROSS_HURD_TARGET \
+            --prefix=$SYS_ROOT \
+            --enable-static-progs='ext2fs,iso9660fs,rumpdisk,pci-arbiter,acpi' \
+            --disable-profile \
+            $extra_flags &&
+        make -j$PROCS all &&
+        fakeroot make -j$PROCS install &&
+        popd
+}
+
+install_libdde() {
+    print_info "Compiling libdde..."
+    rm -rf libdde.obj &&
+        mkdir -p libdde.obj &&
+        cp -R $SOURCE/hurd/* libdde.obj/ &&
+        pushd libdde.obj &&
         autoreconf -i &&
         cp -R $SOURCE/dde/libmachdevdde ./libmachdevdde &&
         cp -R $SOURCE/dde/libddekit ./libddekit &&
@@ -166,29 +186,24 @@ install_hurd() {
             --build=$HOST \
             --host=$CROSS_HURD_TARGET \
             --prefix=$SYS_ROOT \
-            --enable-static-progs='ext2fs,iso9660fs,rumpdisk,pci-arbiter,acpi' \
-            --disable-profile \
-            $extra_flags &&
-        make -j$PROCS clean &&
-        make -j$PROCS all &&
-        fakeroot make -j$PROCS install &&
-        (if [ -z "$extra_flags" ]; then
-            make -j$PROCS -C libddekit &&
-                make -j$PROCS -C libmachdevdde &&
-                fakeroot make -j$PROCS -C libddekit install &&
-                fakeroot make -j$PROCS -C libmachdevdde install &&
-                install -d libdde-linux26/build/include/x86 &&
-                ln -s x86 libdde-linux26/build/include/amd64 &&
-                ln -s asm-x86 libdde-linux26/build/include/amd64/asm-x86_64 &&
-                # It appears that there are issues with parallel builds.
-                make ARCH=$(get_arch) LDFLAGS= BUILDDIR=build CC=$CC -C libdde-linux26 &&
-                make -j$PROCS ARCH=$(get_arch) LDFLAGS= BUILDDIR=build CC=$CC -C libdde-linux26 install &&
-                mkdir -p $SYS_ROOT/share/libdde_linux26 &&
-                cp -R libdde-linux26/build $SYS_ROOT/share/libdde_linux26 &&
-                cp -R libdde-linux26/Makeconf libdde-linux26/Makeconf.local libdde-linux26/mk $SYS_ROOT/share/libdde_linux26 &&
-                cp libdde-linux26/lib/src/libdde_linux26*.a $SYS_ROOT/lib/
-        fi) &&
-        popd
+            --disable-profile &&
+        make -j$PROCS libshouldbeinlibc libihash libhurd-slab libports libirqhelp \
+            libiohelp libtrivfs libmachdev libbpf &&
+        make -j$PROCS -C libddekit &&
+        make -j$PROCS -C libmachdevdde &&
+        fakeroot make -j$PROCS -C libddekit install &&
+        fakeroot make -j$PROCS -C libmachdevdde install &&
+        install -d libdde-linux26/build/include/x86 &&
+        ln -s x86 libdde-linux26/build/include/amd64 &&
+        ln -s asm-x86 libdde-linux26/build/include/amd64/asm-x86_64 &&
+        # It appears that there are issues with parallel builds.
+        make ARCH=$(get_arch) LDFLAGS= BUILDDIR=build CC=$CC -C libdde-linux26 &&
+        make -j$PROCS ARCH=$(get_arch) LDFLAGS= BUILDDIR=build CC=$CC -C libdde-linux26 install &&
+        mkdir -p $SYS_ROOT/share/libdde_linux26 &&
+        cp -R libdde-linux26/build $SYS_ROOT/share/libdde_linux26 &&
+        cp -R libdde-linux26/Makeconf libdde-linux26/Makeconf.local libdde-linux26/mk $SYS_ROOT/share/libdde_linux26 &&
+        cp libdde-linux26/lib/src/libdde_linux26*.a $SYS_ROOT/lib/
+    popd
 }
 
 install_netdde() {
@@ -1058,6 +1073,7 @@ install_minimal_system() {
         install_libdaemon &&
         install_libtirpc &&
         install_hurd &&
+        install_libdde &&
         install_netdde &&
         install_bash &&
         install_dash &&
