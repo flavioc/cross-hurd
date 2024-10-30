@@ -151,6 +151,27 @@ get_arch() {
     fi
 }
 
+install_libirqhelp() {
+    print_info "Compiling libirqhelp..."
+    local extra_flags="$1"
+    rm -rf libirqhelp.obj &&
+        mkdir -p libirqhelp.obj &&
+        pushd libirqhelp.obj &&
+        pushd $SOURCE/$HURD_SRC &&
+        autoreconf -i &&
+        popd &&
+        $SOURCE/$HURD_SRC/configure \
+            --build=$HOST \
+            --host=$CROSS_HURD_TARGET \
+            --prefix=$SYS_ROOT \
+            --disable-profile \
+            --without-parted &&
+        make -j$PROCS libshouldbeinlibc libirqhelp &&
+        make -C libshouldbeinlibc install &&
+        make -C libirqhelp install &&
+        popd
+}
+
 install_hurd() {
     print_info "Compiling Hurd servers..."
     local extra_flags="$1"
@@ -1054,6 +1075,8 @@ install_perl() {
 install_minimal_system() {
     install_libxcrypt &&
         install_libpciaccess &&
+        # libacpica needs libirqhelp.
+        install_libirqhelp &&
         install_libacpica &&
         install_zlib &&
         install_bzip2 &&
