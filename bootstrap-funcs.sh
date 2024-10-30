@@ -57,10 +57,8 @@ compile_gcc() {
     make -j$PROCS all-gcc &&
     make -j$PROCS install-gcc &&
     make -j$PROCS configure-target-libgcc &&
-    cd "$CROSS_HURD_TARGET"/libgcc &&
-    make -j$PROCS all &&
-    make -j$PROCS install &&
-    cd - &&
+    make -j$PROCS all-target-libgcc &&
+    make -j$PROCS install-target-libgcc &&
     mv config.status config.status.removed &&
     rm -f config.cache *config.cache */*/config.cache &&
     cd ..
