@@ -52,13 +52,18 @@ compile_gcc() {
       --disable-libquadmath \
       --disable-libssp \
       --disable-libvtv \
-      --disable-libstdcxx \
-      --enable-languages=c &&
+      --enable-languages=c,c++,ada &&
     make -j$PROCS all-gcc &&
     make -j$PROCS install-gcc &&
     make -j$PROCS configure-target-libgcc &&
     make -j$PROCS all-target-libgcc &&
     make -j$PROCS install-target-libgcc &&
+    make -j$PROCS configure-target-libada &&
+    make -j$PROCS all-target-libada &&
+    make -j$PROCS install-target-libada &&
+    make -j$PROCS configure-target-libstdc++-v3 &&
+    make -j$PROCS all-target-libstdc++-v3 &&
+    make -j$PROCS install-target-libstdc++-v3 &&
     mv config.status config.status.removed &&
     rm -f config.cache *config.cache */*/config.cache &&
     cd ..
@@ -165,9 +170,8 @@ compile_full_gcc() {
       --with-sysroot="$SYSTEM" \
       --with-local-prefix="$SYS_ROOT" \
       --with-native-system-header-dir="$SYS_ROOT"/include \
-      --disable-static \
       --disable-nls \
-      --enable-languages=c,c++ \
+      --enable-languages=c,c++,ada \
       --enable-threads=posix \
       --disable-multilib \
       --with-system-zlib \

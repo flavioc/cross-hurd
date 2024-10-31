@@ -15,7 +15,7 @@ jobs:
     - run: apt-get update
     - run: apt-get install apt-transport-https ca-certificates -y
     - run: update-ca-certificates
-    - run: apt install -y gcc make autoconf g++ texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext meson
+    - run: apt install -y gcc make autoconf g++ gnat texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext meson
     - run: bash download.sh
     - run: bash bootstrap.sh
     - run: bash compile.sh
@@ -23,7 +23,7 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v2
-    - run: apt install -y gcc make autoconf g++ texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext
+    - run: apt install -y gcc make autoconf g++ gnat texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext
     - run: bash download.sh
     - run: CPU=x86_64 bash bootstrap.sh
     - run: CPU=x86_64 bash compile.sh
@@ -31,6 +31,6 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v2
-    - run: apt install -y gcc make autoconf g++ texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext
+    - run: apt install -y gcc make autoconf g++ gnat texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext
     - run: bash download.sh
     - run: USER32="true" CPU=x86_64 bash bootstrap-kernel.sh

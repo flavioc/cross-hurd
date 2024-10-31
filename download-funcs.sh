@@ -180,6 +180,17 @@ download_glibc() {
         cd ..
 }
 
+download_gcc () {
+   download $GCC_PKG $GCC_URL &&
+        if [ -d "$GCC_SRC" ]; then
+           return 0
+        fi
+   unpack xf $GCC_PKG $GCC_SRC &&
+   pushd $GCC_SRC &&
+   apply_patch $SCRIPT_DIR/patches/gcc/ada-hurd-amd64.diff 1 &&
+   popd
+}
+
 download_sed() {
     download $SED_PKG $SED_URL &&
         if [ -d "$SED_SRC" ]; then
