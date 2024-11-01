@@ -5,7 +5,7 @@
 
 mkdir -p $SOURCE &&
     pushd $SOURCE &&
-    download_package $GCC_URL &&
+    download_gcc &&
     download_package $BINUTILS_URL &&
     download $FLEX_PKG $FLEX_URL &&
     unpack zxf $FLEX_PKG $FLEX_SRC &&

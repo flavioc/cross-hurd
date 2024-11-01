@@ -1,5 +1,5 @@
---- a/src/gcc/ada/Makefile.rtl
-+++ b/src/gcc/ada/Makefile.rtl
+--- a/gcc/ada/Makefile.rtl
++++ b/gcc/ada/Makefile.rtl
 @@ -1674,6 +1674,37 @@ ifeq ($(strip $(filter-out x86_64 kfreeb
    LIBRARY_VERSION := $(LIB_VERSION)
  endif
