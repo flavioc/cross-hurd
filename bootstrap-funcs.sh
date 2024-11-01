@@ -2,6 +2,10 @@
 #
 export CC=$HOST_CC
 export CXX=$HOST_CXX
+export GNATBIND=$HOST_GNATBIND
+export GNATMAKE=$HOST_GNATMAKE
+export GNATLS=$HOST_GNATLS
+export GNATLINK=$HOST_GNATLINK
 
 compile_binutils() {
   print_info "Cross compiling binutils"
@@ -52,18 +56,12 @@ compile_gcc() {
       --disable-libquadmath \
       --disable-libssp \
       --disable-libvtv \
-      --enable-languages=c,c++,ada &&
+      --enable-languages=c &&
     make -j$PROCS all-gcc &&
     make -j$PROCS install-gcc &&
     make -j$PROCS configure-target-libgcc &&
     make -j$PROCS all-target-libgcc &&
     make -j$PROCS install-target-libgcc &&
-    make -j$PROCS configure-target-libada &&
-    make -j$PROCS all-target-libada &&
-    make -j$PROCS install-target-libada &&
-    make -j$PROCS configure-target-libstdc++-v3 &&
-    make -j$PROCS all-target-libstdc++-v3 &&
-    make -j$PROCS install-target-libstdc++-v3 &&
     mv config.status config.status.removed &&
     rm -f config.cache *config.cache */*/config.cache &&
     cd ..
@@ -181,6 +179,12 @@ compile_full_gcc() {
       --disable-libcilkrts \
       --disable-libgomp &&
     make -j$PROCS AS_FOR_TARGET="$CROSS_HURD_TARGET-as" LD_FOR_TARGET="$CROSS_HURD_TARGET-ld" all &&
+    make -j$PROCS configure-target-libada &&
+    make -j$PROCS all-target-libada &&
+    make -j$PROCS install-target-libada &&
+    make -j$PROCS configure-target-libstdc++-v3 &&
+    make -j$PROCS all-target-libstdc++-v3 &&
+    make -j$PROCS install-target-libstdc++-v3 &&
     make -j$PROCS install &&
     cd ..
 }

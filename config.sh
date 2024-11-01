@@ -6,6 +6,10 @@ export HOST_CC=gcc
 export HOST_CXX=g++
 export HOST_AR=ar
 export HOST_AS=as
+export HOST_GNATBIND=gnatbind
+export HOST_GNATMAKE=gnatmake
+export HOST_GNATLS=gnatls
+export HOST_GNATLINK=gnatlink
 export HOST_RANLIB=ranlib
 
 # Change how many CPUs you want to use.

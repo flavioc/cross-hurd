@@ -16,6 +16,9 @@ jobs:
     - run: apt-get install apt-transport-https ca-certificates -y
     - run: update-ca-certificates
     - run: apt install -y gcc make autoconf g++ gnat texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext meson
+    - run: ln -sf /usr/bin/gnatmake-12 /usr/bin/gnatmake
+    - run: ln -sf /usr/bin/gnatbind-12 /usr/bin/gnatbind
+    - run: ln -sf /usr/bin/gnatls-12 /usr/bin/gnatls
     - run: bash download.sh
     - run: bash bootstrap.sh
     - run: bash compile.sh
@@ -24,6 +27,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: apt install -y gcc make autoconf g++ gnat texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext
+    - run: ln -sf /usr/bin/gnatmake-12 /usr/bin/gnatmake
+    - run: ln -sf /usr/bin/gnatbind-12 /usr/bin/gnatbind
+    - run: ln -sf /usr/bin/gnatls-12 /usr/bin/gnatls
     - run: bash download.sh
     - run: CPU=x86_64 bash bootstrap.sh
     - run: CPU=x86_64 bash compile.sh
@@ -32,5 +38,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: apt install -y gcc make autoconf g++ gnat texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext
+    - run: ln -sf /usr/bin/gnatmake-12 /usr/bin/gnatmake
+    - run: ln -sf /usr/bin/gnatbind-12 /usr/bin/gnatbind
+    - run: ln -sf /usr/bin/gnatls-12 /usr/bin/gnatls
     - run: bash download.sh
     - run: USER32="true" CPU=x86_64 bash bootstrap-kernel.sh
