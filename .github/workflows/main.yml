@@ -15,11 +15,11 @@ jobs:
     - run: apt-get update
     - run: apt-get install apt-transport-https ca-certificates -y
     - run: update-ca-certificates
-    - run: apt install -y gcc make autoconf g++ gnat-13 texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext meson
-    - run: ln -sf /usr/bin/gnatmake-13 /usr/bin/gnatmake
-    - run: ln -sf /usr/bin/gnatbind-13 /usr/bin/gnatbind
-    - run: ln -sf /usr/bin/gnatlink-13 /usr/bin/gnatlink
-    - run: ln -sf /usr/bin/gnatls-13 /usr/bin/gnatls
+    - run: apt install -y gcc make autoconf g++ gnat-14 texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext meson
+    - run: ln -sf /usr/bin/gnatmake-14 /usr/bin/gnatmake
+    - run: ln -sf /usr/bin/gnatbind-14 /usr/bin/gnatbind
+    - run: ln -sf /usr/bin/gnatlink-14 /usr/bin/gnatlink
+    - run: ln -sf /usr/bin/gnatls-14 /usr/bin/gnatls
     - run: bash download.sh
     - run: bash bootstrap.sh
     - run: bash compile.sh
@@ -27,11 +27,11 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v2
-    - run: apt install -y gcc make autoconf g++ gnat-13 texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext
-    - run: ln -sf /usr/bin/gnatmake-13 /usr/bin/gnatmake
-    - run: ln -sf /usr/bin/gnatbind-13 /usr/bin/gnatbind
-    - run: ln -sf /usr/bin/gnatlink-13 /usr/bin/gnatlink
-    - run: ln -sf /usr/bin/gnatls-13 /usr/bin/gnatls
+    - run: apt install -y gcc make autoconf g++ gnat-14 texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext
+    - run: ln -sf /usr/bin/gnatmake-14 /usr/bin/gnatmake
+    - run: ln -sf /usr/bin/gnatbind-14 /usr/bin/gnatbind
+    - run: ln -sf /usr/bin/gnatlink-14 /usr/bin/gnatlink
+    - run: ln -sf /usr/bin/gnatls-14 /usr/bin/gnatls
     - run: bash download.sh
     - run: CPU=x86_64 bash bootstrap.sh
     - run: CPU=x86_64 bash compile.sh
