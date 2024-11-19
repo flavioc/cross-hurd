@@ -20,6 +20,7 @@ jobs:
     - run: ln -sf /usr/bin/gnatbind-14 /usr/bin/gnatbind
     - run: ln -sf /usr/bin/gnatlink-14 /usr/bin/gnatlink
     - run: ln -sf /usr/bin/gnatls-14 /usr/bin/gnatls
+    - run: bash cleanup.sh
     - run: bash download.sh
     - run: bash bootstrap.sh
     - run: bash compile.sh
@@ -33,6 +34,7 @@ jobs:
     - run: ln -sf /usr/bin/gnatbind-14 /usr/bin/gnatbind
     - run: ln -sf /usr/bin/gnatlink-14 /usr/bin/gnatlink
     - run: ln -sf /usr/bin/gnatls-14 /usr/bin/gnatls
+    - run: bash cleanup.sh
     - run: bash download.sh
     - run: CPU=x86_64 bash bootstrap.sh
     - run: CPU=x86_64 bash compile.sh
@@ -41,5 +43,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: apt install -y gcc make autoconf g++ texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext
+    - run: bash cleanup.sh
     - run: bash download.sh
     - run: USER32="true" CPU=x86_64 bash bootstrap-kernel.sh
