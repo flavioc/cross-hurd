@@ -93,6 +93,11 @@ qemu_arch() {
    fi
 }
 
+qemu_net() {
+   local network_hardware="nic,model=e1000"
+   echo "-net user$(if [[ -f $SYS_ROOT/sbin/sshd ]]; then echo ",hostfwd=tcp:127.0.0.1:2222-:22"; fi) -net $network_hardware"
+}
+
 trap umount_image EXIT
 trap umount_image INT
 
@@ -104,9 +109,6 @@ create_image &&
    copy_files &&
    install_grub &&
    print_info "Disk image available on $IMG" &&
-   fwd_qemu=""
-if [[ -f $SYS_ROOT/sbin/sshd ]]; then
-   fwd_qemu=",hostfwd=tcp:127.0.0.1:2222-:22"
-fi &&
-   print_info "Run 'qemu-system-$(qemu_arch) --enable-kvm -m 4G -drive cache=writeback,file=$IMG -M q35 -net user$fwd_qemu -net nic,model=e1000' to enjoy the Hurd!" &&
+   print_info "Run the following command to boot the image:" &&
+   echo "    qemu-system-$(qemu_arch) --enable-kvm -m 4G -drive cache=writeback,file=$IMG -M q35 $(qemu_net)" &&
    exit 0
