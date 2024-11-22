@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - master
+  pull_request:
+    types: [opened, reopened]
+    branches:
+      - master
   schedule:
     - cron: '0 0 * * *'
 
