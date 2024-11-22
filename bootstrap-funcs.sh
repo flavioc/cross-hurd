@@ -29,9 +29,9 @@ compile_binutils() {
 
 compile_gcc() {
   print_info "Cross compiling first phase of GCC"
-  rm -rf $GCC_SRC.obj &&
-    mkdir -p $GCC_SRC.obj &&
-    cd $GCC_SRC.obj &&
+  rm -rf $GCC_SRC.first_obj &&
+    mkdir -p $GCC_SRC.first_obj &&
+    cd $GCC_SRC.first_obj &&
     AR=$HOST_AR LDFLAGS="-Wl,-rpath,${CROSS_TOOLS}/lib" \
       $SOURCE/$GCC_SRC/configure \
       --prefix=$CROSS_TOOLS \
