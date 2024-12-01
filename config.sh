@@ -31,3 +31,8 @@ fi
 if [ -z "$CPU" ]; then
   export CPU=i686
 fi
+
+# Other options.
+#
+# Set this to true if you want to disable the Ada compiler.
+# export DISABLE_ADA=true

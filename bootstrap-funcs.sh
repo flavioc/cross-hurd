@@ -156,6 +156,10 @@ compile_first_glibc() {
 }
 
 compile_full_gcc() {
+  local ada="ada"
+  if [ -n $DISABLE_ADA ]; then
+    ada=""
+  fi
   print_info "Cross compiling GCC"
   rm -rf $GCC_SRC.obj &&
     mkdir -p $GCC_SRC.obj &&
@@ -169,7 +173,7 @@ compile_full_gcc() {
       --with-local-prefix="$SYS_ROOT" \
       --with-native-system-header-dir="$SYS_ROOT"/include \
       --disable-nls \
-      --enable-languages=c,c++,ada \
+      --enable-languages=c,c++,$ada \
       --enable-threads=posix \
       --disable-multilib \
       --with-system-zlib \
@@ -179,9 +183,11 @@ compile_full_gcc() {
       --disable-libcilkrts \
       --disable-libgomp &&
     make -j$PROCS AS_FOR_TARGET="$CROSS_HURD_TARGET-as" LD_FOR_TARGET="$CROSS_HURD_TARGET-ld" all &&
-    make -j$PROCS configure-target-libada &&
-    make -j$PROCS all-target-libada &&
-    make -j$PROCS install-target-libada &&
+    (if [ -n "$ada" ]; then
+      make -j$PROCS configure-target-libada &&
+        make -j$PROCS all-target-libada &&
+        make -j$PROCS install-target-libada
+    fi) &&
     make -j$PROCS configure-target-libstdc++-v3 &&
     make -j$PROCS all-target-libstdc++-v3 &&
     make -j$PROCS install-target-libstdc++-v3 &&
