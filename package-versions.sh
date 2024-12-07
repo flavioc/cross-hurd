@@ -134,3 +134,9 @@ GRUB_VERSION=2.06
 GRUB_SRC=grub-$GRUB_VERSION
 GRUB_PKG=$GRUB_SRC.tar.gz
 GRUB_URL=https://ftp.gnu.org/gnu/grub/$GRUB_PKG
+
+# htop
+HTOP_VERSION=3.3.0
+HTOP_SRC=htop-$HTOP_VERSION
+HTOP_PKG=$HTOP_SRC.tar.xz
+HTOP_URL=https://github.com/htop-dev/htop/releases/download/$HTOP_VERSION/$HTOP_PKG

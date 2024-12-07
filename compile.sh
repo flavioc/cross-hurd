@@ -1053,22 +1053,37 @@ install_git() {
 }
 
 install_perl() {
-    rm -rf $PERL_SRC.obj &&
-        mkdir -p $PERL_SRC.obj &&
-        cp -vR $SOURCE/$PERL_SRC/* $PERL_SRC.obj &&
-        cp -vR $SOURCE/$PERL_CROSS_SRC/* $PERL_SRC.obj &&
-        pushd $PERL_SRC.obj &&
-        ./configure \
-            --build=$HOST \
-            --target=$CROSS_HURD_TARGET \
-            --host-cc=$HOST_CC \
-            --host=$CROSS_HURD_TARGET \
-            --target-tools-prefix=$CPU-gnu \
-            --prefix=$SYS_ROOT &&
-        make crosspatch &&
-        make -j$PROCS miniperl &&
-        make -j$PROCS all &&
-        make -j$PROCS install
+  rm -rf $PERL_SRC.obj &&
+    mkdir -p $PERL_SRC.obj &&
+    cp -vR $SOURCE/$PERL_SRC/* $PERL_SRC.obj &&
+    cp -vR $SOURCE/$PERL_CROSS_SRC/* $PERL_SRC.obj &&
+    pushd $PERL_SRC.obj &&
+    ./configure \
+      --build=$HOST \
+      --target=$CROSS_HURD_TARGET \
+      --host-cc=$HOST_CC \
+      --host=$CROSS_HURD_TARGET \
+      --target-tools-prefix=$CPU-gnu \
+      --prefix=$SYS_ROOT &&
+    make crosspatch &&
+    make -j$PROCS miniperl &&
+    make -j$PROCS all &&
+    make -j$PROCS install
+  popd
+}
+
+install_htop() {
+  rm -rf HTOP_SRC.obj &&
+    mkdir -p HTOP_SRC.obj &&
+    pushd HTOP_SRC.obj &&
+    $SOURCE/$HTOP_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT \
+      --with-proc=/proc/ \
+      --enable-unicode &&
+    make -j$PROCS &&
+    make -j$PROCS install &&
     popd
 }
 
@@ -1109,10 +1124,11 @@ install_minimal_system() {
 }
 
 install_more_shell_tools() {
-    install_grep &&
-        install_gawk &&
-        install_less &&
-        install_file
+  install_grep &&
+    install_gawk &&
+    install_less &&
+    install_file &&
+    install_htop
 }
 
 install_networking_tools() {
