@@ -73,4 +73,5 @@ mkdir -p $SOURCE &&
   download_glibc &&
   download_libacpica &&
   download_rumpkernel &&
+  download_binutils_gdb &&
   echo "Download complete."

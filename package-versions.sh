@@ -140,3 +140,6 @@ HTOP_VERSION=3.3.0
 HTOP_SRC=htop-$HTOP_VERSION
 HTOP_PKG=$HTOP_SRC.tar.xz
 HTOP_URL=https://github.com/htop-dev/htop/releases/download/$HTOP_VERSION/$HTOP_PKG
+
+# gdb
+GDB_SRC=binutils-gdb
