@@ -574,14 +574,14 @@ install_ncurses() {
       --with-shared \
       --build=${HOST} \
       --host=${CROSS_HURD_TARGET} \
-      --without-debug \
+      --with-debug \
       --without-ada \
       --with-termlib \
       --enable-overwrite \
       --without-cxx-binding \
       --disable-widec \
       --enable-normal \
-      --with-build-cc=gcc &&
+      --disable-stripping &&
     make -j$PROCS &&
     make -j$PROCS install.libs install.includes &&
     popd
@@ -603,13 +603,15 @@ install_ncursesw() {
       --with-shared \
       --build=${HOST} \
       --host=${CROSS_HURD_TARGET} \
-      --without-debug \
+      --with-debug \
       --without-ada \
-      --with-termlib \
+      --with-termlib=tinfo \
       --enable-overwrite \
       --without-cxx-binding \
-      --enable-widec \
-      --with-build-cc=gcc &&
+      --disable-stripping \
+      --disable-relink \
+      --with-versioned-syms \
+      --enable-widec &&
     make -j$PROCS &&
     make -j$PROCS TIC_PATH=$PWD/host/progs/tic install &&
     popd
