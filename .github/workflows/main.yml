@@ -27,7 +27,7 @@ jobs:
     - run: bash cleanup.sh
     - run: bash download.sh
     - run: bash bootstrap.sh
-    - run: bash compile.sh
+    - run: BUILD_TYPE=full bash compile.sh
     - run: bash create-image.sh
   full-build-x86_64:
     runs-on: self-hosted
@@ -41,7 +41,7 @@ jobs:
     - run: bash cleanup.sh
     - run: bash download.sh
     - run: CPU=x86_64 bash bootstrap.sh
-    - run: CPU=x86_64 bash compile.sh
+    - run: CPU=x86_64 BUILD_TYPE=full bash compile.sh
   kernel-x86_64_32:
     runs-on: self-hosted
     steps:
