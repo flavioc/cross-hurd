@@ -1054,6 +1054,30 @@ install_git() {
     popd
 }
 
+install_gdb() {
+  rm -rf $GDB_SRC.obj &&
+    mkdir -p $GDB_SRC.obj &&
+    pushd $GDB_SRC.obj &&
+    $SOURCE/$GDB_SRC/configure \
+      --build=$HOST \
+      --host=$CROSS_HURD_TARGET \
+      --prefix=$SYS_ROOT \
+      --with-sysroot=$SYS_ROOT \
+      --disable-nls \
+      --enable-tui \
+      --disable-gdbserver \
+      --disable-sim \
+      --disable-gprof \
+      --disable-ld \
+      --disable-binutils \
+      --disable-gas \
+      --disable-gold \
+      --disable-ada &&
+    make -j$PROCS &&
+    make -j$PROCS install &&
+    popd
+}
+
 install_perl() {
   rm -rf $PERL_SRC.obj &&
     mkdir -p $PERL_SRC.obj &&
@@ -1156,7 +1180,8 @@ install_development_tools() {
     install_gcc &&
     install_make &&
     install_perl &&
-    install_git
+    install_git &&
+    install_gdb
 }
 
 install_editors() {
