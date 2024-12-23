@@ -157,7 +157,7 @@ compile_first_glibc() {
 
 compile_full_gcc() {
   local ada="ada"
-  if [ -n $DISABLE_ADA ]; then
+  if [ -n "$DISABLE_ADA" ]; then
     ada=""
   fi
   print_info "Cross compiling GCC"

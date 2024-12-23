@@ -523,6 +523,10 @@ install_mpc() {
 }
 
 install_gcc() {
+  local ada="ada"
+  if [ -n "$DISABLE_ADA" ]; then
+    ada=""
+  fi
   print_info "Compiling GCC"
   cp -R $SOURCE/$GCC_SRC $GCC_SRC.compiler
   cd $GCC_SRC.compiler &&
@@ -542,17 +546,17 @@ install_gcc() {
       --disable-bootstrap \
       --with-local-prefix="$SYS_ROOT" \
       --disable-nls \
-      --enable-languages=c,c++,ada \
+      --enable-languages=c,c++,$ada \
       --disable-libstdcxx-pch \
       --with-system-zlib \
       --with-native-system-header-dir="$SYS_ROOT/include" \
       --enable-checking=release \
       --disable-libcilkrts \
-      --disable-libssp
-  cp -v Makefile{,.orig} &&
+      --disable-libssp &&
+    cp -v Makefile{,.orig} &&
     sed "/^HOST_\(GMP\|ISL\|CLOOG\)\(LIBS\|INC\)/s:$SYS_ROOT:$CROSS_TOOLS:g" \
-      Makefile.orig >Makefile
-  make -j$PROCS AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD" all &&
+      Makefile.orig >Makefile &&
+    make -j$PROCS AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD" all &&
     make -j$PROCS install &&
     cd ..
 }
