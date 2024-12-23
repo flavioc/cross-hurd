@@ -528,14 +528,17 @@ install_gcc() {
     ada=""
   fi
   print_info "Compiling GCC"
-  cp -R $SOURCE/$GCC_SRC $GCC_SRC.compiler
-  cd $GCC_SRC.compiler &&
+  cp -R $SOURCE/$GCC_SRC $GCC_SRC.compiler &&
+    pushd $GCC_SRC.compiler &&
     cp -v gcc/Makefile.in{,.orig} &&
     sed 's@\./fixinc\.sh@-c true@' gcc/Makefile.in.orig >gcc/Makefile.in &&
-    cd .. &&
+    (if [ $CPU = "x86_64" ]; then
+      sed -i.orig '/m64=/s/lib64/lib/' gcc/config/i386/t-gnu64
+    fi) &&
+    popd &&
     rm -rf $GCC_SRC.obj &&
     mkdir -p $GCC_SRC.obj &&
-    cd $GCC_SRC.obj &&
+    pushd $GCC_SRC.obj &&
     LDFLAGS="-lpthread" \
       ../$GCC_SRC.compiler/configure \
       --prefix=$SYS_ROOT \
@@ -558,7 +561,7 @@ install_gcc() {
       Makefile.orig >Makefile &&
     make -j$PROCS AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD" all &&
     make -j$PROCS install &&
-    cd ..
+    popd
 }
 
 install_ncurses() {

@@ -160,13 +160,19 @@ compile_full_gcc() {
   if [ -n "$DISABLE_ADA" ]; then
     ada=""
   fi
-  print_info "Cross compiling GCC"
-  rm -rf $GCC_SRC.obj &&
+  print_info "Cross compiling GCC" &&
+    cp -R $SOURCE/$GCC_SRC $GCC_SRC.compiler &&
+    pushd $GCC_SRC.compiler &&
+    (if [ $CPU = "x86_64" ]; then
+      sed -i.orig '/m64=/s/lib64/lib/' gcc/config/i386/t-gnu64
+    fi) &&
+    popd &&
+    rm -rf $GCC_SRC.obj &&
     mkdir -p $GCC_SRC.obj &&
-    cd $GCC_SRC.obj &&
+    pushd $GCC_SRC.obj &&
     AR=$HOST_AR \
       LDFLAGS="-Wl,-rpath,${CROSS_TOOLS}/lib" \
-      $SOURCE/$GCC_SRC/configure \
+      ../$GCC_SRC.compiler/configure \
       --prefix=$CROSS_TOOLS \
       --target="$CROSS_HURD_TARGET" \
       --with-sysroot="$SYSTEM" \
@@ -192,7 +198,7 @@ compile_full_gcc() {
     make -j$PROCS all-target-libstdc++-v3 &&
     make -j$PROCS install-target-libstdc++-v3 &&
     make -j$PROCS install &&
-    cd ..
+    popd
 }
 
 compile_second_glibc() {
