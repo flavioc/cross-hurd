@@ -19,7 +19,7 @@ jobs:
     - run: apt-get update
     - run: apt-get install apt-transport-https ca-certificates -y
     - run: update-ca-certificates
-    - run: apt install -y gcc make autoconf g++ gnat-14 texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext meson udev python3-cryptography
+    - run: apt install -y gcc make autoconf g++ gnat-14 texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext meson udev python3-cryptography grub2
     - run: ln -sf /usr/bin/gnatmake-14 /usr/bin/gnatmake
     - run: ln -sf /usr/bin/gnatbind-14 /usr/bin/gnatbind
     - run: ln -sf /usr/bin/gnatlink-14 /usr/bin/gnatlink
@@ -33,7 +33,7 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v2
-    - run: apt install -y gcc make autoconf g++ gnat-14 texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext python3-cryptography
+    - run: apt install -y gcc make autoconf g++ gnat-14 texinfo libmpfr-dev libgmp-dev wget bzip2 git xz-utils sudo libmpc-dev zlib1g-dev bison flex gawk autopoint libtool fakeroot mount parted gettext python3-cryptography grub2
     - run: ln -sf /usr/bin/gnatmake-14 /usr/bin/gnatmake
     - run: ln -sf /usr/bin/gnatbind-14 /usr/bin/gnatbind
     - run: ln -sf /usr/bin/gnatlink-14 /usr/bin/gnatlink
