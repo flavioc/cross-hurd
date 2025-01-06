@@ -43,9 +43,9 @@ set +v
 echo "nameserver 10.0.2.3" >/etc/resolv.conf
 ln -sf /servers/socket/2 /servers/socket/inet
 
-if [[ -f /sbin/sshd ]]; then
-    echo "Generating SSH host keys..."
-    ssh-keygen -A
+if [[ -f /sbin/sshd ]] && [[ ! -f /etc/ssh/ssh_host_rsa_key ]]; then
+  echo "Generating SSH host keys..."
+  ssh-keygen -A
 fi
 
 # if test "$BOOT_DEV" && /bin/sh ./MAKEDEV "$BOOT_DEV"; then

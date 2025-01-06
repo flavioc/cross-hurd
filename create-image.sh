@@ -106,13 +106,24 @@ qemu_net() {
   echo "-net user$(if [[ -f $SYS_ROOT/sbin/sshd ]]; then echo ",hostfwd=tcp:127.0.0.1:2222-:22"; fi) -net $network_hardware"
 }
 
+generate_ssh_host_keys() {
+  if [[ -f files/etc/ssh/ssh_host_rsa_key ]]; then
+    return 0
+  fi
+  print_info "Generating SSH host keys..." &&
+    ssh-keygen -t rsa -f files/etc/ssh/ssh_host_rsa_key -N '' &&
+    ssh-keygen -t ecdsa -f files/etc/ssh/ssh_host_ecdsa_key -N '' &&
+    ssh-keygen -t ed25519 -f files/etc/ssh/ssh_host_ed25519_key -N ''
+}
+
 trap umount_image EXIT
 trap umount_image INT
 
 umount mount >/dev/null 2>&1
 sudo losetup -d $LOOP >/dev/null 2>&1
 rm -f $IMG
-create_image &&
+generate_ssh_host_keys &&
+  create_image &&
   mount_image &&
   copy_files &&
   install_grub &&
