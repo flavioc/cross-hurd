@@ -37,8 +37,8 @@ mount_image() {
 
 copy_files() {
   print_info "Copying system into mount..."
-  mkdir -p mount/{etc,boot,dev,usr,hurd,include,servers,lib,libexec,proc,sbin,bin,var,root,run,share} &&
-    mkdir -p mount/var/{run,lib,log} &&
+  mkdir -p mount/{etc,boot,dev,usr,home,hurd,include,servers,lib,libexec,proc,sbin,bin,var,root,run,share} &&
+    mkdir -p mount/var/{mail,run,lib,log} &&
     install -d -m700 mount/var/lib/sshd &&
     mkdir -p mount/servers/{socket,bus} &&
     cp -R files/etc/* mount/etc/ &&
