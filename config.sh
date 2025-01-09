@@ -36,5 +36,3 @@ fi
 #
 # Set this to true if you want to disable the Ada compiler.
 # export DISABLE_ADA=true
-
-export CFLAGS="-O2 -g"

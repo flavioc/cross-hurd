@@ -110,8 +110,7 @@ generate_ssh_host_keys() {
   if [[ -f files/etc/ssh/ssh_host_rsa_key ]]; then
     return 0
   fi
-  mkdir -p files/etc/ssh &&
-    print_info "Generating SSH host keys..." &&
+  print_info "Generating SSH host keys..." &&
     ssh-keygen -t rsa -f files/etc/ssh/ssh_host_rsa_key -N '' &&
     ssh-keygen -t ecdsa -f files/etc/ssh/ssh_host_ecdsa_key -N '' &&
     ssh-keygen -t ed25519 -f files/etc/ssh/ssh_host_ed25519_key -N ''
