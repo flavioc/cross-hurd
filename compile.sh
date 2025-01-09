@@ -1197,7 +1197,14 @@ install_editors() {
 
 mkdir -p $BUILD_ROOT/native &&
   cd $BUILD_ROOT/native &&
-  install_minimal_system &&
+  install_hurd
+exit 0
+#install_ncurses &&
+#install_ncursesw &&
+#install_htop
+install_gdb
+exit 0
+install_minimal_system &&
   if [ $BUILD_TYPE = "full" ]; then
     install_more_shell_tools &&
       install_networking_tools &&
