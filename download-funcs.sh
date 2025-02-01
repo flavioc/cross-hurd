@@ -175,11 +175,9 @@ download_glibc() {
     git checkout $GLIBC_TAG &&
     apply_patch $SCRIPT_DIR/patches/glibc/tg-bits_atomic.h_multiple_threads.diff 1 &&
     apply_patch $SCRIPT_DIR/patches/glibc/tg-unlockpt-chroot.diff 1 &&
-    apply_patch $SCRIPT_DIR/patches/glibc/local-clock_gettime_MONOTONIC.diff 1 &&
     apply_patch $SCRIPT_DIR/patches/glibc/submitted-AF_LINK.diff 1 &&
     apply_patch $SCRIPT_DIR/patches/glibc/unsubmitted-prof-eintr.diff 1 &&
     apply_patch $SCRIPT_DIR/patches/glibc/unsubmitted-getaux_at_secure.diff 1 &&
-    apply_patch $SCRIPT_DIR/patches/glibc/local-static_pthread_setcancelstate.diff 1 &&
     apply_patch $SCRIPT_DIR/patches/glibc/tg-mach-hurd-link.diff 1 &&
     cd ..
 }
