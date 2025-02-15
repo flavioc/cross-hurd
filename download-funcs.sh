@@ -83,6 +83,7 @@ download_from_git() {
   (if [ -d $dir ]; then
     pushd $dir &&
       git reset --hard &&
+      git clean -f -d &&
       git pull &&
       local git_result=$?
     popd &&
