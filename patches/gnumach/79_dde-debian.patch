@@ -19,20 +19,24 @@ hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
  vm/vm_user.c                    |   14 ++++++++
  7 files changed, 130 insertions(+), 10 deletions(-)
 
---- a/Makefrag.am
-+++ b/Makefrag.am
-@@ -362,7 +362,6 @@ include_device_HEADERS = \
+Index: gnumach/Makefrag.am
+===================================================================
+--- gnumach.orig/Makefrag.am
++++ gnumach/Makefrag.am
+@@ -364,7 +364,6 @@ include_device_HEADERS = \
+ 	include/device/device_types.h \
  	include/device/disk_status.h \
- 	include/device/input.h \
  	include/device/net_status.h \
 -	include/device/notify.defs \
  	include/device/notify.h \
  	include/device/tape_status.h \
  	include/device/tty_status.h
---- a/device/ds_routines.c
-+++ b/device/ds_routines.c
-@@ -354,7 +354,7 @@ ds_device_intr_register (device_t dev, i
-   if (! name_equal(mdev->dev_ops->d_name, 3, "irq"))
+Index: gnumach/device/ds_routines.c
+===================================================================
+--- gnumach.orig/device/ds_routines.c
++++ gnumach/device/ds_routines.c
+@@ -357,7 +357,7 @@ ds_device_intr_register (device_t dev, i
+   if (id < 0 || id >= NINTR)
      return D_INVALID_OPERATION;
  
 -  user_intr_t *e = insert_intr_entry (&irqtab, id, receive_port);
@@ -40,7 +44,7 @@ hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
    if (!e)
      return D_NO_MEMORY;
  
-@@ -371,6 +371,52 @@ ds_device_intr_register (device_t dev, i
+@@ -374,6 +374,52 @@ ds_device_intr_register (device_t dev, i
  #endif /* MACH_XEN */
  }
  
@@ -93,7 +97,7 @@ hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
  kern_return_t
  ds_device_intr_ack (device_t dev, ipc_port_t receive_port)
  {
-@@ -399,6 +445,22 @@ ds_device_intr_ack (device_t dev, ipc_po
+@@ -402,6 +448,22 @@ ds_device_intr_ack (device_t dev, ipc_po
  #endif /* MACH_XEN */
  }
  
@@ -116,10 +120,12 @@ hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
  boolean_t
  ds_notify (mach_msg_header_t *msg)
  {
---- a/device/intr.c
-+++ b/device/intr.c
-@@ -25,7 +25,7 @@
- #ifndef MACH_XEN
+Index: gnumach/device/intr.c
+===================================================================
+--- gnumach.orig/device/intr.c
++++ gnumach/device/intr.c
+@@ -27,7 +27,7 @@
+ def_simple_lock_irq_data(static, intr_lock)
  
  queue_head_t main_intr_queue;
 -static boolean_t deliver_intr (int id, ipc_port_t dst_port);
@@ -127,7 +133,7 @@ hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
  
  #ifndef LINUX_DEV
  #define SA_SHIRQ 0x04000000
-@@ -122,7 +122,7 @@ deliver_user_intr (struct irqdev *dev, i
+@@ -140,7 +140,7 @@ deliver_user_intr (struct irqdev *dev, i
   * This entry exists in the queue until
   * the corresponding interrupt port is removed.*/
  user_intr_t *
@@ -136,7 +142,7 @@ hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
  {
    user_intr_t *e, *new, *ret;
    int free = 0;
-@@ -146,7 +146,11 @@ insert_intr_entry (struct irqdev *dev, i
+@@ -164,7 +164,11 @@ insert_intr_entry (struct irqdev *dev, i
    new->id = id;
    new->dst_port = dst_port;
    new->interrupts = 0;
@@ -149,16 +155,16 @@ hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
  
    queue_enter (dev->intr_queue, new, user_intr_t *, chain);
  out:
-@@ -268,7 +272,7 @@ intr_thread (void)
+@@ -286,7 +290,7 @@ intr_thread (void)
  		  irqtab.tot_num_intr--;
  
- 		  splx (s);
+ 		  simple_unlock_irq(s, &intr_lock);
 -		  deliver_intr (id, dst_port);
 +		  deliver_intr (id, e->compat ? 424242 : DEVICE_INTR_NOTIFY, dst_port);
- 		  s = splhigh ();
+ 		  s = simple_lock_irq(&intr_lock);
  		}
  	    }
-@@ -307,7 +311,7 @@ intr_thread (void)
+@@ -336,7 +340,7 @@ intr_thread (void)
  }
  
  static boolean_t
@@ -167,7 +173,7 @@ hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
  {
    ipc_kmsg_t kmsg;
    device_intr_notification_t *n;
-@@ -331,7 +335,7 @@ deliver_intr (int id, ipc_port_t dst_por
+@@ -360,7 +364,7 @@ deliver_intr (int id, ipc_port_t dst_por
    m->msgh_seqno = DEVICE_NOTIFY_MSGH_SEQNO;
    m->msgh_local_port = MACH_PORT_NULL;
    m->msgh_remote_port = MACH_PORT_NULL;
@@ -176,8 +182,10 @@ hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
  
    t->msgt_name = MACH_MSG_TYPE_INTEGER_32;
    t->msgt_size = 32;
---- a/device/intr.h
-+++ b/device/intr.h
+Index: gnumach/device/intr.h
+===================================================================
+--- gnumach.orig/device/intr.h
++++ gnumach/device/intr.h
 @@ -36,6 +36,7 @@ typedef struct {
    int n_unacked;  /* Number of times irqs were disabled for this */
    ipc_port_t dst_port; /* Notification port */
@@ -195,8 +203,10 @@ hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
  
  void intr_thread (void);
  kern_return_t irq_acknowledge (ipc_port_t receive_port);
---- a/include/mach/experimental.defs
-+++ b/include/mach/experimental.defs
+Index: gnumach/include/mach/experimental.defs
+===================================================================
+--- gnumach.orig/include/mach/experimental.defs
++++ gnumach/include/mach/experimental.defs
 @@ -13,3 +13,41 @@ subsystem
  serverprefix experimental_;
  
@@ -239,8 +249,10 @@ hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
 +	out	vaddr		: vm_address_t;
 +	out	paddr		: vm_address_t;
 +		size		: vm_size_t);
---- a/linux/dev/drivers/block/genhd.c
-+++ b/linux/dev/drivers/block/genhd.c
+Index: gnumach/linux/dev/drivers/block/genhd.c
+===================================================================
+--- gnumach.orig/linux/dev/drivers/block/genhd.c
++++ gnumach/linux/dev/drivers/block/genhd.c
 @@ -1060,7 +1060,9 @@ void device_setup(void)
  	scsi_dev_init();
  #endif
@@ -252,9 +264,11 @@ hurd-libs0.3 (<< hurd_1:0.9.git20200718-1+b1)
  #endif
  #ifndef MACH
  	console_map_init();
---- a/vm/vm_user.c
-+++ b/vm/vm_user.c
-@@ -688,3 +688,17 @@ kern_return_t vm_allocate_contiguous(
+Index: gnumach/vm/vm_user.c
+===================================================================
+--- gnumach.orig/vm/vm_user.c
++++ gnumach/vm/vm_user.c
+@@ -804,3 +804,17 @@ kern_return_t vm_pages_phys(
  
  	return KERN_SUCCESS;
  }
