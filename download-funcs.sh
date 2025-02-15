@@ -72,6 +72,12 @@ download_package() {
     unpack "xf" $package_file $dir_name
 }
 
+refresh_git() {
+  git reset --hard &&
+    git clean -f -d &&
+    git pull
+}
+
 download_from_git() {
   dir=$1
   repo=$2
@@ -82,9 +88,7 @@ download_from_git() {
   fi
   (if [ -d $dir ]; then
     pushd $dir &&
-      git reset --hard &&
-      git clean -f -d &&
-      git pull &&
+      refresh_git &&
       local git_result=$?
     popd &&
       return $git_result
@@ -93,8 +97,7 @@ download_from_git() {
       pushd $DOWNLOAD_CACHE_DIRECTORY &&
       (if [ -d $dir ]; then
         pushd $dir &&
-          git reset --hard &&
-          git pull &&
+          refresh_git &&
           popd
       else
         git clone --depth=1 $repo $add_branch $dir
