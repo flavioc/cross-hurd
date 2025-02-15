@@ -161,7 +161,8 @@ apply_patch() {
   if patch -f -Np$2 --dry-run <$1 >/dev/null 2>&1; then
     patch -Np$2 <$1 || exit 1
   else
-    echo "Cannot apply patch!"
+    echo "Cannot apply patch $1"
+    exit 1
   fi
 }
 
