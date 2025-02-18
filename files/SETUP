@@ -34,7 +34,7 @@ fsysopts / --writable
 # Setup crucial devices
 cd /dev
 rm -f console
-for device in vcs std ptyp ptyq cd0 cd1 hd0 hd0s1 sd0 rumpdisk wd0 wd0s1 tty1 tty2 tty3 tty4 tty5 tty6 netdde eth0; do
+for device in vcs std ptyp ptyq cd0 cd1 hd0 hd0s1 sd0 rumpdisk wd0 wd0s1 tty1 tty2 tty3 tty4 tty5 tty6 netdde eth0 rtc fd0 fd1 eth0 eth1 pseudo-root loop0 loop1 lpr0 lpr1; do
   echo "Setting up $device"
   /bin/bash /sbin/MAKEDEV $device
 done
