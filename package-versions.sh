@@ -106,7 +106,7 @@ GCRYPT_PKG=$GCRYPT_SRC.tar.bz2
 GCRYPT_URL=https://gnupg.org/ftp/gcrypt/libgcrypt/$GCRYPT_PKG
 
 # binutils
-BINUTILS_VERSION=2.43
+BINUTILS_VERSION=2.44
 BINUTILS_SRC=binutils-$BINUTILS_VERSION
 BINUTILS_PKG=$BINUTILS_SRC.tar.bz2
 BINUTILS_URL=https://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
