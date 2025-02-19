@@ -430,6 +430,9 @@ install_libdaemon() {
 install_libtirpc() {
   create_temp $LIBTIRPC_SRC.obj &&
     pushd $LIBTIRPC_SRC.obj &&
+    pushd $SOURCE/$LIBTIRPC_SRC &&
+    autoreconf -fi &&
+    popd &&
     $SOURCE/$LIBTIRPC_SRC/configure \
       --build=$HOST \
       --host=$CROSS_HURD_TARGET \
