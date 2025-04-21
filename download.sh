@@ -6,6 +6,7 @@
 mkdir -p $SOURCE &&
   pushd $SOURCE &&
   download_gcc &&
+  download_package $MPFR_URL &&
   download_package $BINUTILS_URL &&
   download $FLEX_PKG $FLEX_URL &&
   unpack zxf $FLEX_PKG $FLEX_SRC &&
@@ -29,8 +30,6 @@ mkdir -p $SOURCE &&
   unpack Jxf $SHADOW_PKG $SHADOW_SRC &&
   download $GMP_PKG $GMP_URL &&
   unpack jxf $GMP_PKG $GMP_SRC &&
-  download $MPFR_PKG $MPFR_URL &&
-  unpack jxf $MPFR_PKG $MPFR_SRC &&
   download $MPC_PKG $MPC_URL &&
   unpack zxf $MPC_PKG $MPC_SRC &&
   download_package $HTOP_URL &&
