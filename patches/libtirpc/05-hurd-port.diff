@@ -4,7 +4,7 @@ Description: Get source building on Hurd
  - Bind sockets on Hurd like on Linux.
 Author: Petter Reinholdtsen <pere@hungry.com>
 Forwarded: not-needed
-Last-Update: 2022-08-11
+Last-Update: 2025-03-17
 
  
 --- a/src/auth_unix.c
@@ -34,9 +34,9 @@ Last-Update: 2022-08-11
  #define LOWPORT 512
 --- a/src/getpeereid.c
 +++ b/src/getpeereid.c
-@@ -25,10 +25,14 @@
-  */
- 
+@@ -28,10 +28,14 @@
+ #include "config.h"
+ #endif
  
 +#include "config.h"
 +
@@ -50,7 +50,7 @@ Last-Update: 2022-08-11
  
  #include <errno.h>
  #include <unistd.h>
-@@ -36,6 +40,9 @@
+@@ -41,6 +45,9 @@
  int
  getpeereid(int s, uid_t *euid, gid_t *egid)
  {
@@ -60,20 +60,22 @@ Last-Update: 2022-08-11
  #ifdef XUCRED_VERSION
  	struct xucred uc;
  #define uid  cr_uid
-@@ -59,4 +66,5 @@
+@@ -64,6 +71,7 @@
  	*euid = uc.uid;
  	*egid = uc.gid;
  	return (0);
 +#endif /* HAVE_SYS_USER_H */
   }
+ 
+ #endif
 --- a/configure.ac
 +++ b/configure.ac
-@@ -93,7 +93,7 @@
- AC_PROG_LIBTOOL
- AC_HEADER_DIRENT
- AC_PREFIX_DEFAULT(/usr)
--AC_CHECK_HEADERS([arpa/inet.h fcntl.h libintl.h limits.h locale.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/param.h sys/socket.h sys/time.h syslog.h unistd.h features.h gssapi/gssapi_ext.h])
-+AC_CHECK_HEADERS([arpa/inet.h fcntl.h libintl.h limits.h locale.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/param.h sys/socket.h sys/time.h syslog.h unistd.h features.h gssapi/gssapi_ext.h sys/user.h])
+@@ -160,7 +160,7 @@
+ AC_CHECK_HEADERS([arpa/inet.h fcntl.h libintl.h limits.h locale.h
+ netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h
+ sys/param.h sys/socket.h sys/time.h syslog.h unistd.h features.h
+-gssapi/gssapi_ext.h endian.h machine/endian.h])
++gssapi/gssapi_ext.h endian.h machine/endian.h sys/user.h])
  AX_PTHREAD
- AC_CHECK_FUNCS([getrpcbyname getrpcbynumber setrpcent endrpcent getrpcent])
+ AC_CHECK_FUNCS([getpeereid getrpcbyname getrpcbynumber setrpcent endrpcent getrpcent])
  

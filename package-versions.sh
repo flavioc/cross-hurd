@@ -117,7 +117,7 @@ GCC_PKG=$GCC_SRC.tar.xz
 GCC_URL=https://ftp.gnu.org/gnu/gcc/gcc-$GCC_VERSION/$GCC_PKG
 
 # libtirpc
-LIBTIRPC_VERSION=1.3.4
+LIBTIRPC_VERSION=1.3.6
 LIBTIRPC_SRC=libtirpc-$LIBTIRPC_VERSION
 LIBTIRPC_PKG=$LIBTIRPC_SRC.tar.bz2
 LIBTIRPC_URL=https://sourceforge.net/projects/libtirpc/files/libtirpc/$LIBTIRPC_VERSION/$LIBTIRPC_PKG

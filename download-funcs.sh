@@ -220,6 +220,7 @@ download_libtirpc() {
     apply_patch $SCRIPT_DIR/patches/libtirpc/03-kfreebsd.diff 1 &&
     apply_patch $SCRIPT_DIR/patches/libtirpc/05-hurd-port.diff 1 &&
     apply_patch $SCRIPT_DIR/patches/libtirpc/06-hurd-client-port.diff 1 &&
+    apply_patch $SCRIPT_DIR/patches/libtirpc/07-gcc15.diff 1 &&
     popd
 }
 
