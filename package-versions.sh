@@ -116,6 +116,12 @@ GCC_SRC=gcc-$GCC_VERSION
 GCC_PKG=$GCC_SRC.tar.xz
 GCC_URL=https://ftp.gnu.org/gnu/gcc/gcc-$GCC_VERSION/$GCC_PKG
 
+# parted
+PARTED_VERSION=3.6
+PARTED_SRC=parted-$PARTED_VERSION
+PARTED_PKG=$PARTED_SRC.tar.xz
+PARTED_URL=https://ftp.gnu.org/gnu/parted/$PARTED_PKG
+
 # libtirpc
 LIBTIRPC_VERSION=1.3.6
 LIBTIRPC_SRC=libtirpc-$LIBTIRPC_VERSION

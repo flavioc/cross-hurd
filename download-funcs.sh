@@ -289,11 +289,10 @@ download_libxcrypt() {
 }
 
 download_parted() {
-  download $PARTED_PKG $PARTED_URL &&
-    if [ -d $PARTED_SRC ]; then
-      return 0
-    fi
-  unpack xf $PARTED_PKG $PARTED_SRC
+  download_package $PARTED_URL &&
+    pushd $PARTED_SRC &&
+    apply_patch $SCRIPT_DIR/patches/parted/parted-3.6-gcc15.patch 1 &&
+    popd
 }
 
 download_dmidecode() {
