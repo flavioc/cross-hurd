@@ -217,13 +217,15 @@ install_libdde() {
     install -d libdde-linux26/build/include/x86 &&
     ln -s x86 libdde-linux26/build/include/amd64 &&
     ln -s asm-x86 libdde-linux26/build/include/amd64/asm-x86_64 &&
+    # dde has issues with C23 since it re-defines true and false.
+    echo "CFLAGS += -std=gnu17" >> libdde-linux26/Makeconf &&
     # It appears that there are issues with parallel builds.
     make ARCH=$(get_arch) LDFLAGS= BUILDDIR=build CC=$CC -C libdde-linux26 &&
     make -j$PROCS ARCH=$(get_arch) LDFLAGS= BUILDDIR=build CC=$CC -C libdde-linux26 install &&
     mkdir -p $SYS_ROOT/share/libdde_linux26 &&
     cp -R libdde-linux26/build $SYS_ROOT/share/libdde_linux26 &&
     cp -R libdde-linux26/Makeconf libdde-linux26/Makeconf.local libdde-linux26/mk $SYS_ROOT/share/libdde_linux26 &&
-    cp libdde-linux26/lib/src/libdde_linux26*.a $SYS_ROOT/lib/
+    cp libdde-linux26/lib/src/libdde_linux26*.a $SYS_ROOT/lib/ &&
   popd
 }
 
