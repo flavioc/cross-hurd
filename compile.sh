@@ -333,7 +333,8 @@ install_e2fsprogs() {
   rm -rf $E2FSPROGS_SRC.obj &&
     mkdir -p $E2FSPROGS_SRC.obj &&
     cd $E2FSPROGS_SRC.obj &&
-    LDFLAGS="-luuid" $SOURCE/$E2FSPROGS_SRC/configure \
+    # This package is old so pin to gnu17. If we upgrade, we can remove this.
+    CFLAGS="-std=gnu17" LDFLAGS="-luuid" $SOURCE/$E2FSPROGS_SRC/configure \
       --prefix="$SYS_ROOT" \
       --enable-elf-shlibs \
       --build=${HOST} \
@@ -362,7 +363,8 @@ install_util_linux() {
 install_grub() {
   mkdir -p $GRUB_SRC.obj &&
     cd $GRUB_SRC.obj &&
-    CFLAGS="-Wno-error=incompatible-pointer-types" \
+    # Use gnu17 since the package cannot be built with c23 since it's old.
+    CFLAGS="-Wno-error=incompatible-pointer-types -std=gnu17" \
       $SOURCE/$GRUB_SRC/configure --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${CROSS_HURD_TARGET} \
