@@ -2,7 +2,6 @@
 FLEX_VERSION=2.6.4
 ZLIB_VERSION=1.3.1
 BZIP2_VERSION=1.0.8
-BASH_VERSION=5.2.21
 # e2fsprogs 1.45.4 is failing due to something with sys/mount.h in configure
 E2FSPROGS_VERSION=1.44.1
 PKGCONFIGLITE_VERSION=0.28-1
@@ -150,6 +149,12 @@ HTOP_VERSION=3.3.0
 HTOP_SRC=htop-$HTOP_VERSION
 HTOP_PKG=$HTOP_SRC.tar.xz
 HTOP_URL=https://github.com/htop-dev/htop/releases/download/$HTOP_VERSION/$HTOP_PKG
+
+# bash
+BASH_VERSION=5.3
+BASH_SRC=bash-$BASH_VERSION
+BASH_PKG=$BASH_SRC.tar.gz
+BASH_URL=https://ftp.gnu.org/gnu/bash/"$BASH_PKG"
 
 # gdb
 GDB_SRC=binutils-gdb
