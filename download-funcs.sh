@@ -243,14 +243,6 @@ download_grep() {
     popd
 }
 
-download_gawk() {
-  download $GAWK_PKG $GAWK_URL &&
-    if [ -d "$GAWK_SRC" ]; then
-      return 0
-    fi
-  unpack xf $GAWK_PKG $GAWK_SRC
-}
-
 download_less() {
   download $LESS_PKG $LESS_URL &&
     unpack xf $LESS_PKG $LESS_SRC

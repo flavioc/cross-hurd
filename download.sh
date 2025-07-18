@@ -46,7 +46,7 @@ mkdir -p $SOURCE &&
   download_libtirpc &&
   download_make &&
   download_grep &&
-  download_gawk &&
+  download_package $GAWK_URL &&
   download_less &&
   download_file &&
   download_sed &&
