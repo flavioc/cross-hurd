@@ -76,7 +76,7 @@ CA_CERTIFICATES_URL=https://salsa.debian.org/debian/ca-certificates.git
 CA_CERTIFICATES_SRC=ca-certificates
 
 # git
-GIT_VERSION=2.45.2
+GIT_VERSION=2.50.1
 GIT_SRC=git-$GIT_VERSION
 GIT_PKG=$GIT_SRC.tar.xz
 GIT_URL=https://www.kernel.org/pub/software/scm/git/$GIT_PKG
