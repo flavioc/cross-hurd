@@ -263,14 +263,6 @@ download_libpciaccess() {
   unpack xf $LIBPCIACCESS_PKG $LIBPCIACCESS_SRC
 }
 
-download_libxcrypt() {
-  download $LIBXCRYPT_PKG $LIBXCRYPT_URL &&
-    if [ -d $LIBXCRYPT_SRC ]; then
-      return 0
-    fi
-  unpack xf $LIBXCRYPT_PKG $LIBXCRYPT_SRC
-}
-
 download_parted() {
   download_package $PARTED_URL &&
     pushd $PARTED_SRC &&
