@@ -47,7 +47,6 @@ mkdir -p $SOURCE &&
   download_grep &&
   download_package $GAWK_URL &&
   download_less &&
-  download_file &&
   download_sed &&
   download_dash &&
   download_ca_certificates &&
