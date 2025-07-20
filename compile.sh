@@ -583,7 +583,9 @@ install_ncurses() {
     make -j$PROCS -C include &&
     make -j$PROCS -C progs tic &&
     popd &&
-    LDFLAGS="-lpthread" CPPFLAGS="-P" $SOURCE/$NCURSES_SRC/configure \
+    # It needs to use the c17 standard since it has issues with c23
+    # especially when compiling dependent packages.
+    LDFLAGS="-lpthread" CFLAGS="-std=gnu17" CPPFLAGS="-P" $SOURCE/$NCURSES_SRC/configure \
       --prefix="${SYS_ROOT}" \
       --with-shared \
       --build=${HOST} \
@@ -612,7 +614,9 @@ install_ncursesw() {
     make -j$PROCS -C include &&
     make -j$PROCS -C progs tic &&
     popd &&
-    LDFLAGS="-lpthread" CPPFLAGS="-P" $SOURCE/$NCURSES_SRC/configure \
+    # It needs to use the c17 standard since it has issues with c23
+    # especially when compiling dependent packages.
+    LDFLAGS="-lpthread" CPPFLAGS="-P" CFLAGS="-std=gnu17" $SOURCE/$NCURSES_SRC/configure \
       --prefix="${SYS_ROOT}" \
       --with-shared \
       --build=${HOST} \
