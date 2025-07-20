@@ -14,7 +14,6 @@ SHADOW_URL=https://github.com/shadow-maint/shadow/releases/download/"$SHADOW_VER
 SED_URL=https://ftp.gnu.org/gnu/sed/"$SED_PKG"
 GMP_URL=https://ftp.gnu.org/gnu/gmp/"$GMP_PKG"
 MPC_URL=https://ftp.gnu.org/gnu/mpc/"$MPC_PKG"
-NCURSES_URL=https://ftp.gnu.org/gnu/ncurses/"$NCURSES_PKG"
 LIBEDIT_URL=https://thrysoee.dk/editline/$LIBEDIT_PKG
 MAKE_URL=ftp://ftp.gnu.org/gnu/make/"$MAKE_PKG"
 GREP_URL=https://ftp.gnu.org/gnu/grep/"$GREP_PKG"
@@ -195,14 +194,6 @@ download_sed() {
       return 0
     fi
   unpack xf $SED_PKG $SED_SRC
-}
-
-download_ncurses() {
-  download $NCURSES_PKG $NCURSES_URL &&
-    if [ -d "$NCURSES_SRC" ]; then
-      return 0
-    fi
-  unpack zxf $NCURSES_PKG $NCURSES_SRC
 }
 
 download_libedit() {

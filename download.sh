@@ -34,7 +34,7 @@ mkdir -p $SOURCE &&
   download $MPC_PKG $MPC_URL &&
   unpack zxf $MPC_PKG $MPC_SRC &&
   download_package $HTOP_URL &&
-  download_ncurses &&
+  download_package $NCURSES_URL &&
   download_libedit &&
   download_package $VIM_URL &&
   download_package $GPG_ERROR_URL &&
