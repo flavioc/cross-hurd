@@ -96,7 +96,8 @@ install_gpg_error() {
 install_gcrypt() {
   create_temp $GCRYPT_SRC.obj &&
     pushd $GCRYPT_SRC.obj &&
-    $SOURCE/$GCRYPT_SRC/configure --prefix=$SYS_ROOT \
+    # -lpthread is required to make tests link correctly.
+    LDFLAGS=-lpthread $SOURCE/$GCRYPT_SRC/configure --prefix=$SYS_ROOT \
       --build="$HOST" \
       --host="$CROSS_HURD_TARGET" \
       --disable-padlock-support \

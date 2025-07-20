@@ -87,13 +87,13 @@ OPENSSL_PKG=$OPENSSL_SRC.tar.gz
 OPENSSL_URL=https://www.openssl.org/source/$OPENSSL_PKG
 
 # libgpg-error
-GPG_ERROR_VERSION=1.50
+GPG_ERROR_VERSION=1.55
 GPG_ERROR_SRC=libgpg-error-$GPG_ERROR_VERSION
 GPG_ERROR_PKG=$GPG_ERROR_SRC.tar.bz2
 GPG_ERROR_URL=https://gnupg.org/ftp/gcrypt/libgpg-error/$GPG_ERROR_PKG
 
 # libgcrypt
-GCRYPT_VERSION=1.11.0
+GCRYPT_VERSION=1.11.1
 GCRYPT_SRC=libgcrypt-$GCRYPT_VERSION
 GCRYPT_PKG=$GCRYPT_SRC.tar.bz2
 GCRYPT_URL=https://gnupg.org/ftp/gcrypt/libgcrypt/$GCRYPT_PKG
