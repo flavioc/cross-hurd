@@ -29,7 +29,7 @@ mkdir -p $SOURCE &&
   download_package $LIBXCRYPT_URL &&
   download $SHADOW_PKG $SHADOW_URL &&
   unpack Jxf $SHADOW_PKG $SHADOW_SRC &&
-  download $GMP_PKG $GMP_URL &&
+  download_gmp &&
   unpack jxf $GMP_PKG $GMP_SRC &&
   download $MPC_PKG $MPC_URL &&
   unpack zxf $MPC_PKG $MPC_SRC &&

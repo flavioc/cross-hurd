@@ -12,7 +12,6 @@ LIBUUID_URL=http://downloads.sourceforge.net/project/libuuid/"$LIBUUID_PKG"
 UTIL_LINUX_URL=https://www.kernel.org/pub/linux/utils/util-linux/v$UTIL_LINUX_MAJOR_VERSION/"$UTIL_LINUX_PKG"
 SHADOW_URL=https://github.com/shadow-maint/shadow/releases/download/"$SHADOW_VERSION"/"$SHADOW_PKG"
 SED_URL=https://ftp.gnu.org/gnu/sed/"$SED_PKG"
-GMP_URL=https://ftp.gnu.org/gnu/gmp/"$GMP_PKG"
 MPC_URL=https://ftp.gnu.org/gnu/mpc/"$MPC_PKG"
 LIBEDIT_URL=https://thrysoee.dk/editline/$LIBEDIT_PKG
 MAKE_URL=ftp://ftp.gnu.org/gnu/make/"$MAKE_PKG"
@@ -299,4 +298,11 @@ download_perl() {
     unpack xf $PERL_CROSS_PKG $PERL_CROSS_SRC &&
     download $PERL_PKG $PERL_URL &&
     unpack xf $PERL_PKG $PERL_SRC
+}
+
+download_gmp() {
+  download_package $GMP_URL &&
+    pushd $GMP_SRC &&
+    apply_patch $SCRIPT_DIR/patches/gmp/gmp-c23.patch 1 &&
+    popd
 }

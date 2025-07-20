@@ -494,16 +494,20 @@ install_sed() {
 }
 
 install_gmp() {
-  rm -rf $GMP_SRC.obj &&
+  pushd $SOURCE/$GMP_SRC &&
+    autoreconf -i &&
+    popd &&
+    rm -rf $GMP_SRC.obj &&
     mkdir -p $GMP_SRC.obj &&
-    cd $GMP_SRC.obj &&
-    NM="" CC_FOR_BUILD="$HOST_MACHINE-gcc" $SOURCE/$GMP_SRC/configure \
+    pushd $GMP_SRC.obj &&
+    NM="" CC_FOR_BUILD="$HOST_MACHINE-gcc" \
+    $SOURCE/$GMP_SRC/configure \
       --prefix="$SYS_ROOT" \
       --build=${HOST} \
       --host=${CROSS_HURD_TARGET} &&
     make -j$PROCS &&
     make -j$PROCS install &&
-    cd ..
+    popd
 }
 
 install_mpfr() {
