@@ -10,6 +10,7 @@ mkdir -p $SOURCE &&
   download_package $BINUTILS_URL &&
   download_package $BASH_URL &&
   download_package $FILE_URL &&
+  download_package $INETUTILS_URL &&
   download $FLEX_PKG $FLEX_URL &&
   unpack zxf $FLEX_PKG $FLEX_SRC &&
   download $ZLIB_PKG $ZLIB_URL &&
@@ -52,7 +53,6 @@ mkdir -p $SOURCE &&
   download_dash &&
   download_ca_certificates &&
   download_iana_etc &&
-  download_inetutils &&
   download_package $OPENSSL_URL &&
   download_wget &&
   download_perl &&

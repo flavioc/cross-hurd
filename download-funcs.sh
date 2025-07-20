@@ -23,7 +23,6 @@ LIBXCRYPT_URL=https://github.com/besser82/libxcrypt/releases/download/v$LIBXCRYP
 DMIDECODE_URL=http://download.savannah.gnu.org/releases/dmidecode/$DMIDECODE_PKG
 FINDUTILS_URL=https://ftp.gnu.org/gnu/findutils/$FINDUTILS_PKG
 IANA_ETC_URL=https://github.com/Mic92/iana-etc/releases/download/$IANA_ETC_VERSION/$IANA_ETC_PKG
-INETUTILS_URL=https://ftp.gnu.org/gnu/inetutils/$INETUTILS_PKG
 WGET_URL=https://ftp.gnu.org/gnu/wget/$WGET_PKG
 PERL_CROSS_URL=https://github.com/arsv/perl-cross/raw/releases/$PERL_CROSS_PKG
 PERL_URL=https://www.cpan.org/src/5.0/$PERL_PKG
@@ -279,13 +278,6 @@ download_findutils() {
 download_iana_etc() {
   download $IANA_ETC_PKG $IANA_ETC_URL &&
     unpack xf $IANA_ETC_PKG $IANA_ETC_SRC
-}
-
-download_inetutils() {
-  download_package $INETUTILS_URL &&
-    pushd $INETUTILS_SRC &&
-    apply_patch $SCRIPT_DIR/patches/inetutils/hurd-gcc14.patch 1 &&
-    popd
 }
 
 download_wget() {
