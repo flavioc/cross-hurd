@@ -162,7 +162,7 @@ NCURSES_URL=https://ftp.gnu.org/gnu/ncurses/$NCURSES_PKG
 FILE_VERSION=5.45
 FILE_SRC=file-$FILE_VERSION
 FILE_PKG=$FILE_SRC.tar.gz
-FILE_URL=https://fossies.org/linux/misc/$FILE_PKG
+FILE_URL=http://ftp.astron.com/pub/file/$FILE_PKG
 
 # gdb
 GDB_SRC=binutils-gdb
