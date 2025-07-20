@@ -154,7 +154,7 @@ BASH_PKG=$BASH_SRC.tar.gz
 BASH_URL=https://ftp.gnu.org/gnu/bash/"$BASH_PKG"
 
 # file
-FILE_VERSION=5.46
+FILE_VERSION=5.45
 FILE_SRC=file-$FILE_VERSION
 FILE_PKG=$FILE_SRC.tar.gz
 FILE_URL=https://fossies.org/linux/misc/$FILE_PKG
