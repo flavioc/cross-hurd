@@ -1125,7 +1125,8 @@ install_htop() {
   rm -rf HTOP_SRC.obj &&
     mkdir -p HTOP_SRC.obj &&
     pushd HTOP_SRC.obj &&
-    $SOURCE/$HTOP_SRC/configure \
+    # TODO: remove -std=gnu17 when Htop is updated.
+    CFLAGS="-Wno-error=int-conversion -std=gnu17" $SOURCE/$HTOP_SRC/configure \
       --build=$HOST \
       --host=$CROSS_HURD_TARGET \
       --prefix=$SYS_ROOT \
