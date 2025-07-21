@@ -834,9 +834,9 @@ install_rump() {
     done
   pushd buildrump.sh/src &&
     pushd lib/librumpuser &&
-    ./configure --prefix=$SYS_ROOT \
-      --build=$HOST \
-      --host=$CROSS_HURD_TARGET &&
+      ./configure --prefix=$SYS_ROOT \
+        --build=$HOST \
+        --host=$CROSS_HURD_TARGET &&
     popd &&
     CFLAGS="-Wno-format-security -Wno-omit-frame-pointer" \
       HOST_GCC=$HOST_CC HOST_CFLAGS="-Wno-error=implicit-function-declaration" \
@@ -854,7 +854,7 @@ install_rump() {
       -V BUILDRUMP_CPPFLAGS="-Wno-error=stringop-overread" \
       -V RUMPUSER_EXTERNAL_DPLIBS=pthread \
       -V CPPFLAGS="-I$OBJ/destdir/usr/include -D_FILE_OFFSET_BITS=64 -DRUMP_REGISTER_T=int -DRUMPUSER_CONFIG=yes -DNO_PCI_MSI_MSIX=yes -DNUSB_DMA=1 -DPAE -DBUFPAGES=16" \
-      -V CWARNFLAGS="-Wno-error=maybe-uninitialized -Wno-error=address-of-packed-member -Wno-error=unused-variable -Wno-error=stack-protector -Wno-error=array-parameter -Wno-error=array-bounds -Wno-error=stringop-overflow -Wno-error=int-to-pointer-cast -Wno-error=incompatible-pointer-types" \
+      -V CWARNFLAGS="-Wno-error=maybe-uninitialized -Wno-error=address-of-packed-member -Wno-error=unused-variable -Wno-error=stack-protector -Wno-error=array-parameter -Wno-error=array-bounds -Wno-error=stringop-overflow -Wno-error=int-to-pointer-cast -Wno-error=incompatible-pointer-types -Wno-error=unterminated-string-initialization" \
       -V LIBCRTBEGIN=" " -V LIBCRTEND=" " -V LIBCRT0=" " -V LIBCRTI=" " \
       -V MIG=mig \
       -V DESTDIR=$OBJ/destdir \
@@ -864,11 +864,11 @@ install_rump() {
       -V TARGET_LDADD="-B$SYS_ROOT/lib -L$SYS_ROOT/lib -L$SYS_ROOT/lib" \
       -U -u -T $OBJ/tooldir -m $arch -j $PROCS tools rump &&
     pushd lib/librumpuser &&
-    RUMPRUN=true $OBJ/tooldir/bin/nbmake-$arch dependall
-  popd &&
+      RUMPRUN=true $OBJ/tooldir/bin/nbmake-$arch dependall &&
+      popd &&
     popd &&
     pushd pci-userspace/src-gnu &&
-    $OBJ/tooldir/bin/nbmake-$arch MIG=$MIG dependall &&
+      $OBJ/tooldir/bin/nbmake-$arch MIG=$MIG dependall &&
     popd &&
     # Perform installation by copying the required files.
     # Copy headers.
