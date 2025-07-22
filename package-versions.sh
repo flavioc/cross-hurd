@@ -103,7 +103,7 @@ BINUTILS_PKG=$BINUTILS_SRC.tar.bz2
 BINUTILS_URL=https://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
 
 # GCC
-GCC_VERSION=14.2.0
+GCC_VERSION=15.1.0
 GCC_SRC=gcc-$GCC_VERSION
 GCC_PKG=$GCC_SRC.tar.xz
 GCC_URL=https://ftp.gnu.org/gnu/gcc/gcc-$GCC_VERSION/$GCC_PKG

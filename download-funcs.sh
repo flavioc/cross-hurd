@@ -180,10 +180,7 @@ download_glibc() {
 }
 
 download_gcc() {
-  download_package $GCC_URL &&
-    pushd $GCC_SRC &&
-    apply_patch $SCRIPT_DIR/patches/gcc/ada-hurd-amd64.diff 1 &&
-    popd
+  download_package $GCC_URL
 }
 
 download_sed() {
