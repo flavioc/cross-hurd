@@ -35,4 +35,5 @@ fi
 # Other options.
 #
 # Set this to true if you want to disable the Ada compiler.
-# export DISABLE_ADA=true
+# Disabled until we can use GNAT 15.
+export DISABLE_ADA=true
