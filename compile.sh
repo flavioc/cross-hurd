@@ -1143,21 +1143,21 @@ install_htop() {
 }
 
 install_minimal_system() {
-#  install_libxcrypt &&
-#    install_libpciaccess &&
-#    # libacpica needs libirqhelp.
-#    install_libirqhelp &&
-#    install_libacpica &&
-#    install_zlib &&
-#    install_bzip2 &&
-#    install_gnumach &&
-#    install_gpg_error &&
-#    install_gcrypt &&
-#    install_ncurses &&
-#    install_ncursesw &&
-#    install_libedit &&
-#    install_util_linux &&
-#    install_rump &&
+  install_libxcrypt &&
+    install_libpciaccess &&
+    # libacpica needs libirqhelp.
+    install_libirqhelp &&
+    install_libacpica &&
+    install_zlib &&
+    install_bzip2 &&
+    install_gnumach &&
+    install_gpg_error &&
+    install_gcrypt &&
+    install_ncurses &&
+    install_ncursesw &&
+    install_libedit &&
+    install_util_linux &&
+    install_rump &&
     # We need to build basic hurd libraries in order to
     # compile parted.
     install_hurd --without-parted &&
