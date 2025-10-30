@@ -11,6 +11,7 @@ export LD="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-ld"
 export STRIP="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-strip"
 export NM=$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-nm
 export READELF=$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-readelf
+export OBJCOPY=$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-objcopy
 export OBJDUMP=$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-objdump
 export MIG="$CROSS_TOOLS/bin/${CROSS_HURD_TARGET}-mig"
 export PKG_CONFIG="$CROSS_TOOLS/bin/pkg-config"
@@ -221,8 +222,8 @@ install_libdde() {
     # dde has issues with C23 since it re-defines true and false.
     echo "CFLAGS += -std=gnu17" >> libdde-linux26/Makeconf &&
     # It appears that there are issues with parallel builds.
-    make ARCH=$(get_arch) LDFLAGS= BUILDDIR=build CC=$CC -C libdde-linux26 &&
-    make -j$PROCS ARCH=$(get_arch) LDFLAGS= BUILDDIR=build CC=$CC -C libdde-linux26 install &&
+    make ARCH=$(get_arch) LDFLAGS= BUILDDIR=build CC=$CC LD=$LD -C libdde-linux26 &&
+    make -j$PROCS ARCH=$(get_arch) LDFLAGS= BUILDDIR=build CC=$CC LD=$LD -C libdde-linux26 install &&
     mkdir -p $SYS_ROOT/share/libdde_linux26 &&
     cp -R libdde-linux26/build $SYS_ROOT/share/libdde_linux26 &&
     cp -R libdde-linux26/Makeconf libdde-linux26/Makeconf.local libdde-linux26/mk $SYS_ROOT/share/libdde_linux26 &&
@@ -840,8 +841,12 @@ install_rump() {
     popd &&
     CFLAGS="-Wno-format-security -Wno-omit-frame-pointer" \
       HOST_GCC=$HOST_CC HOST_CFLAGS="-Wno-error=implicit-function-declaration" \
-      TARGET_CC=$CC TARGET_CXX=$CC \
+      TARGET_CC=$CC TARGET_CXX=$CXX \
       TARGET_LD=$LD TARGET_MIG=$MIG \
+      TARGET_AR=$AR TARGET_AS=$AS \
+      TARGET_RANLIB=$RANLIB TARGET_STRIP=$STRIP \
+      TARGET_NM=$NM TARGET_READELF=$READELF \
+      TARGET_OBJCOPY=$OBJCOPY TARGET_OBJDUMP=$OBJDUMP \
       TARGET_LDADD="-B/$SYS_ROOT/lib -L$SYS_ROOT/lib -L$SYS_ROOT/lib" \
       _GCC_CRTENDS= _GCC_CRTEND= _CC_CRTBEGINS= \
       _GCC_CRTBEGIN= _GCC_CRTI= _GCC_CRTN= \
@@ -1138,21 +1143,21 @@ install_htop() {
 }
 
 install_minimal_system() {
-  install_libxcrypt &&
-    install_libpciaccess &&
-    # libacpica needs libirqhelp.
-    install_libirqhelp &&
-    install_libacpica &&
-    install_zlib &&
-    install_bzip2 &&
-    install_gnumach &&
-    install_gpg_error &&
-    install_gcrypt &&
-    install_ncurses &&
-    install_ncursesw &&
-    install_libedit &&
-    install_util_linux &&
-    install_rump &&
+#  install_libxcrypt &&
+#    install_libpciaccess &&
+#    # libacpica needs libirqhelp.
+#    install_libirqhelp &&
+#    install_libacpica &&
+#    install_zlib &&
+#    install_bzip2 &&
+#    install_gnumach &&
+#    install_gpg_error &&
+#    install_gcrypt &&
+#    install_ncurses &&
+#    install_ncursesw &&
+#    install_libedit &&
+#    install_util_linux &&
+#    install_rump &&
     # We need to build basic hurd libraries in order to
     # compile parted.
     install_hurd --without-parted &&
