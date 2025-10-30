@@ -14,6 +14,7 @@ compile_binutils() {
     cd "$BINUTILS_SRC".obj &&
     AR=$HOST_AR AS=$HOST_AS \
       $SOURCE/$BINUTILS_SRC/configure \
+      --build="$HOST" \
       --host="$HOST" \
       --target="$CROSS_HURD_TARGET" \
       --prefix="$CROSS_TOOLS" \
@@ -174,6 +175,8 @@ compile_full_gcc() {
       LDFLAGS="-Wl,-rpath,${CROSS_TOOLS}/lib" \
       ../$GCC_SRC.compiler/configure \
       --prefix=$CROSS_TOOLS \
+      --build="$HOST" \
+      --host="$HOST" \
       --target="$CROSS_HURD_TARGET" \
       --with-sysroot="$SYSTEM" \
       --with-local-prefix="$SYS_ROOT" \
