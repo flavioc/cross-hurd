@@ -170,7 +170,6 @@ download_glibc() {
     git reset --hard &&
     git pull &&
     git checkout $GLIBC_TAG &&
-    apply_patch $SCRIPT_DIR/patches/glibc/tg-bits_atomic.h_multiple_threads.diff 1 &&
     apply_patch $SCRIPT_DIR/patches/glibc/tg-unlockpt-chroot.diff 1 &&
     apply_patch $SCRIPT_DIR/patches/glibc/submitted-AF_LINK.diff 1 &&
     apply_patch $SCRIPT_DIR/patches/glibc/unsubmitted-prof-eintr.diff 1 &&
