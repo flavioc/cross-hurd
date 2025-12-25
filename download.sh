@@ -6,6 +6,7 @@
 mkdir -p $SOURCE &&
   pushd $SOURCE &&
   download_gcc &&
+  download_package $GREP_URL &&
   download_dash &&
   download_libxcrypt &&
   download_package $FINDUTILS_URL &&
@@ -47,7 +48,6 @@ mkdir -p $SOURCE &&
   download_package $LIBDAEMON_URL &&
   download_libtirpc &&
   download_make &&
-  download_grep &&
   download_package $GAWK_URL &&
   download_less &&
   download_sed &&

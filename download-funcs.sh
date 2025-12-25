@@ -15,7 +15,6 @@ SED_URL=https://ftp.gnu.org/gnu/sed/"$SED_PKG"
 MPC_URL=https://ftp.gnu.org/gnu/mpc/"$MPC_PKG"
 LIBEDIT_URL=https://thrysoee.dk/editline/$LIBEDIT_PKG
 MAKE_URL=ftp://ftp.gnu.org/gnu/make/"$MAKE_PKG"
-GREP_URL=https://ftp.gnu.org/gnu/grep/"$GREP_PKG"
 LESS_URL=https://www.greenwoodsoftware.com/less/$LESS_PKG
 LIBPCIACCESS_URL=https://www.x.org/pub/individual/lib/$LIBPCIACCESS_PKG
 LIBXCRYPT_URL=https://github.com/besser82/libxcrypt/releases/download/v$LIBXCRYPT_VERSION/$LIBXCRYPT_PKG
@@ -209,17 +208,6 @@ download_make() {
       return 0
     fi
   unpack xf $MAKE_PKG $MAKE_SRC
-}
-
-download_grep() {
-  download $GREP_PKG $GREP_URL &&
-    if [ -d "$GREP_SRC" ]; then
-      return 0
-    fi
-  unpack xf $GREP_PKG $GREP_SRC
-  pushd $GREP_SRC &&
-    apply_patch $SCRIPT_DIR/patches/grep/gnulib-hurd-x86_64.patch 1 &&
-    popd
 }
 
 download_less() {
