@@ -6,6 +6,7 @@
 mkdir -p $SOURCE &&
   pushd $SOURCE &&
   download_gcc &&
+  download_dash &&
   download_libxcrypt &&
   download_package $FINDUTILS_URL &&
   download_package $MPFR_URL &&
@@ -50,7 +51,6 @@ mkdir -p $SOURCE &&
   download_package $GAWK_URL &&
   download_less &&
   download_sed &&
-  download_dash &&
   download_ca_certificates &&
   download_iana_etc &&
   download_package $OPENSSL_URL &&
