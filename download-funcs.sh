@@ -21,7 +21,6 @@ DASH_URL=http://gondor.apana.org.au/~herbert/dash/files/$DASH_PKG
 LIBPCIACCESS_URL=https://www.x.org/pub/individual/lib/$LIBPCIACCESS_PKG
 LIBXCRYPT_URL=https://github.com/besser82/libxcrypt/releases/download/v$LIBXCRYPT_VERSION/$LIBXCRYPT_PKG
 DMIDECODE_URL=http://download.savannah.gnu.org/releases/dmidecode/$DMIDECODE_PKG
-FINDUTILS_URL=https://ftp.gnu.org/gnu/findutils/$FINDUTILS_PKG
 IANA_ETC_URL=https://github.com/Mic92/iana-etc/releases/download/$IANA_ETC_VERSION/$IANA_ETC_PKG
 WGET_URL=https://ftp.gnu.org/gnu/wget/$WGET_PKG
 PERL_CROSS_URL=https://github.com/arsv/perl-cross/raw/releases/$PERL_CROSS_PKG
@@ -261,14 +260,6 @@ download_dmidecode() {
       return 0
     fi
   unpack xf $DMIDECODE_PKG $DMIDECODE_SRC
-}
-
-download_findutils() {
-  download $FINDUTILS_PKG $FINDUTILS_URL &&
-    if [ -d $FINDUTILS_SRC ]; then
-      return 0
-    fi
-  unpack xf $FINDUTILS_PKG $FINDUTILS_SRC
 }
 
 download_iana_etc() {

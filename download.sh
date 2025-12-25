@@ -6,6 +6,7 @@
 mkdir -p $SOURCE &&
   pushd $SOURCE &&
   download_gcc &&
+  download_package $FINDUTILS_URL &&
   download_package $MPFR_URL &&
   download_package $BINUTILS_URL &&
   download_package $BASH_URL &&
@@ -41,7 +42,6 @@ mkdir -p $SOURCE &&
   download_package $GPG_ERROR_URL &&
   download_package $GCRYPT_URL &&
   download_dmidecode &&
-  download_findutils &&
   download_parted &&
   download_package $LIBDAEMON_URL &&
   download_libtirpc &&

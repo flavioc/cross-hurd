@@ -887,12 +887,13 @@ install_rump() {
 }
 
 install_findutils() {
-  rm -rf $LIBPCIACCESS_SRC.obj &&
-    mkdir -p $LIBPCIACCESS_SRC.obj &&
-    pushd $LIBPCIACCESS_SRC.obj &&
+  rm -rf $FINDUTILS_SRC.obj &&
+    mkdir -p $FINDUTILS_SRC.obj &&
+    pushd $FINDUTILS_SRC.obj &&
     $SOURCE/$FINDUTILS_SRC/configure --prefix=$SYS_ROOT \
       --build="$HOST" \
-      --host="$CROSS_HURD_TARGET" &&
+      --host="$CROSS_HURD_TARGET" \
+      --disable-year2038 &&
     make -j$PROCS &&
     make -j$PROCS install &&
     popd
