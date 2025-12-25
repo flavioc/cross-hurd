@@ -171,7 +171,7 @@ MPFR_PKG=$MPFR_SRC.tar.bz2
 MPFR_URL=http://mpfr.org/mpfr-current/$MPFR_PKG
 
 # libxcrypt
-LIBXCRYPT_VERSION=4.4.38
+LIBXCRYPT_VERSION=4.5.2
 LIBXCRYPT_SRC=libxcrypt-$LIBXCRYPT_VERSION
 LIBXCRYPT_PKG=$LIBXCRYPT_SRC.tar.xz
 LIBXCRYPT_URL=https://github.com/besser82/libxcrypt/releases/download/v$LIBXCRYPT_VERSION/$LIBXCRYPT_PKG

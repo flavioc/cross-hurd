@@ -285,3 +285,10 @@ download_gmp() {
     apply_patch $SCRIPT_DIR/patches/gmp/gmp-c23.patch 1 &&
     popd
 }
+
+download_libxcrypt() {
+  download_package $LIBXCRYPT_URL &&
+    pushd $LIBXCRYPT_SRC &&
+      apply_patch $SCRIPT_DIR/patches/libxcrypt/libxcrypt-gcc15.patch 1 &&
+    popd
+}

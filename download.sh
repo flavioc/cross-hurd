@@ -6,6 +6,7 @@
 mkdir -p $SOURCE &&
   pushd $SOURCE &&
   download_gcc &&
+  download_libxcrypt &&
   download_package $FINDUTILS_URL &&
   download_package $MPFR_URL &&
   download_package $BINUTILS_URL &&
@@ -28,7 +29,6 @@ mkdir -p $SOURCE &&
   download $UTIL_LINUX_PKG $UTIL_LINUX_URL &&
   unpack zxf $UTIL_LINUX_PKG $UTIL_LINUX_SRC &&
   download_package $GRUB_URL &&
-  download_package $LIBXCRYPT_URL &&
   download $SHADOW_PKG $SHADOW_URL &&
   unpack Jxf $SHADOW_PKG $SHADOW_SRC &&
   download_gmp &&
