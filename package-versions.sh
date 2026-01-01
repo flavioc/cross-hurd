@@ -27,7 +27,7 @@ PERL_VERSION=5.40.0
 COREUTILS_VERSION=9.5
 COREUTILS_SRC=coreutils-$COREUTILS_VERSION
 COREUTILS_PKG=$COREUTILS_SRC.tar.xz
-COREUTILS_URL=https://ftp.gnu.org/gnu/coreutils/$COREUTILS_PKG
+COREUTILS_URL=$GNU_REPO/coreutils/$COREUTILS_PKG
 
 # vim
 VIM_VERSION=9.1.0041
@@ -39,13 +39,13 @@ VIM_URL=https://github.com/vim/vim/archive/v$VIM_VERSION/$VIM_PKG
 LIBUNISTRING_VERSION=1.1
 LIBUNISTRING_SRC=libunistring-$LIBUNISTRING_VERSION
 LIBUNISTRING_PKG=$LIBUNISTRING_SRC.tar.xz
-LIBUNISTRING_URL=https://ftp.gnu.org/gnu/libunistring/$LIBUNISTRING_PKG
+LIBUNISTRING_URL=$GNU_REPO/libunistring/$LIBUNISTRING_PKG
 
 # libidn2
 LIBIDN2_VERSION=2.3.7
 LIBIDN2_SRC=libidn2-$LIBIDN2_VERSION
 LIBIDN2_PKG=$LIBIDN2_SRC.tar.gz
-LIBIDN2_URL=https://ftp.gnu.org/gnu/libidn/$LIBIDN2_PKG
+LIBIDN2_URL=$GNU_REPO/libidn/$LIBIDN2_PKG
 
 # libpsl
 LIBPSL_VERSION=0.21.5
@@ -97,19 +97,19 @@ GCRYPT_URL=https://gnupg.org/ftp/gcrypt/libgcrypt/$GCRYPT_PKG
 BINUTILS_VERSION=2.45.1
 BINUTILS_SRC=binutils-$BINUTILS_VERSION
 BINUTILS_PKG=$BINUTILS_SRC.tar.bz2
-BINUTILS_URL=https://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
+BINUTILS_URL=$GNU_REPO/binutils/$BINUTILS_PKG
 
 # GCC
 GCC_VERSION=15.2.0
 GCC_SRC=gcc-$GCC_VERSION
 GCC_PKG=$GCC_SRC.tar.xz
-GCC_URL=https://ftp.gnu.org/gnu/gcc/gcc-$GCC_VERSION/$GCC_PKG
+GCC_URL=$GNU_REPO/gcc/gcc-$GCC_VERSION/$GCC_PKG
 
 # parted
 PARTED_VERSION=3.6
 PARTED_SRC=parted-$PARTED_VERSION
 PARTED_PKG=$PARTED_SRC.tar.xz
-PARTED_URL=https://ftp.gnu.org/gnu/parted/$PARTED_PKG
+PARTED_URL=$GNU_REPO/parted/$PARTED_PKG
 
 # libtirpc
 LIBTIRPC_VERSION=1.3.6
@@ -127,13 +127,13 @@ OPENSSH_URL=https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/$OPENSSH_PKG
 GAWK_VERSION=5.3.2
 GAWK_SRC=gawk-$GAWK_VERSION
 GAWK_PKG=$GAWK_SRC.tar.xz
-GAWK_URL=https://ftp.gnu.org/gnu/gawk/$GAWK_PKG
+GAWK_URL=$GNU_REPO/gawk/$GAWK_PKG
 
 # grub
 GRUB_VERSION=2.06
 GRUB_SRC=grub-$GRUB_VERSION
 GRUB_PKG=$GRUB_SRC.tar.gz
-GRUB_URL=https://ftp.gnu.org/gnu/grub/$GRUB_PKG
+GRUB_URL=$GNU_REPO/grub/$GRUB_PKG
 
 # htop
 HTOP_VERSION=3.3.0
@@ -145,13 +145,13 @@ HTOP_URL=https://github.com/htop-dev/htop/releases/download/$HTOP_VERSION/$HTOP_
 BASH_VERSION=5.3
 BASH_SRC=bash-$BASH_VERSION
 BASH_PKG=$BASH_SRC.tar.gz
-BASH_URL=https://ftp.gnu.org/gnu/bash/"$BASH_PKG"
+BASH_URL=$GNU_REPO/bash/"$BASH_PKG"
 
 # ncurses
 NCURSES_VERSION=6.4
 NCURSES_SRC=ncurses-${NCURSES_VERSION}
 NCURSES_PKG=${NCURSES_SRC}.tar.gz
-NCURSES_URL=https://ftp.gnu.org/gnu/ncurses/$NCURSES_PKG
+NCURSES_URL=$GNU_REPO/ncurses/$NCURSES_PKG
 
 # file
 FILE_VERSION=5.45
@@ -178,19 +178,19 @@ LIBXCRYPT_URL=https://github.com/besser82/libxcrypt/releases/download/v$LIBXCRYP
 GMP_VERSION=6.3.0
 GMP_SRC=gmp-"$GMP_VERSION"
 GMP_PKG="${GMP_SRC}".tar.bz2
-GMP_URL=https://ftp.gnu.org/gnu/gmp/"$GMP_PKG"
+GMP_URL=$GNU_REPO/gmp/"$GMP_PKG"
 
 # inetutils
 INETUTILS_VERSION=2.6
 INETUTILS_SRC=inetutils-$INETUTILS_VERSION
 INETUTILS_PKG=$INETUTILS_SRC.tar.xz
-INETUTILS_URL=https://ftp.gnu.org/gnu/inetutils/$INETUTILS_PKG
+INETUTILS_URL=$GNU_REPO/inetutils/$INETUTILS_PKG
 
 # findutils
 FINDUTILS_VERSION=4.10.0
 FINDUTILS_SRC=findutils-$FINDUTILS_VERSION
 FINDUTILS_PKG=$FINDUTILS_SRC.tar.xz
-FINDUTILS_URL=https://ftp.gnu.org/gnu/findutils/$FINDUTILS_PKG
+FINDUTILS_URL=$GNU_REPO/findutils/$FINDUTILS_PKG
 
 # dash
 DASH_VERSION=0.5.13
@@ -202,4 +202,4 @@ DASH_URL=http://gondor.apana.org.au/~herbert/dash/files/$DASH_PKG
 GREP_VERSION=3.12
 GREP_SRC=grep-"$GREP_VERSION"
 GREP_PKG=${GREP_SRC}.tar.xz
-GREP_URL=https://ftp.gnu.org/gnu/grep/"$GREP_PKG"
+GREP_URL=$GNU_REPO/grep/"$GREP_PKG"

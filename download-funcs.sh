@@ -2,7 +2,6 @@
 
 . ./config.sh
 
-BINUTILS_URL=https://ftp.gnu.org/gnu/binutils/$BINUTILS_PKG
 FLEX_URL=https://github.com/westes/flex/releases/download/v$FLEX_VERSION/$FLEX_PKG
 ZLIB_URL=http://zlib.net/"$ZLIB_PKG"
 BZIP2_URL=https://sourceware.org/pub/bzip2/$BZIP2_PKG
@@ -11,16 +10,16 @@ PKGCONFIGLITE_URL=http://downloads.sourceforge.net/project/pkgconfiglite/"$PKGCO
 LIBUUID_URL=http://downloads.sourceforge.net/project/libuuid/"$LIBUUID_PKG"
 UTIL_LINUX_URL=https://www.kernel.org/pub/linux/utils/util-linux/v$UTIL_LINUX_MAJOR_VERSION/"$UTIL_LINUX_PKG"
 SHADOW_URL=https://github.com/shadow-maint/shadow/releases/download/"$SHADOW_VERSION"/"$SHADOW_PKG"
-SED_URL=https://ftp.gnu.org/gnu/sed/"$SED_PKG"
-MPC_URL=https://ftp.gnu.org/gnu/mpc/"$MPC_PKG"
+SED_URL=$GNU_REPO/sed/"$SED_PKG"
+MPC_URL=$GNU_REPO/mpc/"$MPC_PKG"
 LIBEDIT_URL=https://thrysoee.dk/editline/$LIBEDIT_PKG
-MAKE_URL=ftp://ftp.gnu.org/gnu/make/"$MAKE_PKG"
+MAKE_URL=$GNU_REPO/"$MAKE_PKG"
 LESS_URL=https://www.greenwoodsoftware.com/less/$LESS_PKG
 LIBPCIACCESS_URL=https://www.x.org/pub/individual/lib/$LIBPCIACCESS_PKG
 LIBXCRYPT_URL=https://github.com/besser82/libxcrypt/releases/download/v$LIBXCRYPT_VERSION/$LIBXCRYPT_PKG
 DMIDECODE_URL=http://download.savannah.gnu.org/releases/dmidecode/$DMIDECODE_PKG
 IANA_ETC_URL=https://github.com/Mic92/iana-etc/releases/download/$IANA_ETC_VERSION/$IANA_ETC_PKG
-WGET_URL=https://ftp.gnu.org/gnu/wget/$WGET_PKG
+WGET_URL=$GNU_REPO/wget/$WGET_PKG
 PERL_CROSS_URL=https://github.com/arsv/perl-cross/raw/releases/$PERL_CROSS_PKG
 PERL_URL=https://www.cpan.org/src/5.0/$PERL_PKG
 

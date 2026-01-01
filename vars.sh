@@ -15,6 +15,8 @@ if [ ! -z "$CCACHE_DIRECTORY" ]; then
    export PATH=$CCACHE_DIRECTORY:$PATH
 fi
 
+GNU_REPO="https://mirror.team-cymru.com/gnu"
+
 . ./package-versions.sh
 
 GNUMACH_SRC=gnumach
