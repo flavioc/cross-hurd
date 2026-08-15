@@ -78,3 +78,9 @@ $ CPU=i686 bash compile.sh
 ```
 
 If it is still failing, you may also need to adjust **compile.sh** for that package.
+
+# License
+
+Copyright (C) 2015-2026 Flavio Cruz
+
+This project is licensed under the GNU General Public License v3.0. See [COPYING](COPYING) for the full text.
