@@ -2,6 +2,7 @@
 
 . ./vars.sh
 . ./download-funcs.sh
+. ./update-configs.sh
 
 mkdir -p $SOURCE &&
   pushd $SOURCE &&
@@ -72,4 +73,7 @@ mkdir -p $SOURCE &&
   download_libacpica &&
   download_rumpkernel &&
   download_binutils_gdb &&
-  echo "Download complete."
+  echo "Download complete." &&
+  update_configs_in_dir "$SOURCE" &&
+  update_configs_in_dir "$DOWNLOAD_CACHE_DIRECTORY" &&
+  echo "Update config.guess and config.sub complete."
